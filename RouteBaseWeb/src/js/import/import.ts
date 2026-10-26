@@ -110,10 +110,10 @@ function addFiles(files: File[]): void {
 		const li = document.createElement("li");
 		li.className = "gpx-file-item";
 		const typeBadge = kind === "activity" ? extOf(file.name).slice(1).toUpperCase() : "Photo";
-		// eslint-disable-next-line no-unsanitized/property -- file.name escapeHtml'd; typeBadge = ACTIVITY_EXT-allowlisted extension (kindOf endsWith gate ⇒ extOf yields exactly .gpx/.tcx/.fit) or "Photo"
+		// eslint-disable-next-line no-unsanitized/property -- file.name and typeBadge escapeHtml'd (typeBadge is also allowlisted: kindOf's endsWith gate ⇒ .gpx/.tcx/.fit, or "Photo")
 		li.innerHTML =
 			`<span class="gpx-file-name"><i class="bi ${kind === "activity" ? "bi-file-earmark-text" : "bi-image"}" aria-hidden="true"></i><span>${escapeHtml(file.name)}</span></span>` +
-			`<span class="import-type-badge">${typeBadge}</span>` +
+			`<span class="import-type-badge">${escapeHtml(typeBadge)}</span>` +
 			`<span class="gpx-badge gpx-badge--pending status-badge">Pending</span>`;
 		fileList.appendChild(li);
 		queue.push({ file, kind, li, status: "pending" });
