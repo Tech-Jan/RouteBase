@@ -106,7 +106,8 @@ jobs:
         run: |
           [ -n "$KEYSTORE_B64" ] || { echo "::error::ANDROID_KEYSTORE_BASE64 secret is not set"; exit 1; }
           export ROUTEBASE_KEYSTORE="$RUNNER_TEMP/release.jks"
-          echo "$KEYSTORE_B64" | base64 -d > "$ROUTEBASE_KEYSTORE"
+          # Whitespace stripped: a base64 line copied from a terminal often gains wraps or spaces.
+          printf '%s' "$KEYSTORE_B64" | tr -d '[:space:]' | base64 -d > "$ROUTEBASE_KEYSTORE"
           chmod +x gradlew
           ./gradlew --console=plain assembleRelease
           rm -f "$ROUTEBASE_KEYSTORE"
