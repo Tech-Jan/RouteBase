@@ -1,0 +1,124 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>d79f26a7-97ea-4377-9812-4e4f7c7a8dd8</UserSecretsId>
+    <!-- Workstation GC: the Web SDK defaults to Server GC, which keeps a heap per core and
+         retains memory — wasteful on a small shared box (4 GB, alongside Authentik). Workstation
+         GC has a far smaller footprint and collects more eagerly under pressure. -->
+    <ServerGarbageCollection>false</ServerGarbageCollection>
+    <ConcurrentGarbageCollection>true</ConcurrentGarbageCollection>
+
+    <!-- RIDs used for RID-specific restore/publish: linux-x64 (Docker) + win-x64
+         (local self-contained publish below). Declared so a plain `dotnet restore`
+         resolves the runtime assets for BOTH, which is what lets the Docker publish skip
+         its own restore after the RID-agnostic one in the layer above. -->
+    <RuntimeIdentifiers>linux-x64;win-x64</RuntimeIdentifiers>
+
+  </PropertyGroup>
+
+  <!-- GC limits, emitted into runtimeconfig.json. RuntimeHostConfigurationOption is the documented
+       mechanism; there is no MSBuild property for these two. -->
+  <ItemGroup>
+    <!-- ⚠ THE TWIN of Memory:GcHeapLimitMB in appsettings.json. Keep them equal.
+
+         The memory budget lives in appsettings.json / Services/MemoryBudget.cs — one place, one unit.
+         This is the ONE number that cannot live there: the runtime reads the heap limit from
+         runtimeconfig.json before any configuration exists. So it is declared twice by necessity, and
+         MemoryBudget.Validate() compares this against the limit the process ACTUALLY got and warns at
+         startup if they have drifted. The duplication cannot hide.
+
+         DECIMAL, not hex: runtimeconfig.json takes a NUMBER here (hex is the env-var form) and a hex
+         string is SILENTLY IGNORED — the limit would simply not exist, with nothing to say so.
+         750 MiB = 750 * 1024 * 1024 = 786432000. -->
+    <RuntimeHostConfigurationOption Include="System.GC.HeapHardLimit" Value="786432000" />
+
+    <!-- The editor's replay allocates a large int[] per channel per op, and an array over 85 KB
+         (>21,250 points) lands on the Large Object Heap — which is NOT compacted by default, so the
+         footprint of editing one long ride ratchets up and stays. ConserveMemory trades some CPU for a
+         smaller, compacted heap; 5 is the middle of the 0-9 range. -->
+    <RuntimeHostConfigurationOption Include="System.GC.ConserveMemory" Value="5" />
+  </ItemGroup>
+
+  <!-- Publish-only: self-contained win-x64 for distribution.
+       These do NOT apply during normal build/debug (F5 / dotnet run). -->
+  <PropertyGroup Condition="'$(PublishDir)' != ''">
+    <SelfContained>true</SelfContained>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <PublishSingleFile>false</PublishSingleFile>
+    <PublishReadyToRun>true</PublishReadyToRun>
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+  </PropertyGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="RouteBaseWeb.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="Data\**" />
+    <Content Remove="Data\**" />
+    <EmbeddedResource Remove="Data\**" />
+    <None Remove="Data\**" />
+  </ItemGroup>
+
+  <!-- Build-time OpenAPI: AddOpenApi() (runtime) + the ApiDescription.Server tool, which emits
+       $(OpenApiDocumentsDirectory)/RouteBaseWeb.json AFTER Build by reflecting over the API surface —
+       NO app run, NO DB touch (HostFactoryResolver stops after builder.Build()). The .json is the
+       source-of-truth the TS contracts are generated from; `npm run gen:contracts` transpiles it.
+       PrivateAssets=all on the tool: build-only, never flows to consumers of this assembly. -->
+  <PropertyGroup>
+    <OpenApiDocumentsDirectory>$(MSBuildProjectDirectory)/openapi</OpenApiDocumentsDirectory>
+    <OpenApiGenerateDocumentsOptions>--file-name RouteBaseWeb</OpenApiGenerateDocumentsOptions>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Garmin.FIT.Sdk" Version="21.205.0" />
+    <PackageReference Include="GeoTimeZone" Version="6.1.0" />
+    <PackageReference Include="MetadataExtractor" Version="2.9.3" />
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.10" />
+    <!-- Transitive via Microsoft.AspNetCore.OpenApi, which resolves 2.0.0 — a HIGH severity advisory
+         (NU1903 / GHSA-v5pm-xwqc-g5wc). Pinned forward explicitly because a transitive package cannot be
+         patched any other way. Held on 2.x deliberately: the OpenAPI document this emits feeds the
+         C#→TS codegen, so ContractsDriftGateTests is the compatibility test for this line. -->
+    <PackageReference Include="Microsoft.OpenApi" Version="2.11.0" />
+    <PackageReference Include="Microsoft.Extensions.ApiDescription.Server" Version="10.0.10">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.OpenIdConnect" Version="10.0.10" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.10" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.10" />
+    <PackageReference Include="SkiaSharp" Version="4.150.1" />
+    <PackageReference Include="SkiaSharp.NativeAssets.Linux.NoDependencies" Version="4.150.1" />
+    <PackageReference Include="SQLitePCLRaw.lib.e_sqlite3" Version="3.53.3" />
+  </ItemGroup>
+
+  <!-- TypeScript → JavaScript build via Vite.
+       Runs before the main Build target so wwwroot/js/ is populated before
+       the SDK copies static files to the output directory.
+
+       Incremental: only re-runs when .ts source, configs, or package.json change.
+       Sentinel: wwwroot/js/.build-stamp is touched after each successful build
+       so MSBuild can skip the target when nothing changed. -->
+  <ItemGroup>
+    <TypeScriptSource Include="src\js\**\*.ts" />
+    <TypeScriptConfig Include="tsconfig.json;vite.config.esm.ts;package.json" />
+  </ItemGroup>
+
+  <Target Name="NpmInstall" BeforeTargets="NpmBuild" Condition="!Exists('node_modules')" Inputs="package.json" Outputs="node_modules\.package-lock.json">
+    <Exec Command="npm ci" WorkingDirectory="$(MSBuildProjectDirectory)" />
+  </Target>
+
+  <Target Name="NpmBuild" BeforeTargets="Build" Inputs="@(TypeScriptSource);@(TypeScriptConfig)" Outputs="wwwroot\js\.build-stamp">
+    <Exec Command="npm run build" WorkingDirectory="$(MSBuildProjectDirectory)" />
+    <Touch Files="wwwroot\js\.build-stamp" AlwaysCreate="true" />
+  </Target>
+
+  <!-- The Web SDK auto-includes wwwroot as Content.
+       This update adds CopyToOutputDirectory so it lands next to the exe on every build. -->
+  <ItemGroup>
+    <Content Update="wwwroot\**\*" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>

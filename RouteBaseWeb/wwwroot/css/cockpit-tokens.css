@@ -1,0 +1,122 @@
+/* cockpit-tokens.css — design tokens, reset, and utility classes */
+
+/* ── Design tokens ─────────────────────────────────────────────────────────── */
+:root {
+  --font-ui:   'Geist', ui-sans-serif, system-ui, -apple-system, Helvetica, Arial, sans-serif;
+  --font-mono: 'Geist Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+
+  /* Cool-tinted neutrals */
+  --bg-0: oklch(0.14 0.008 240);   /* canvas */
+  --bg-1: oklch(0.18 0.008 240);   /* sidebar / app background */
+  --bg-2: oklch(0.21 0.008 240);   /* cards */
+  --bg-3: oklch(0.25 0.008 240);   /* raised / active nav */
+  --bg-4: oklch(0.30 0.010 240);   /* input bg / hover */
+
+  --line:   oklch(0.30 0.010 240);
+  --line-2: oklch(0.35 0.012 240);
+
+  --fg-0: oklch(0.97 0.005 240);   /* primary text */
+  --fg-1: oklch(0.80 0.010 240);   /* secondary */
+  --fg-2: oklch(0.62 0.012 240);   /* tertiary / labels */
+  --fg-3: oklch(0.45 0.010 240);   /* muted / axis */
+
+  /* Accents */
+  --acc-cyan:   oklch(0.78 0.13 210);   /* speed / pace / primary cta */
+  --acc-amber:  oklch(0.80 0.15 75);    /* effort / heart rate */
+  --acc-lime:   oklch(0.85 0.18 130);   /* elevation / achievement */
+  --acc-red:    oklch(0.72 0.18 25);    /* alert / max */
+  --acc-violet: oklch(0.74 0.12 285);   /* queued / waiting in a server queue */
+
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 10px;
+  --radius-xl: 14px;
+
+  --shadow-1: 0 1px 2px oklch(0 0 0 / 0.4);
+  --shadow-2: 0 8px 24px oklch(0 0 0 / 0.35);
+
+  /* Sidebar width */
+  --sidebar-w: 190px;
+  --right-rail-w: 320px;
+}
+
+/* ── Breakpoints ────────────────────────────────────────────────────────────
+   CSS custom properties CANNOT appear in a media-query condition
+   (`@media (max-width: var(--x))` does not work), and there is no CSS build
+   step here to expand `@custom-media`. So the "tokens" are this documented,
+   ENFORCED canonical ladder — every stylesheet must use only these values.
+   The item-7 guard test (css-system-invariants.test.ts) fails the build if a
+   new off-list breakpoint appears, so a legitimate new one reads as deliberate.
+
+   Canonical max-width ladder (mobile-first, `@media (max-width: …)`):
+     480px   small phone
+     600px   phone
+     768px   tablet portrait  (Bootstrap md)
+     900px   tablet landscape / small laptop
+     1024px  laptop
+     1600px  ultrawide — sidebar / right-rail collapse
+
+   Min-width companions use the value+1 idiom, so a `min-width` block pairs a
+   `max-width` block one pixel below it without overlap:
+     481, 601, 769, 901, 1025, 1601
+   (601 pairs 600 in dashboard.css; 769 pairs 768 in activities.css.)
+
+   Load-bearing exception — the one single-use value kept because it pins a
+   specific layout's flip point (too tight to fold without a browser check):
+     400px   replay-controls.css  transport bar tightest phone layout (≤320px devices)
+
+   The rest of the tail was collapsed onto the ladder by the CSS-system cleanup
+   (2026-07-30):
+     520 → 480 (races.css)   640 → 600 (grid-filter.css)   720 → 768 (photos.css)
+     1100 → 1024 (record.css, trash.css)
+     992 → 901 (liveview.css min) — now pairs the 900px .lv-main stack point so
+                                    901–991px no longer falls through both blocks.
+   ──────────────────────────────────────────────────────────────────────────── */
+
+/* ── Reset scoped to cockpit ────────────────────────────────────────────────── */
+body.cockpit-active {
+  margin: 0;
+  padding: 0;
+  background: var(--bg-0);
+  color: var(--fg-0);
+  font-family: var(--font-ui);
+  font-feature-settings: 'ss01', 'cv11';
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  letter-spacing: -0.003em;
+  overflow: hidden;
+  height: 100dvh;
+}
+
+body.cockpit-active *,
+body.cockpit-active *::before,
+body.cockpit-active *::after {
+  box-sizing: border-box;
+}
+
+:where(body.cockpit-active) button {
+  font-family: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  padding: 0;
+}
+
+/* ── Utility classes ────────────────────────────────────────────────────────── */
+.mono  { font-family: var(--font-mono); font-feature-settings: 'tnum', 'zero'; }
+.tnum  { font-variant-numeric: tabular-nums; }
+
+.hairline   { border-bottom: 1px solid var(--line); }
+.hairline-t { border-top: 1px solid var(--line); }
+.divider    { height: 1px; background: var(--line); margin: 0; }
+
+/* .chip moved to cockpit-components.css (it is a component, not a token) — CSS-system cleanup. */
+
+.focus-ring:focus-visible { outline: 2px solid var(--acc-cyan); outline-offset: 2px; }
+
+/* ── Thin scrollbar ─────────────────────────────────────────────────────────── */
+.scroll-thin::-webkit-scrollbar          { width: 8px; height: 8px; }
+.scroll-thin::-webkit-scrollbar-track   { background: transparent; }
+.scroll-thin::-webkit-scrollbar-thumb   { background: oklch(0.35 0.01 240 / 0.6); border-radius: 8px; }
+.scroll-thin::-webkit-scrollbar-thumb:hover { background: oklch(0.45 0.01 240 / 0.8); }

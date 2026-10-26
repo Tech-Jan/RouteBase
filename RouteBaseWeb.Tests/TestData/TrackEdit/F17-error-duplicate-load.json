@@ -1,0 +1,17 @@
+{
+  "fixtureVersion": 1,
+  "name": "error-duplicate-load",
+  "description": "E21: loading the same activityId twice -> duplicateLoad at opIndex 1",
+  "sources": {
+    "101": {
+      "time": [1000, 1010],
+      "lat": [47000000, 47000100],
+      "lng": [8000000, 8000100]
+    }
+  },
+  "script": { "schemaVersion": 1, "ops": [
+    { "op": "loadActivity", "activityId": 101 },
+    { "op": "loadActivity", "activityId": 101 }
+  ] },
+  "expectError": { "opIndex": 1, "code": "duplicateLoad" }
+}

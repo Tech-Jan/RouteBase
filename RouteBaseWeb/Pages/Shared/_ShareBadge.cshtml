@@ -1,0 +1,18 @@
+@using RouteBaseWeb.Models.Sharing
+@model ShareBadgeModel
+@* The share glyph + lifetime open count on a card. Renders nothing at all when the resource was never
+   shared — or was shared but never opened — so call sites need no @@if of their own.
+
+   Three states: bright with a tooltip while a link is live; dimmed with NO tooltip once sharing ended (the
+   count outlives the link — see ShareBadgeModel); nothing when there is neither. The title/aria-label
+   attributes disappear on their own in the ended state: Razor omits an attribute whose value is null.
+
+   The count is suppressed at zero: a bare glyph already says "published", and "0" next to it reads as a
+   failure rather than as "nobody has been yet". The active title says it in words either way. *@
+@if (Model.IsShared)
+{
+    <span class="share-badge @Model.CssClass @Model.StateClass" title="@Model.Title" aria-label="@Model.Title">
+        <i class="bi bi-share" aria-hidden="true"></i>@if (Model.OpenCount > 0)
+        {<span class="share-badge-count mono">@Model.OpenCount</span>}
+    </span>
+}

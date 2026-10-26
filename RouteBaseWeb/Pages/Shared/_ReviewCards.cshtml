@@ -1,0 +1,108 @@
+@using RouteBaseWeb.Services.Lifecycle
+@using Microsoft.AspNetCore.Mvc.ViewFeatures
+@model List<RouteBaseWeb.Models.Activity>
+@* The review queue: auto-detected rides awaiting your decision, plus the ones already rejected into the
+   trash. Cards, not table rows — the minimap is the whole point of the decision, and a row's map column is
+   the first thing a phone drops.
+
+   Same construction as the trash page: the shared _ActivityCard is untouched, and everything that makes one
+   a REVIEW card (badge, checkbox, type picker, verbs) lives on the wrapper. The card's link to
+   /Activities/Details works here because that route opens the owner's own non-released ride in review mode
+   (ActivityViewOptions.AllowOwnerNonReleased).
+
+   Permanent deletion is not offered here: Delete = soft trash (2-day window), and /Activities/Trash owns the
+   irreversible verb. *@
+@{
+    var activityTypes = ActivityTypeVocabulary.Recordable;
+    var pendingCount = Model.Count(a => a.Lifecycle == LifecycleStates.InWork);
+}
+
+<div class="rec-review-panel">
+    <div class="rec-panel-header">
+        <span><i class="bi bi-hourglass-split" style="color:var(--acc-amber)" aria-hidden="true"></i> Review</span>
+        <span class="rec-sessions-count">@pendingCount waiting</span>
+    </div>
+
+    @* Bulk actions apply to the pending cards only — a trashed card has no checkbox. *@
+    <div class="rec-bulk-toolbar" id="rec-bulk-toolbar" style="@(pendingCount > 0 ? "" : "display:none")">
+        <label class="rec-bulk-selectall">
+            <input type="checkbox" id="rec-select-all" /> Select all pending
+        </label>
+        <span class="rec-bulk-count" id="rec-bulk-count">0 selected</span>
+        <div class="rec-bulk-apply">
+            <select id="rec-bulk-action" class="rec-select rec-bulk-select" aria-label="Bulk action">
+                <option value="approve">Approve</option>
+                <option value="delete">Delete</option>
+            </select>
+            <button type="button" id="rec-bulk-apply-btn" class="btn-cockpit btn-cockpit-primary btn-cockpit-sm" disabled>
+                <i class="bi bi-check2-square" aria-hidden="true"></i> Apply
+            </button>
+        </div>
+    </div>
+
+    <div class="rec-review-cards">
+        @foreach (var activity in Model)
+        {
+            var isTrashed = activity.Lifecycle == LifecycleStates.Trashed;
+            <div class="rec-review-card @(isTrashed ? "rec-review-card--trashed" : "")" data-track-id="@activity.TrackId">
+                <partial name="_ActivityCard" model="activity"
+                         view-data='@(new ViewDataDictionary(ViewData) { ["CurrentUserId"] = activity.UserId ?? "" })' />
+
+                @if (!isTrashed)
+                {
+                    <label class="rec-review-select" title="Select for bulk action">
+                        <input type="checkbox" class="rec-row-check" data-track-id="@activity.TrackId"
+                               aria-label="Select for bulk action" />
+                    </label>
+                }
+
+                <span class="rec-review-badge @(isTrashed ? "rec-review-badge--trashed" : "")">
+                    @if (isTrashed)
+                    {
+                        <i class="bi bi-trash3-fill" aria-hidden="true"></i><text> Trashed</text>
+                    }
+                    else
+                    {
+                        <i class="bi bi-hourglass-split" aria-hidden="true"></i><text> Pending review</text>
+                    }
+                </span>
+
+                <div class="rec-review-foot">
+                    @if (isTrashed)
+                    {
+                        <button type="button" class="btn-cockpit btn-cockpit-ghost btn-cockpit-sm rec-restore-btn"
+                                data-track-id="@activity.TrackId" title="Restore this activity to pending review">
+                            <i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i> Restore
+                        </button>
+                        <a href="/Activities/Trash" class="btn-cockpit btn-cockpit-ghost btn-cockpit-sm"
+                           title="Delete it for good from the trash">
+                            <i class="bi bi-trash" aria-hidden="true"></i> Trash
+                        </a>
+                    }
+                    else
+                    {
+                        @* Preserve a detected type outside the fixed list so Approve doesn't silently retype it (LR-06). *@
+                        <select class="rec-select rec-review-type" aria-label="Activity type">
+                            @if (!string.IsNullOrEmpty(activity.ActivityType) && !activityTypes.Contains(activity.ActivityType))
+                            {
+                                <option value="@activity.ActivityType" selected>@activity.ActivityType</option>
+                            }
+                            @foreach (var t in activityTypes)
+                            {
+                                <option value="@t" selected="@(t == activity.ActivityType)">@t</option>
+                            }
+                        </select>
+                        <button type="button" class="btn-cockpit btn-cockpit-primary btn-cockpit-sm rec-approve-btn"
+                                data-track-id="@activity.TrackId" title="Approve this activity">
+                            <i class="bi bi-check-lg" aria-hidden="true"></i> Approve
+                        </button>
+                        <button type="button" class="btn-cockpit btn-cockpit-danger btn-cockpit-sm rec-delete-btn"
+                                data-track-id="@activity.TrackId" title="Move to trash (auto-deleted after 2 days)">
+                            <i class="bi bi-trash" aria-hidden="true"></i> Delete
+                        </button>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+</div>

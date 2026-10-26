@@ -1,0 +1,29 @@
+{
+  "fixtureVersion": 1,
+  "name": "required-channels-only",
+  "description": "E15: ops on a time/lat/lng-only track; optional channels stay absent; cropTo new-head distance rebase is vacuous (no distance channel)",
+  "sources": {
+    "601": {
+      "time": [1000, 1010, 1020, 1030],
+      "lat": [47000000, 47000100, 47000200, 47000300],
+      "lng": [8000000, 8000100, 8000200, 8000300]
+    }
+  },
+  "script": { "schemaVersion": 1, "ops": [
+    { "op": "loadActivity", "activityId": 601 },
+    { "op": "cropTo", "slot": 0, "from": 1, "to": 2 }
+  ] },
+  "expect": {
+    "slots": [
+      {
+        "slotId": 0,
+        "origin": { "activityId": 601 },
+        "channels": {
+          "time": [1010, 1020],
+          "lat": [47000100, 47000200],
+          "lng": [8000100, 8000200]
+        }
+      }
+    ]
+  }
+}

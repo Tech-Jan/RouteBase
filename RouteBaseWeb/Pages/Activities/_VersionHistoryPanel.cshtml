@@ -1,0 +1,45 @@
+@using RouteBaseWeb.Services.Tracks
+@model VersionHistoryPanel
+@* Version history — owner only, so the caller gates it. History is not a public fact about a ride: a friend
+   viewing it has no business reading what it looked like before you cropped it (the API enforces this too).
+
+   This is the ONE place a ride's version changes (EditorSurfaces): restore a version · undo the save that
+   wrote one · reset to original. There is deliberately no second door — a head cannot move while the ride is
+   checked out, so the editor cannot host one.
+
+   `data-checked-out` is that fact, server-rendered from the ride's own checkout pointer: while it is set,
+   every action here is refused by the server, so the panel says so up front instead of firing a 409.
+
+   `data-version-count` / `data-any-commit` let the panel decide whether to fetch the list AT ALL. Most rides
+   are imported once and never edited, and the panel used to spend an HTTP round-trip on every owner page load
+   just to learn it had nothing to show. They are raw counts, NOT a verdict — the rule lives in hasHistory()
+   (version-history-model.ts), once.
+
+   Every id below is a DOM contract read by version-history.ts. *@
+
+<div class="det-custom-panel" id="versionHistoryPanel"
+     data-track-id="@Model.TrackId"
+     data-lifecycle="@Model.Lifecycle"
+     data-checked-out="@(Model.CheckedOut ? "true" : "false")"
+     data-version-count="@Model.Facts.VersionCount"
+     data-any-commit="@(Model.Facts.AnyCommit ? "true" : "false")">
+    <div class="det-custom-header">
+        <i class="bi bi-clock-history"></i> Version history
+        <button type="button" class="btn-cockpit btn-cockpit-ghost btn-cockpit-sm ms-auto"
+                id="parkToggleBtn" hidden></button>
+    </div>
+    <div class="det-custom-body">
+        @* Only while the ride is checked out. The panel's actions are inert until the edit is resolved, and
+           saying which edit is holding it is the difference between a dead button and a next step. *@
+        <div class="det-notice det-notice--warn" id="versionCheckedOutNotice" hidden>
+            This ride has an edit open. Resume or discard it (top of the page) to change versions.
+        </div>
+        <ul class="version-list" id="versionList"></ul>
+        <div class="det-notice det-notice--info" id="versionStatus">Loading&hellip;</div>
+        <div class="version-panel-actions" id="versionPanelActions" hidden>
+            <button type="button" class="btn-cockpit btn-cockpit-danger btn-cockpit-sm" id="versionResetBtn">
+                Reset track to original&hellip;
+            </button>
+        </div>
+    </div>
+</div>

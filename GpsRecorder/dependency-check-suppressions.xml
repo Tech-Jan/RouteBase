@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<suppressions xmlns="https://jeremylong.github.io/DependencyCheck/dependency-suppression.1.3.xsd">
+    <!-- androidx.sqlite is the Jetpack SQLite BINDING (version 2.x); dependency-check CPE-matches it
+         against SQLite-the-database 2.x and imports decade-old engine CVEs. The actual SQLite engine
+         on Android is the OS's, outside this app's dependency tree. -->
+    <suppress>
+        <packageUrl regex="true">^pkg:maven/androidx\.sqlite/.*$</packageUrl>
+        <cpe>cpe:/a:sqlite:sqlite</cpe>
+    </suppress>
+</suppressions>

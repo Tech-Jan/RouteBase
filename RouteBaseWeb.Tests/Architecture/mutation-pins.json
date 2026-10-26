@@ -1,0 +1,32 @@
+{
+  "_comment": "Per-file mutation-score pins. Enforced by scripts/mutation-ratchet.py (gates.sh --mutation, ~16 min). The cheap half \u2014 every pin still names a real file, inside the mutated subtrees \u2014 runs in dotnet test as MutationRatchetPinTests. Score = (Killed+Timeout)/(Killed+Timeout+Survived+NoCoverage)*100, Stryker's own definition. PINS ONLY RISE: lowering one needs a written reason in the same commit, like the file-size and culture ratchets. Regenerate with scripts/mutation-ratchet.py --update, then REVIEW THE DIFF.",
+  "measuredFrom": "mutation-report.json",
+  "pins": {
+    "RouteBaseWeb/Services/Segments/CandidateSqlFilters.cs": 85.71,
+    "RouteBaseWeb/Services/Segments/GridFilterSqlTranslator.cs": 80.7,
+    "RouteBaseWeb/Services/Segments/Rules/ExtentRules.cs": 75.86,
+    "RouteBaseWeb/Services/Segments/Rules/MembershipRules.cs": 88.61,
+    "RouteBaseWeb/Services/Segments/Rules/RuleDocument.cs": 67.42,
+    "RouteBaseWeb/Services/Segments/Rules/SegmentRuleEvaluator.cs": 86.11,
+    "RouteBaseWeb/Services/Segments/Rules/TrackEvidence.cs": 96.77,
+    "RouteBaseWeb/Services/Segments/Rules/TrackEvidenceExtractor.cs": 92.98,
+    "RouteBaseWeb/Services/Segments/SegmentAnalysisHandler.cs": 3.7,
+    "RouteBaseWeb/Services/Segments/SegmentDetailViewBuilder.cs": 41.18,
+    "RouteBaseWeb/Services/Segments/SegmentEffortPerformanceBuilder.cs": 54.72,
+    "RouteBaseWeb/Services/Segments/SegmentEffortProjection.cs": 61.54,
+    "RouteBaseWeb/Services/Segments/SegmentEffortTotalsProjection.cs": 68.75,
+    "RouteBaseWeb/Services/Segments/ShapeSegmentMatcher.cs": 58.62,
+    "RouteBaseWeb/Services/Segments/SingleSegmentAnalysisHandler.cs": 5.88,
+    "RouteBaseWeb/Services/Tracks/ContentTrackReader.cs": 89.41,
+    "RouteBaseWeb/Services/Tracks/DecodedTrack.cs": 83.33,
+    "RouteBaseWeb/Services/Tracks/DecodedTrackExtensions.cs": 84.93,
+    "RouteBaseWeb/Services/Tracks/RecordingStagingStore.cs": 68.09,
+    "RouteBaseWeb/Services/Tracks/TrackBlobCodec.cs": 78.66,
+    "RouteBaseWeb/Services/Tracks/TrackChannel.cs": 100.0,
+    "RouteBaseWeb/Services/Tracks/TrackContentStore.cs": 68.15,
+    "RouteBaseWeb/Services/Tracks/TrackCoordinates.cs": 85.71,
+    "RouteBaseWeb/Services/Tracks/TrackObjectStore.cs": 84.62,
+    "RouteBaseWeb/Services/Tracks/TrackReaderCache.cs": 85.19,
+    "RouteBaseWeb/Services/Tracks/TrackVersionHistory.cs": 81.18
+  }
+}

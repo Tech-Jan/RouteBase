@@ -1,0 +1,45 @@
+{
+  "fixtureVersion": 1,
+  "name": "deleteRange-close-middle",
+  "description": "close: tail shifted so junction gap = gapSeconds (10); anchor t[0]=1000, next t[3]=1030, shift=20",
+  "sources": {
+    "101": {
+      "time": [1000, 1010, 1020, 1030],
+      "lat": [47000000, 47000100, 47000200, 47000300],
+      "lng": [8000000, 8000100, 8000200, 8000300],
+      "altitude": [1000, 1010, 1020, 1030],
+      "distance": [0, 100, 200, 300],
+      "speed": [500, 510, 520, 530],
+      "heartRate": [120, 121, 122, 123],
+      "gradeSmooth": [10, 11, 12, 13],
+      "cadence": [80, 81, 82, 83],
+      "power": [200, 201, 202, 203],
+      "pressure": [101300, 101310, 101320, 101330]
+    }
+  },
+  "script": { "schemaVersion": 1, "ops": [
+    { "op": "loadActivity", "activityId": 101 },
+    { "op": "deleteRange", "slot": 0, "from": 1, "to": 2, "timeMode": "close", "gapSeconds": 10 }
+  ] },
+  "expect": {
+    "slots": [
+      {
+        "slotId": 0,
+        "origin": { "activityId": 101 },
+        "channels": {
+          "time": [1000, 1010],
+          "lat": [47000000, 47000300],
+          "lng": [8000000, 8000300],
+          "altitude": [1000, 1030],
+          "distance": [0, 0],
+          "speed": [500, 530],
+          "heartRate": [120, 123],
+          "gradeSmooth": [10, 13],
+          "cadence": [80, 83],
+          "power": [200, 203],
+          "pressure": [101300, 101330]
+        }
+      }
+    ]
+  }
+}

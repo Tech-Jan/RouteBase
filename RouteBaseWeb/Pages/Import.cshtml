@@ -1,0 +1,96 @@
+@page
+@model RouteBaseWeb.Pages.ImportModel
+@{
+    Layout = "_DashboardLayout";
+    var target = Model.TrackId;
+    ViewData["Title"] = target.HasValue ? "Add Photos" : "Import";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/import.css" asp-append-version="true">
+}
+
+<div class="cockpit-scroll">
+    <partial name="_PageHeader" model="@(new PageHeaderModel(
+        Title: target.HasValue ? "Add Photos" : "Import",
+        Subtitle: target.HasValue
+            ? "These photos will be added directly to the selected activity."
+            : "Import activity files (GPX, TCX, FIT) and photos — photos auto-link to the matching activity.",
+        Breadcrumbs: new[] { ("/", "Dashboard"), ("/Import", "Import") }
+    ))" />
+
+    <div id="importRoot" class="gpx-layout" data-track-id="@(target?.ToString() ?? "")">
+
+        @if (target.HasValue)
+        {
+            <div class="import-target-banner">
+                <i class="bi bi-geo-alt" aria-hidden="true"></i>
+                <span>Adding photos to <a href="/Activities/Details/@target">this activity</a>. Only images are accepted here.</span>
+            </div>
+        }
+        else
+        {
+            <label class="gpx-option">
+                <input type="checkbox" id="useFilenameAsId" class="gpx-option-checkbox" />
+                <span class="gpx-option-body">
+                    <span class="gpx-option-label">Use filename as Strava activity ID (GPX)</span>
+                    <span class="gpx-option-hint">Enable for Strava GPX exports (e.g. <code>3572546957.gpx</code>) to dedupe against API imports.</span>
+                </span>
+            </label>
+        }
+
+        <div class="gpx-option">
+            <label class="photos-opt-label" for="previewSize">Photo preview size</label>
+            <select id="previewSize" class="photos-select">
+                <option value="640">640 px — smallest</option>
+                <option value="1024" selected>1024 px — default</option>
+                <option value="1600">1600 px — sharpest</option>
+            </select>
+        </div>
+
+        <div id="dropZone" class="gpx-dropzone">
+            <i class="bi bi-cloud-upload gpx-dropzone-icon" aria-hidden="true"></i>
+            <p class="gpx-dropzone-primary">
+                Drag &amp; drop @(target.HasValue ? "photos" : "activity files or photos") here
+            </p>
+            <p class="gpx-dropzone-secondary">
+                @(target.HasValue ? "JPG · PNG · WebP" : ".gpx · .tcx · .fit · JPG · PNG · WebP") — or click to select
+            </p>
+            <input type="file" id="fileInput" accept="@(target.HasValue ? ".jpg,.jpeg,.png,.webp" : ".gpx,.tcx,.fit,.jpg,.jpeg,.png,.webp")" multiple style="display:none" />
+            <button type="button" id="btnBrowse" class="btn-cockpit btn-cockpit-primary">
+                <i class="bi bi-folder2-open" aria-hidden="true"></i> Browse Files
+            </button>
+        </div>
+
+        @* Notices sit ABOVE the file list — with a long list they'd otherwise be pushed
+           off-screen and missed. Error banner first (a failed upload outranks everything),
+           then resolution prompts (e.g. "which activity for this photo?"). *@
+        <div id="importSummary" class="gpx-summary" style="display:none"></div>
+        <div id="importResults" class="import-results" style="display:none"></div>
+
+        <div id="fileQueue" class="gpx-queue" style="display:none">
+            <div class="gpx-queue-header">
+                <span class="gpx-queue-title">Files</span>
+                <div id="uploadProgress" class="gpx-upload-progress" style="display:none" role="status" aria-live="polite">
+                    <span id="uploadProgressText" class="gpx-upload-progress-text"></span>
+                    <span class="gpx-upload-progress-bar">
+                        <span id="uploadProgressFill" class="gpx-upload-progress-fill"></span>
+                    </span>
+                </div>
+                <div class="gpx-queue-actions">
+                    <button id="btnUploadAll" class="btn-cockpit btn-cockpit-primary btn-cockpit-sm">
+                        <i class="bi bi-upload" aria-hidden="true"></i> Import All
+                    </button>
+                    <button id="btnClear" class="btn-cockpit btn-cockpit-ghost btn-cockpit-sm">
+                        <i class="bi bi-trash" aria-hidden="true"></i> Clear
+                    </button>
+                </div>
+            </div>
+            <ul id="fileList" class="gpx-file-list"></ul>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script type="module" src="~/js/import/import.js" asp-append-version="true"></script>
+}

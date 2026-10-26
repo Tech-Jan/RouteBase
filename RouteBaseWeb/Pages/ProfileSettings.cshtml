@@ -1,0 +1,382 @@
+@page
+@using RouteBaseWeb.Constants
+@model ProfileSettingsModel
+@{
+    Layout = "_DashboardLayout";
+    ViewData["Title"] = "Settings";
+
+    // Every min/max/step and every <option> below comes from SettingsCatalog — the same entry the POST
+    // validates against and the read path clamps through. Do NOT retype a bound as a literal here: three
+    // copies of each rule is what this page had before, and the HTML permitted what the server clamped.
+    // The <select>s keep asp-for, so the tag helper still marks the current value selected.
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/profile-settings.css" asp-append-version="true">
+}
+
+<div class="cockpit-scroll">
+
+    <partial name="_PageHeader" model="@(new PageHeaderModel(
+        Title: "Settings",
+        Subtitle: "Visualization and performance preferences",
+        Breadcrumbs: new (string Href, string Label)[] { ("/", "Dashboard"), ("/ProfileSettings", "Settings") }
+    ))" />
+
+    @if (!string.IsNullOrEmpty(Model.SuccessMessage))
+    {
+        <div class="settings-notice settings-notice--success" role="status">
+            <span>@Model.SuccessMessage</span>
+            <button class="settings-notice-close" data-dismiss-notice aria-label="Dismiss">×</button>
+        </div>
+    }
+
+    @if (!string.IsNullOrEmpty(Model.ErrorMessage ?? Model.LoadErrorMessage))
+    {
+        <div class="settings-notice settings-notice--error" role="alert">
+            <span>@(Model.ErrorMessage ?? Model.LoadErrorMessage)</span>
+            <button class="settings-notice-close" data-dismiss-notice aria-label="Dismiss">×</button>
+        </div>
+    }
+
+    <form method="post" asp-page-handler="Save">
+
+        <div class="settings-panel">
+
+            <!-- ── Chart Settings ─────────────────────────────────── -->
+            <section class="settings-section">
+                <h2 class="settings-section-title">Chart Settings</h2>
+
+                <div class="settings-grid settings-grid-2">
+                    <div class="settings-field">
+                        <label asp-for="SpeedSmoothingSeconds" class="settings-label">Speed Smoothing</label>
+                        <input asp-for="SpeedSmoothingSeconds" type="number" class="settings-input"
+                               min="@SettingsCatalog.SpeedSmoothingSeconds.MinAttr"
+                               max="@SettingsCatalog.SpeedSmoothingSeconds.MaxAttr"
+                               step="@SettingsCatalog.SpeedSmoothingSeconds.StepAttr">
+                        <span asp-validation-for="SpeedSmoothingSeconds" class="settings-error"></span>
+                        <p class="settings-hint">Shapes the <strong>Smoothed</strong> speed view only — Recorded is drawn as stored. Seconds of riding averaged into each point. Higher = smoother. 0 = no smoothing. Default: @SettingsCatalog.SpeedSmoothingSeconds.DefaultText (range @SettingsCatalog.SpeedSmoothingSeconds.RangeText).</p>
+                    </div>
+
+                    <div class="settings-field">
+                        <label asp-for="SpeedBinCount" class="settings-label">Speed Chart Detail</label>
+                        <input asp-for="SpeedBinCount" type="number" class="settings-input"
+                               min="@SettingsCatalog.SpeedBinCount.MinAttr"
+                               max="@SettingsCatalog.SpeedBinCount.MaxAttr"
+                               step="@SettingsCatalog.SpeedBinCount.StepAttr">
+                        <span asp-validation-for="SpeedBinCount" class="settings-error"></span>
+                        <p class="settings-hint">Shapes the <strong>Smoothed</strong> speed view only. How many steps the trace is drawn in, across whatever range is on screen. Lower = broader, more readable levels; higher = a closer trace. Default: @SettingsCatalog.SpeedBinCount.DefaultText (range @SettingsCatalog.SpeedBinCount.RangeText).</p>
+                    </div>
+
+                    <div class="settings-field">
+                        <label asp-for="DefaultSpeedView" class="settings-label">Speed Chart Opens On</label>
+                        <select asp-for="DefaultSpeedView" class="settings-input">
+                            @foreach (var option in SettingsCatalog.DefaultSpeedView.Options)
+                            {
+                                <option value="@option.Value">@option.Label</option>
+                            }
+                        </select>
+                        <p class="settings-hint">Which view a speed chart starts in. Switching a chart with its own button overrides this on that device, for that chart.</p>
+                    </div>
+
+                    <div class="settings-field">
+                        <label asp-for="ElevationSmoothingWindow" class="settings-label">Elevation Smoothing Window</label>
+                        <input asp-for="ElevationSmoothingWindow" type="number" class="settings-input"
+                               min="@SettingsCatalog.ElevationSmoothingWindow.MinAttr"
+                               max="@SettingsCatalog.ElevationSmoothingWindow.MaxAttr"
+                               step="@SettingsCatalog.ElevationSmoothingWindow.StepAttr">
+                        <span asp-validation-for="ElevationSmoothingWindow" class="settings-error"></span>
+                        <p class="settings-hint">Window size in GPS points. Higher = smoother. 1 = no smoothing. Default: @SettingsCatalog.ElevationSmoothingWindow.DefaultText (range @SettingsCatalog.ElevationSmoothingWindow.RangeText).</p>
+                    </div>
+                </div>
+
+                <div class="settings-grid">
+                    <div class="settings-field">
+                        <label asp-for="ChartTension" class="settings-label">Chart Line Tension</label>
+                        <input asp-for="ChartTension" type="number" class="settings-input"
+                               min="@SettingsCatalog.ChartTension.MinAttr"
+                               max="@SettingsCatalog.ChartTension.MaxAttr"
+                               step="@SettingsCatalog.ChartTension.StepAttr">
+                        <span asp-validation-for="ChartTension" class="settings-error"></span>
+                        <p class="settings-hint">0.0 = sharp corners, 1.0 = very curved</p>
+                    </div>
+
+                    <div class="settings-field">
+                        <label asp-for="ChartBorderWidth" class="settings-label">Chart Line Width</label>
+                        <input asp-for="ChartBorderWidth" type="number" class="settings-input"
+                               min="@SettingsCatalog.ChartBorderWidth.MinAttr"
+                               max="@SettingsCatalog.ChartBorderWidth.MaxAttr"
+                               step="@SettingsCatalog.ChartBorderWidth.StepAttr">
+                        <span asp-validation-for="ChartBorderWidth" class="settings-error"></span>
+                        <p class="settings-hint">Thickness of chart lines (@SettingsCatalog.ChartBorderWidth.RangeText px)</p>
+                    </div>
+
+                    <div class="settings-field">
+                        <label asp-for="ChartDetail" class="settings-label">Segment Chart Detail</label>
+                        <select asp-for="ChartDetail" class="settings-input">
+                            @foreach (var option in SettingsCatalog.ChartDetail.Options)
+                            {
+                                <option value="@option.Value">@option.Label</option>
+                            }
+                        </select>
+                        <p class="settings-hint">
+                            Point density for segment performance charts. Auto (recommended) uses <strong>High</strong> for segments under 50 efforts and <strong>Normal</strong> for 50+ — never Full.
+                            Low/Normal/High share a ~150,000-point budget across the segment's efforts (High ≈ 2× Normal, Low ≈ ½×), capped at 4,000 points per effort; e.g. a 300-effort segment loads ~500 / ~1,000 pts per effort at Normal / High.
+                            Full = every GPS point (largest payloads, sharpest hover).
+                        </p>
+                    </div>
+                </div>
+
+                <p class="settings-sub-title">Splits</p>
+                <div class="settings-grid settings-grid-2">
+                    <div class="settings-field">
+                        <label asp-for="SplitDistanceRunWalk" class="settings-label">Split Distance — Run / Walk</label>
+                        <input asp-for="SplitDistanceRunWalk" type="number" class="settings-input"
+                               min="@SettingsCatalog.SplitDistanceRunWalk.MinAttr"
+                               max="@SettingsCatalog.SplitDistanceRunWalk.MaxAttr"
+                               step="@SettingsCatalog.SplitDistanceRunWalk.StepAttr">
+                        <span asp-validation-for="SplitDistanceRunWalk" class="settings-error"></span>
+                        <p class="settings-hint">Split interval in km for running &amp; walking. Default: @SettingsCatalog.SplitDistanceRunWalk.DefaultText (range @SettingsCatalog.SplitDistanceRunWalk.RangeText).</p>
+                    </div>
+
+                    <div class="settings-field">
+                        <label asp-for="SplitDistanceOther" class="settings-label">Split Distance — Other Activities</label>
+                        <input asp-for="SplitDistanceOther" type="number" class="settings-input"
+                               min="@SettingsCatalog.SplitDistanceOther.MinAttr"
+                               max="@SettingsCatalog.SplitDistanceOther.MaxAttr"
+                               step="@SettingsCatalog.SplitDistanceOther.StepAttr">
+                        <span asp-validation-for="SplitDistanceOther" class="settings-error"></span>
+                        <p class="settings-hint">Split interval in km for cycling and all other activities. Default: @SettingsCatalog.SplitDistanceOther.DefaultText (range @SettingsCatalog.SplitDistanceOther.RangeText).</p>
+                    </div>
+                </div>
+            </section>
+
+            <div class="divider"></div>
+
+            <!-- ── Map Settings ───────────────────────────────────── -->
+            <section class="settings-section">
+                <h2 class="settings-section-title">Map Settings</h2>
+
+                <p class="settings-sub-title">General Settings (2D &amp; 3D Maps)</p>
+                <div class="settings-grid settings-grid-2">
+                    <div class="settings-field">
+                        <label asp-for="DefaultMapZoom" class="settings-label">Default Map Zoom Level</label>
+                        <input asp-for="DefaultMapZoom" type="number" class="settings-input"
+                               min="@SettingsCatalog.DefaultMapZoom.MinAttr"
+                               max="@SettingsCatalog.DefaultMapZoom.MaxAttr"
+                               step="@SettingsCatalog.DefaultMapZoom.StepAttr">
+                        <span asp-validation-for="DefaultMapZoom" class="settings-error"></span>
+                        <p class="settings-hint">@SettingsCatalog.DefaultMapZoom.MinAttr = world view, @SettingsCatalog.DefaultMapZoom.MaxAttr = street level</p>
+                    </div>
+                </div>
+
+                <p class="settings-sub-title">Map Settings</p>
+                <div class="settings-grid">
+                    <div class="settings-field">
+                        <label asp-for="DefaultMapStyle" class="settings-label">Default basemap</label>
+                        <select asp-for="DefaultMapStyle" class="settings-select">
+                            @foreach (var option in SettingsCatalog.DefaultMapStyle.Options)
+                            {
+                                <option value="@option.Value">@option.Label</option>
+                            }
+                        </select>
+                        <p class="settings-hint">Basemap used across all maps; styles marked "requires MapTiler key" need a key configured, otherwise falls back to Liberty</p>
+                    </div>
+
+                    <div class="settings-field">
+                        <label asp-for="HillshadeExaggeration" class="settings-label">Hillshade Exaggeration</label>
+                        <input asp-for="HillshadeExaggeration" type="number" class="settings-input"
+                               min="@SettingsCatalog.HillshadeExaggeration.MinAttr"
+                               max="@SettingsCatalog.HillshadeExaggeration.MaxAttr"
+                               step="@SettingsCatalog.HillshadeExaggeration.StepAttr">
+                        <span asp-validation-for="HillshadeExaggeration" class="settings-error"></span>
+                        <p class="settings-hint">Strength of the shading drawn on the terrain. 0.0 = no shading, 1.0 = maximum</p>
+                    </div>
+
+                    <div class="settings-field">
+                        <label asp-for="TerrainExaggeration" class="settings-label">Terrain Exaggeration (3D)</label>
+                        <input asp-for="TerrainExaggeration" type="number" class="settings-input"
+                               min="@SettingsCatalog.TerrainExaggeration.MinAttr"
+                               max="@SettingsCatalog.TerrainExaggeration.MaxAttr"
+                               step="@SettingsCatalog.TerrainExaggeration.StepAttr">
+                        <span asp-validation-for="TerrainExaggeration" class="settings-error"></span>
+                        <p class="settings-hint">Vertical scale of the 3D relief itself. @SettingsCatalog.TerrainExaggeration.DefaultText = true to life, higher = more dramatic (@SettingsCatalog.TerrainExaggeration.RangeText)</p>
+                    </div>
+
+                </div>
+
+                <div class="settings-field">
+                    <label asp-for="FogDistance" class="settings-label">Fog Distance</label>
+                    <div class="settings-range-wrap">
+                        <input asp-for="FogDistance" type="range" class="settings-range"
+                               min="@SettingsCatalog.FogDistance.MinAttr"
+                               max="@SettingsCatalog.FogDistance.MaxAttr"
+                               step="@SettingsCatalog.FogDistance.StepAttr" data-zero-label="Disabled">
+                        <output class="settings-range-value">@(Model.FogDistance == 0 ? "Disabled" : Model.FogDistance.ToString())</output>
+                    </div>
+                    <p class="settings-hint">0 = no fog, 1–@SettingsCatalog.FogDistance.MaxAttr = fog distance (higher = less fog)</p>
+                </div>
+            </section>
+
+            <div class="divider"></div>
+
+            <!-- ── Segment Settings ───────────────────────────────── -->
+            <section class="settings-section">
+                <h2 class="settings-section-title">Segment Settings</h2>
+
+                <div class="settings-grid">
+                    <div class="settings-field">
+                        <label asp-for="DefaultMatchThreshold" class="settings-label">Default Match Threshold</label>
+                        <input asp-for="DefaultMatchThreshold" type="number" class="settings-input"
+                               min="@SettingsCatalog.DefaultMatchThreshold.MinAttr"
+                               max="@SettingsCatalog.DefaultMatchThreshold.MaxAttr"
+                               step="@SettingsCatalog.DefaultMatchThreshold.StepAttr">
+                        <span asp-validation-for="DefaultMatchThreshold" class="settings-error"></span>
+                        <p class="settings-hint">Default match % used when analyzing a single segment and by the "Analyze All" button. Lower = looser matching. Default: @SettingsCatalog.DefaultMatchThreshold.DefaultText (range @SettingsCatalog.DefaultMatchThreshold.RangeText).</p>
+                    </div>
+
+                    @* Was applied to every segment you create and shown nowhere — SegmentCrud has read it
+                       since the visibility rework. Labelled "new segments" because that is what reads it:
+                       activities take their visibility from the recorder request or an explicit edit. *@
+                    <div class="settings-field">
+                        <label asp-for="DefaultVisibility" class="settings-label">Default visibility for new segments</label>
+                        <select asp-for="DefaultVisibility" class="settings-select">
+                            @foreach (var option in SettingsCatalog.DefaultVisibility.Options)
+                            {
+                                <option value="@option.Value">@option.Label</option>
+                            }
+                        </select>
+                        <p class="settings-hint">Who can see a segment you create. Does not affect activities, and does not change segments that already exist.</p>
+                    </div>
+                </div>
+            </section>
+
+            <div class="divider"></div>
+
+            <!-- ── Recording ──────────────────────────────────────── -->
+            <section class="settings-section">
+                <h2 class="settings-section-title">Recording</h2>
+
+                <div class="settings-grid">
+                    <div class="settings-field">
+                        <div class="settings-toggle-wrap">
+                            <input asp-for="AutoApproveRecordings" type="checkbox" class="settings-toggle">
+                            <label asp-for="AutoApproveRecordings" class="settings-toggle-label">Auto-approve detected rides</label>
+                        </div>
+                        <p class="settings-hint">Auto-detected rides go straight into your activities and join their segments as soon as they finish, instead of waiting in the Record page's review queue. Rides too short to be real are still discarded automatically. Turn this off to review each one by hand.</p>
+                    </div>
+                </div>
+            </section>
+
+            <div class="divider"></div>
+
+            <!-- ── Performance ────────────────────────────────────── -->
+            <section class="settings-section">
+                <h2 class="settings-section-title">Performance</h2>
+
+                @* Was a private const plus a seed literal with nothing relating them, and no way to set it —
+                   every estimated effort in the app was computed for a 75 kg rider whether or not you are one. *@
+                <div class="settings-grid">
+                    <div class="settings-field">
+                        <label asp-for="RiderWeightKg" class="settings-label">Rider + bike mass (kg)</label>
+                        <input asp-for="RiderWeightKg" type="number" class="settings-input"
+                               min="@SettingsCatalog.RiderWeightKg.MinAttr"
+                               max="@SettingsCatalog.RiderWeightKg.MaxAttr"
+                               step="@SettingsCatalog.RiderWeightKg.StepAttr">
+                        <span asp-validation-for="RiderWeightKg" class="settings-error"></span>
+                        <p class="settings-hint">Used to estimate effort power when a ride has no power meter. Combined mass of you, the bike and what you carry. Default: @SettingsCatalog.RiderWeightKg.DefaultText (range @SettingsCatalog.RiderWeightKg.RangeText).</p>
+                    </div>
+                </div>
+            </section>
+
+            <div class="divider"></div>
+
+            <!-- ── UI Preferences ────────────────────────────────── -->
+            <section class="settings-section">
+                <h2 class="settings-section-title">UI Preferences</h2>
+
+                <div class="settings-grid">
+                    <div class="settings-field">
+                        <label asp-for="DefaultColorMode" class="settings-label">Default Track Color Mode</label>
+                        <select asp-for="DefaultColorMode" class="settings-select">
+                            @foreach (var option in SettingsCatalog.DefaultColorMode.Options)
+                            {
+                                <option value="@option.Value">@option.Label</option>
+                            }
+                        </select>
+                        <p class="settings-hint">Default color visualization for GPS tracks</p>
+                    </div>
+
+                    <div class="settings-field">
+                        <div class="settings-toggle-wrap">
+                            <input asp-for="ShowDebugInfo" type="checkbox" class="settings-toggle">
+                            <label asp-for="ShowDebugInfo" class="settings-toggle-label">Show Debug Information</label>
+                        </div>
+                        <p class="settings-hint">Display technical details and logs</p>
+                    </div>
+                </div>
+            </section>
+
+        </div>
+
+        <!-- ── Footer buttons ────────────────────────────────────── -->
+        <div class="settings-footer">
+            <div class="settings-footer-left">
+                <button type="submit" class="btn-cockpit btn-cockpit-primary">Save Settings</button>
+                <a href="/" class="btn-cockpit btn-cockpit-ghost">Cancel</a>
+            </div>
+            <button type="submit" asp-page-handler="Reset" class="btn-cockpit btn-cockpit-danger"
+                    onclick="return confirm('Reset all settings to defaults?')">Reset to Defaults</button>
+        </div>
+
+    </form>
+
+    @* ── This device ────────────────────────────────────────────────────────────
+       OUTSIDE the form on purpose: device preferences never reach the server, so posting them would be
+       the one thing this split exists to prevent. Everything above is ACCOUNT state (it follows you to a
+       new machine); everything this button clears is DEVICE state (it should not). *@
+    <div class="settings-info">
+        <h3 class="settings-info-title">This device</h3>
+        <p class="settings-hint">
+            Panel sizes, collapsed cards, grid column widths and column order are remembered in this
+            browser only — they are not part of your account and do not follow you to another device.
+        </p>
+        <div class="settings-footer-left">
+            <button type="button" id="resetDevicePrefs" class="btn-cockpit btn-cockpit-ghost">Reset this device's layout</button>
+            <span id="resetDevicePrefsResult" class="settings-hint" role="status"></span>
+        </div>
+    </div>
+
+    <!-- ── About These Settings ──────────────────────────────────── -->
+    <div class="settings-info">
+        <h3 class="settings-info-title">About These Settings</h3>
+        <div class="settings-info-grid">
+            <div class="settings-info-section">
+                <p class="settings-info-section-title">Chart Settings</p>
+                <p>Control how activity data is smoothed and displayed in charts. Higher smoothing values create cleaner curves but may hide small variations.</p>
+            </div>
+            <div class="settings-info-section">
+                <p class="settings-info-section-title">Map Settings</p>
+                <p>Customize the default appearance of maps and GPS tracks. These settings affect the map views.</p>
+            </div>
+            <div class="settings-info-section">
+                <p class="settings-info-section-title">Performance</p>
+                <p>Rider + bike mass feeds the estimated-power model for rides recorded without a power meter. It changes the numbers on segment efforts, not how fast anything loads.</p>
+            </div>
+            <div class="settings-info-section">
+                <p class="settings-info-section-title">Recommended Settings</p>
+                <ul>
+                    <li><strong>Speed Smoothing:</strong> 15–25 for cycling, 10–15 for running</li>
+                    <li><strong>Elevation Smoothing:</strong> 7–11 for most activities</li>
+                    <li><strong>Segment Chart Detail:</strong> Auto (scales with the segment's effort count)</li>
+                    <li><strong>Track Color:</strong> Speed for cycling, Heart Rate for running</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+@section Scripts {
+    <script type="module" src="~/js/pages/profile-settings.js" asp-append-version="true"></script>
+}

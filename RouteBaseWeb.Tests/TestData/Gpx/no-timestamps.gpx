@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="RouteTool"
+     xmlns="http://www.topografix.com/GPX/1/1">
+  <trk>
+    <name>Planned Hike</name>
+    <type>hiking</type>
+    <trkseg>
+      <trkpt lat="47.2692" lon="11.4041">
+        <ele>600</ele>
+      </trkpt>
+      <trkpt lat="47.2700" lon="11.4050">
+        <ele>620</ele>
+      </trkpt>
+      <trkpt lat="47.2710" lon="11.4060">
+        <ele>640</ele>
+      </trkpt>
+    </trkseg>
+  </trk>
+</gpx>

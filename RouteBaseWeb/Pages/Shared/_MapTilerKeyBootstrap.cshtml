@@ -1,0 +1,22 @@
+@*
+    The #mapTilerKey island — a CREDENTIAL, deliberately not part of the settings payload.
+
+    Rendered by the two pages whose entry actually reads it (overview/activities-page-init.ts and
+    live-recording/live-recording.ts, both via core/map-api-key.setMapTilerApiKey). Details and Segment
+    Statistics do NOT: they take the key from their own page-config islands, so the old shared partial was
+    emitting an island neither of them read.
+
+    Deliberately NOT moved into the layouts with the settings. Two reasons, both load-bearing:
+      · /s/{token} is served to anyone with the URL. Share/View.cshtml passes IncludeMapTilerKey:false for
+        exactly this reason, and a layout-level key island would hand the credential to every anonymous
+        visitor — silently undoing that.
+      · MapTilerService reads AppCredentials uncached, so putting it in a layout would add a DB round trip
+        to every page in the app (R2). Two pages ask for it; two pages pay for it.
+
+    Emits nothing when there is no key: TS reads '' and the keyless basemaps work.
+*@
+@model string?
+@if (!string.IsNullOrEmpty(Model))
+{
+    <script type="application/json" id="mapTilerKey">@Html.Raw(BootstrapJson.Serialize(Model))</script>
+}

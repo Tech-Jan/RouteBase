@@ -1,0 +1,23 @@
+@model RouteBaseWeb.Models.Sharing.SegmentDetailView
+@using RouteBaseWeb.Services
+
+<partial name="_CdnLibs" model="@("maplibre-js,chartjs,chartjs-zoom,chartjs-datefns")" />
+
+@* Keyless MapLibre boot chain — ungated so the map works without a MapTiler key.
+   maplibre-terrain/-helpers/-track are imported chunks now (pulled by the segment-stats
+   entry); CameraControls is likewise an ESM import in the replay chain. No script tags. *@
+
+@* Page config for the segment-stats modules — parsed from this JSON tag by segment-statistics.ts,
+   which also derives the map/chart shapes (efforts, effortDates, hasForeignRiders) from effortRows,
+   so the efforts list is serialized exactly once (PD-06). Default STJ encoder escapes </> — safe
+   inside a <script> element. *@
+@{
+    // Named DTO since F2b (SegmentStatisticsConfigDto) — the conditional-key semantics live in the
+    // factory + record now; absence of hasHeatmap/heatmapStatus is load-bearing (poll gate).
+    var segStatsConfigJson = System.Text.Json.JsonSerializer.Serialize(Model.GetConfigForJavaScript());
+}
+<script type="application/json" id="segmentStatisticsConfig">@Html.Raw(segStatsConfigJson)</script>
+
+<script type="module" src="~/js/segment-stats/segment-stats.js" asp-append-version="true"></script>
+@* "All Efforts" grid (reusable core/grid) + visibility/statsbox selection — segment-stats-efforts-table.ts *@
+<script type="module" src="~/js/segment-stats/segment-stats-efforts-table.js" asp-append-version="true"></script>

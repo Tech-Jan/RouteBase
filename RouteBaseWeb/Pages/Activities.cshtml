@@ -1,0 +1,254 @@
+@page
+@model ActivitiesModel
+@{
+    Layout = "_DashboardLayout";
+    ViewData["Title"] = "Activities";
+    // Optional columns + their visibility are managed entirely by the client grid toolbar
+    // (overview/activities-grid.ts), persisted in the activityExtraColumns cookie.
+}
+
+@section Styles {
+    <partial name="_CdnLibs" model="@("maplibre-css")" />
+    <link rel="stylesheet" href="~/css/grid-filter.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/activities.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/shape-filter.css" asp-append-version="true" />
+    @* Photo overlay (toggle, clustered markers, on-map thumbnails, cluster gallery) — shares the
+       .det-photo-* popup/fullscreen rules with the Details page. *@
+    <link rel="stylesheet" href="~/css/activity-photos.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/photo-viewer.css" asp-append-version="true" />
+    @* Track-editor entry picker (Flow A button, Flow B ?pickFor confirm bar/toast/banner). *@
+    <link rel="stylesheet" href="~/css/entry-picker.css" asp-append-version="true" />
+}
+
+<div class="cockpit-scroll">
+
+    @* RightActionsHtml below is wired in overview/activities-export-controller.ts, which owns the label
+       text (the count is the table's owned-match count) and the title. It enqueues a background job; the
+       op-toast carries progress and the download from there. The <i>/<span> are the hooks it mutates.
+       Kept OUT of the @( ) expression: a Razor comment there is C#-context and newer SDKs reject it. *@
+    <partial name="_PageHeader" model="@(new PageHeaderModel(
+        Title: "Activities",
+        Subtitle: Model.TotalCount > 0 ? $"{Model.TotalCount} activities" : null,
+        Breadcrumbs: new (string Href, string Label)[] { ("/", "Dashboard"), ("/Activities", "Activities") },
+        RightActionsHtml: Model.TotalCount > 0
+            ? new HtmlString("<button type=\"button\" id=\"actExportGpxBtn\" class=\"btn-cockpit btn-cockpit-ghost btn-cockpit-sm\"><i class=\"bi bi-file-earmark-zip\"></i> <span class=\"act-export-label\">Export GPX</span></button>")
+            : null
+    ))" />
+
+    <!-- Map panel ─────────────────────────────────────────────────── -->
+    @if (Model.TotalCount > 0)
+    {
+    @* Map toolbar above the map (matches the activity-details / segment-statistics pages).
+       Each control group is a dropdown (<details>): the summary shows the current selection, the
+       menu holds the option buttons (IDs unchanged so MapShell still drives style + size). The
+       setupToolbarDropdowns() in activities-page-init.ts syncs labels and handles open/close. *@
+    <div class="act-map-toolbar">
+        <span id="mapStatus" class="act-map-status"></span>
+
+        @* How tracks filtered out by the table appear on the map. Wired in overview/activities-grid.ts
+           (setupMapDisplayModeToggle). Highlight is the default. *@
+        <div id="actMapDisplayMode" class="act-map-mode" role="group" aria-label="Filtered track display">
+            <button type="button" class="act-map-mode-btn" data-mode="all" title="Show every track at full opacity — ignore the table filter on the map" aria-label="Show all tracks">
+                <i class="bi bi-eye"></i><span class="act-map-mode-label">Show all</span>
+            </button>
+            <button type="button" class="act-map-mode-btn active" data-mode="highlight" title="Keep matching tracks bright and fade the filtered-out ones" aria-label="Highlight matching tracks">
+                <i class="bi bi-highlighter"></i><span class="act-map-mode-label">Highlight</span>
+            </button>
+            <button type="button" class="act-map-mode-btn" data-mode="hide" title="Show only tracks matching the table filter" aria-label="Show only matching tracks">
+                <i class="bi bi-funnel"></i><span class="act-map-mode-label">Only matches</span>
+            </button>
+        </div>
+
+        @* Photos overlay toggle — off by default. On = fetch the caller's placed photos and show them as
+           clustered map markers that open into thumbnails on zoom. Wired in overview/activities-photos-overlay.ts. *@
+        <button type="button" id="actPhotosToggle" class="act-photos-toggle" aria-pressed="false" title="Show your photos on the map">
+            <i class="bi bi-camera"></i><span class="act-map-mode-label">Photos</span>
+        </button>
+
+        @* Track-editor entry (Flow A) — hidden until the table filter or map paint highlights 1..10 tracks.
+           Visibility + label are pure client state (overview highlight); wired in track-edit/entry-picker.ts. *@
+        <button type="button" id="trackEditOpenBtn" class="act-map-mode-btn act-track-edit-open" hidden
+                title="Open the selected tracks in the track editor">
+            <i class="bi bi-pencil-square"></i><span class="act-map-mode-label">Open in editor</span>
+        </button>
+
+        @* Map style — MapShell renders one button per available basemap into #actMapStyleSwitcher
+           (registry-driven; button set + active flip decided at runtime, keyed or keyless). *@
+        <details class="act-dd" data-picker="true">
+            <summary class="act-dd-summary">
+                <span class="act-dd-label">Style</span>
+                <span class="act-dd-value">Map</span>
+                <svg class="act-dd-chevron" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+            </summary>
+            <div class="act-dd-menu" id="actMapStyleSwitcher" role="group" aria-label="Map style"></div>
+        </details>
+
+        <!-- Map size -->
+        <details class="act-dd">
+            <summary class="act-dd-summary">
+                <span class="act-dd-label">Size</span>
+                <svg class="act-dd-chevron" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+            </summary>
+            <div class="act-dd-menu" role="group" aria-label="Map size">
+                <button id="actMapGrowBtn"   class="act-dd-item" title="Make map taller">Taller</button>
+                <button id="actMapShrinkBtn" class="act-dd-item" title="Make map smaller">Smaller</button>
+                <button id="actMapResetBtn"  class="act-dd-item" title="Reset map size">Reset size</button>
+            </div>
+        </details>
+    </div>
+
+    <div id="activitiesMapCard" class="act-map-hero">
+        <div class="act-hero-overlay act-hero-tr">
+            <button id="actMapFullscreenBtn" class="act-map-expand-btn" title="Fullscreen">
+                <i class="bi bi-fullscreen"></i>
+            </button>
+        </div>
+        <div id="activitiesMap"></div>
+        <div id="mapLoadingSpinner" style="display:none;" class="act-map-spinner">
+            <div class="act-map-spinner-ring"></div>
+        </div>
+    </div>
+
+    @* Paint controls stay below the map. Shape-filter overlay controls are built by overview/shape-filter.ts *@
+    <div class="act-map-toolbar act-map-toolbar--bottom">
+        <div id="shapeFilterPanel" class="shape-filter-panel"></div>
+    </div>
+    }
+
+    <!-- Activities table — client-rendered by overview/activities-grid.ts ── -->
+    <div class="grid-table-panel">
+        <!-- Reusable grid toolbar (row count + Reset filters + Reset all + Columns) is rendered into
+             this mount by GridView, so it sits above (and outside) the horizontal-scroll wrapper. -->
+        <div id="activitiesGridToolbar" class="grid-toolbar"></div>
+        <div class="grid-table-wrapper act-table-wrapper">
+            <div id="activitiesGrid"></div>
+        </div>
+    </div>
+
+    <!-- Pagination ────────────────────────────────────────────────── -->
+    @if (Model.TotalPages > 1)
+    {
+        <nav class="act-pagination" aria-label="Activities pagination">
+            @* FUX-03: at a boundary these render as a non-interactive <span>, not a greyed <a href>. The
+               .disabled CSS only blocks the MOUSE (pointer-events:none) — the anchor stayed keyboard-
+               focusable and Enter navigated to page 0 / N+1. A <span> removes focus, click and the
+               keyboard path; aria-hidden drops the dead control from the a11y tree entirely. *@
+            @if (Model.PageNumber == 1)
+            {
+                <span class="act-page-link disabled" aria-hidden="true">&laquo;&laquo;</span>
+                <span class="act-page-link disabled" aria-hidden="true">&laquo;</span>
+            }
+            else
+            {
+                <a class="act-page-link" href="@Model.BuildUrl(new { Page = 1 })" aria-label="First page">&laquo;&laquo;</a>
+                <a class="act-page-link" href="@Model.BuildUrl(new { Page = Model.PageNumber - 1 })" aria-label="Previous page">&laquo;</a>
+            }
+
+            @{
+                int startP = Math.Max(1, Model.PageNumber - 3);
+                int endP   = Math.Min(Model.TotalPages, Model.PageNumber + 3);
+                if (startP > 1)
+                {
+                    <a class="act-page-link" href="@Model.BuildUrl(new { Page = 1 })">1</a>
+                    if (startP > 2) { <span class="act-page-sep">…</span> }
+                }
+                for (int i = startP; i <= endP; i++)
+                {
+                    <a class="act-page-link @(i == Model.PageNumber ? "active" : "")" href="@Model.BuildUrl(new { Page = i })">@i</a>
+                }
+                if (endP < Model.TotalPages)
+                {
+                    if (endP < Model.TotalPages - 1) { <span class="act-page-sep">…</span> }
+                    <a class="act-page-link" href="@Model.BuildUrl(new { Page = Model.TotalPages })">@Model.TotalPages</a>
+                }
+            }
+
+            @if (Model.PageNumber == Model.TotalPages)
+            {
+                <span class="act-page-link disabled" aria-hidden="true">&raquo;</span>
+                <span class="act-page-link disabled" aria-hidden="true">&raquo;&raquo;</span>
+            }
+            else
+            {
+                <a class="act-page-link" href="@Model.BuildUrl(new { Page = Model.PageNumber + 1 })" aria-label="Next page">&raquo;</a>
+                <a class="act-page-link" href="@Model.BuildUrl(new { Page = Model.TotalPages })" aria-label="Last page">&raquo;&raquo;</a>
+            }
+        </nav>
+
+        <div class="act-page-jump">
+            <form method="get" class="act-page-jump-form">
+                @foreach (var t in Model.SelectedActivityTypes)
+                {
+                    <input type="hidden" name="SelectedActivityTypes" value="@t" />
+                }
+                <input type="hidden" name="StartDate" value="@Model.StartDateParam" />
+                <input type="hidden" name="EndDate" value="@Model.EndDateParam" />
+                <input type="hidden" name="SortColumn" value="@Model.SortColumn" />
+                <input type="hidden" name="SortDirection" value="@Model.SortDirection" />
+                <input type="hidden" name="PageSize" value="@Model.PageSize" />
+                <input type="hidden" name="OwnerUserId" value="@Model.OwnerUserId" />
+                @* Carry per-column filters (f.*) and the selected extra columns so a page jump keeps them (GL-06). *@
+                @foreach (var kv in Model.Request.Query.Where(kv => kv.Key.StartsWith("f.")))
+                {
+                    foreach (var v in kv.Value)
+                    {
+                        <input type="hidden" name="@kv.Key" value="@v" />
+                    }
+                }
+                @if (!string.IsNullOrEmpty(Model.ExtraColumns))
+                {
+                    <input type="hidden" name="ExtraColumns" value="@Model.ExtraColumns" />
+                }
+                <label for="pageJump">Go to page:</label>
+                <input type="number" name="Page" id="pageJump" class="act-page-jump-input"
+                       min="1" max="@Model.TotalPages" value="@Model.PageNumber" />
+                <button type="submit" class="btn-cockpit btn-cockpit-ghost btn-cockpit-sm">Go</button>
+            </form>
+        </div>
+    }
+
+</div>
+
+@section Scripts {
+    <partial name="_CdnLibs" model="@("maplibre-js")" />
+
+    <partial name="_MapTilerKeyBootstrap" model="Model.MapTilerApiKey" />
+
+    @* activities-overview is now an imported chunk (pulled by activities-page-init /
+       activities-grid / shape-filter) — no standalone script tag. *@
+
+    @* No data shim: activities-page-init.ts reads #activitiesGridBootstrap (below) for the map's id
+       universe and the account-settings island for the basemap. This was the app's last window global. *@
+    <script type="module" src="~/js/overview/activities-page-init.js" asp-append-version="true"></script>
+
+    @* Shape-filter overlay — paint rectangles to build a shape-defined segment *@
+    <script type="module" src="~/js/overview/shape-filter.js" asp-append-version="true"></script>
+
+    @* Track-editor entry picker — Flow A "Open in editor" button + Flow B ?pickFor confirm bar *@
+    <script type="module" src="~/js/track-edit/entry-picker.js" asp-append-version="true"></script>
+
+    @* Bootstrap for the client-rendered grid — first page + filter options.
+       Consumed by overview/activities-grid.ts. camelCase so it maps to the TS row/option shapes. *@
+    @{
+        var gridBootstrap = new RouteBaseWeb.Pages.ActivitiesGridBootstrap
+        {
+            InitialData = new RouteBaseWeb.Models.ActivityGridResponse(
+                Rows: Model.Rows,
+                FilteredIds: Model.AllFilteredIds,
+                OwnerIds: Model.OwnerScopedIds,
+                Total: Model.TotalCount,
+                UnfilteredTotal: Model.UnfilteredTotal,
+                OwnedFilteredCount: Model.OwnedFilteredCount),
+            // Owner column is always shown (defaults to "Me") so non-friends' visible public activities
+            // can be filtered out — see ActivitiesModel.OwnerOptions.
+            MultiUser = true,
+            TypeOptions = Model.ActivityTypes,
+            OwnerOptions = Model.OwnerOptions,
+            ExtraColumns = (Model.ExtraColumns ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries),
+            Sort = new RouteBaseWeb.Pages.GridSort { Column = Model.SortColumn, Direction = Model.SortDirection },
+            PageSize = Model.PageSize,
+        };
+    }
+    <script type="application/json" id="activitiesGridBootstrap">@Html.Raw(RouteBaseWeb.Helpers.BootstrapJson.Serialize(gridBootstrap))</script>
+    <script type="module" src="~/js/overview/activities-grid.js" asp-append-version="true"></script>
+}

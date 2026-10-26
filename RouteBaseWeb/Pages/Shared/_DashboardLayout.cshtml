@@ -1,0 +1,213 @@
+@inject RouteBaseWeb.Services.Settings.IAppSettingsProvider AppSettings
+@using RouteBaseWeb.Services.Navigation
+@inject RouteBaseWeb.Services.IAdminGate AdminGate
+@inject RouteBaseWeb.Configuration.LocalModeOptions LocalMode
+@{
+    Layout = null;
+
+    var currentPage = ViewContext.RouteData.Values["page"]?.ToString() ?? "";
+
+    bool IsActive(NavItem item) =>
+        (item.Href == "/" && currentPage == "/Index")
+        || (item.Href != "/" && currentPage.StartsWith(item.Href, StringComparison.OrdinalIgnoreCase));
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@(ViewData["Title"] != null ? ViewData["Title"] + " – " : "")RouteBase</title>
+    <!-- Google Fonts: Geist + Geist Mono -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="~/css/cockpit-tokens.css" asp-append-version="true">
+    <link rel="stylesheet" href="~/css/cockpit-shell.css" asp-append-version="true">
+    <link rel="stylesheet" href="~/css/cockpit-components.css" asp-append-version="true">
+    <link rel="stylesheet" href="~/css/dashboard.css" asp-append-version="true">
+    <partial name="_CdnLibs" model="@("bootstrap-icons-css")" />
+    @await RenderSectionAsync("Styles", required: false)
+</head>
+<body class="cockpit-active">
+
+<div class="cockpit-shell">
+
+    <!-- ── Sidebar ───────────────────────────────────────────────────────── -->
+    <aside class="cockpit-sidebar">
+
+        <!-- Logo -->
+        <div class="sidebar-logo">
+            <span class="sidebar-logo-emoji" aria-hidden="true">🏃</span>
+            <span class="sidebar-logo-text mono">RouteBase</span>
+        </div>
+
+        <!-- Nav links -->
+        <nav class="sidebar-nav" aria-label="Main navigation">
+            @foreach (var item in NavMenu.Primary)
+            {
+                var active = IsActive(item);
+                if (item.Children is { Count: > 0 })
+                {
+                    <div class="sidebar-nav-group @(active ? "active" : "")" data-group="@item.Href">
+                        @if (item.ToggleOnly)
+                        {
+                            <button class="sidebar-nav-item sidebar-nav-toggle-full" data-toggle-group="@item.Href"
+                                    aria-label="Expand @item.Label" aria-expanded="false">
+                                <partial name="_NavIcon" model="@item.Icon" />
+                                <span>@item.Label</span>
+                                <partial name="_NavIcon" model="@("chevron-down")" />
+                            </button>
+                        }
+                        else
+                        {
+                            <a href="@item.Href" class="sidebar-nav-item @(active ? "active" : "")" aria-current="@(active ? "page" : null)">
+                                <partial name="_NavIcon" model="@item.Icon" />
+                                <span>@item.Label</span>
+                            </a>
+                            <button class="sidebar-nav-toggle" aria-label="Expand @item.Label" data-toggle-group="@item.Href">
+                                <partial name="_NavIcon" model="@("chevron-down")" />
+                            </button>
+                        }
+                        <ul class="sidebar-subnav" id="subnav-@item.Href.Replace("/","")">
+                            @foreach (var child in item.Children)
+                            {
+                                var childActive = currentPage.StartsWith(child.Href, StringComparison.OrdinalIgnoreCase);
+                                <li>
+                                    <a href="@child.Href" class="sidebar-subnav-item @(childActive ? "active" : "")" aria-current="@(childActive ? "page" : null)">
+                                        <partial name="_NavIcon" model="@child.Icon" />
+                                        <span>@child.Label</span>
+                                        @if (child.BadgeId is not null)
+                                        {
+                                            <span class="nav-pip" id="@child.BadgeId" style="margin-left:auto;"></span>
+                                        }
+                                    </a>
+                                </li>
+                            }
+                            @* Localhost mode has no login/logout — the local user is always signed in. *@
+                            @if (item.Href == "/ProfileSettings" && User.Identity?.IsAuthenticated == true && !LocalMode.Enabled)
+                            {
+                                <li>
+                                    <form method="post" asp-page="/Auth/Logout">
+                                        <button type="submit" class="sidebar-subnav-item">
+                                            <partial name="_NavIcon" model="@("logout")" />
+                                            <span>Logout</span>
+                                        </button>
+                                    </form>
+                                </li>
+                            }
+                        </ul>
+                    </div>
+                }
+                else
+                {
+                    <a href="@item.Href" class="sidebar-nav-item @(active ? "active" : "")" aria-current="@(active ? "page" : null)">
+                        <partial name="_NavIcon" model="@item.Icon" />
+                        <span>@item.Label</span>
+                        @if (item.BadgeId is not null)
+                        {
+                            <span class="nav-pip" id="@item.BadgeId"></span>
+                        }
+                    </a>
+                }
+            }
+            @* Admin-only (user decision 2026-07-11): shares the /Admin/Errors page's IAdminGate,
+               so friends never see a dead link — for them the entry is absent and the page 404s. *@
+            @if (AdminGate.IsAdminUser())
+            {
+                <a href="/Admin/Errors" class="sidebar-nav-item @(currentPage.StartsWith("/Admin", StringComparison.OrdinalIgnoreCase) ? "active" : "")" aria-current="@(currentPage.StartsWith("/Admin", StringComparison.OrdinalIgnoreCase) ? "page" : null)">
+                    <partial name="_NavIcon" model="@("inbox")" />
+                    <span>Errors</span>
+                </a>
+            }
+        </nav>
+    </aside>
+
+    <!-- ── Sidebar toggle (tablet only, shown via CSS at ≤1024px) ─────────── -->
+    <button class="sidebar-toggle" id="sidebar-toggle" aria-label="Toggle navigation">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true">
+            <line x1="3" y1="6"  x2="21" y2="6"/>
+            <line x1="3" y1="12" x2="21" y2="12"/>
+            <line x1="3" y1="18" x2="21" y2="18"/>
+        </svg>
+    </button>
+
+    <!-- ── Main content ───────────────────────────────────────────────────── -->
+    <div class="cockpit-main">
+        @RenderBody()
+    </div>
+
+    <!-- ── Mobile bottom tab bar ─────────────────────────────────────────── -->
+    @{
+        var morePages = NavMenu.MobileSheet.Select(i => i.Href);
+        var moreActive = morePages.Any(p => currentPage.StartsWith(p, StringComparison.OrdinalIgnoreCase));
+    }
+    <nav class="cockpit-tabbar" aria-label="Mobile navigation">
+        <a href="/" class="tabbar-item @(currentPage == "/Index" ? "active" : "")" aria-current="@(currentPage == "/Index" ? "page" : null)">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 10l8-7 8 7v10a1 1 0 0 1-1 1h-4v-7h-6v7H5a1 1 0 0 1-1-1V10z"/></svg>
+            <span>Home</span>
+        </a>
+        @* !moreActive so a sub-page the More sheet owns (Trash) highlights only More — two lit tabs reads as broken. *@
+        <a href="/Activities" class="tabbar-item @(currentPage.StartsWith("/Activities") && !moreActive ? "active" : "")" aria-current="@(currentPage.StartsWith("/Activities") && !moreActive ? "page" : null)">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 9h18M8 3v4M16 3v4"/></svg>
+            <span>Activities</span>
+        </a>
+        <a href="/Statistics" class="tabbar-cta" aria-label="Statistics">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 4h12v4a6 6 0 0 1-12 0V4zM6 6H3a3 3 0 0 0 3 3M18 6h3a3 3 0 0 1-3 3M10 14h4v3h3v3H7v-3h3v-3z"/></svg>
+        </a>
+        <a href="/Segments" class="tabbar-item @(currentPage.StartsWith("/Segments") ? "active" : "")" aria-current="@(currentPage.StartsWith("/Segments") ? "page" : null)">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1" fill="currentColor"/></svg>
+            <span>Segments</span>
+        </a>
+        <button class="tabbar-item tabbar-more-btn @(moreActive ? "active" : "")" id="tabbar-more-btn" aria-label="More navigation" aria-expanded="false">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.5" fill="currentColor" stroke="none"/></svg>
+            <span>More</span>
+        </button>
+    </nav>
+
+    <!-- ── Mobile "More" sheet ───────────────────────────────────────────── -->
+    <div class="tabbar-more-backdrop" id="tabbar-more-backdrop" aria-hidden="true"></div>
+    <div class="tabbar-more-sheet" id="tabbar-more-sheet" role="dialog" aria-label="More navigation" aria-hidden="true">
+        <div class="tabbar-more-handle"></div>
+        <nav class="tabbar-more-nav">
+            @foreach (var si in NavMenu.MobileSheet)
+            {
+                var siActive = currentPage.StartsWith(si.Href, StringComparison.OrdinalIgnoreCase);
+                <a href="@si.Href" class="tabbar-more-item @(siActive ? "active" : "")">
+                    <span>@si.Label</span>
+                </a>
+            }
+            @if (AdminGate.IsAdminUser())
+            {
+                <a href="/Admin/Errors" class="tabbar-more-item @(currentPage.StartsWith("/Admin", StringComparison.OrdinalIgnoreCase) ? "active" : "")">
+                    <span>Errors</span>
+                </a>
+            }
+            @if (!LocalMode.Enabled)
+            {
+                <div class="tabbar-more-divider"></div>
+                <form method="post" asp-page="/Auth/Logout">
+                    <button type="submit" class="tabbar-more-item tabbar-more-logout">Logout</button>
+                </form>
+            }
+        </nav>
+    </div>
+
+</div>
+
+<partial name="_OpToast" />
+
+@* Settings island, before core.js: core/core.ts reads it at boot, and module graphs evaluate in
+   document order. Rendered HERE rather than per page — _ViewStart plus the per-page `Layout =`
+   assignments make the three layouts a partition of every page. *@
+@{ var appSettings = await AppSettings.GetAsync(); }
+<partial name="_AppSettingsBootstrap" model="appSettings" />
+
+<script type="module" src="~/js/core/core.js" asp-append-version="true"></script>
+<script type="module" src="~/js/core/op-toast.js" asp-append-version="true"></script>
+
+<script type="module" src="~/js/dashboard/dashboard-nav.js" asp-append-version="true"></script>
+
+@await RenderSectionAsync("Scripts", required: false)
+
+</body>
+</html>

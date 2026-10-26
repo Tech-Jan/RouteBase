@@ -1,0 +1,52 @@
+<!-- Segment Replay Fullscreen Overlay -->
+<div id="segmentReplayOverlay" class="segment-replay-overlay">
+
+    <div id="replayEffortSidebar" class="replay-effort-sidebar">
+        @* A layout container, not a heading — it holds only the follow toggle + a collapse chevron. As
+           <h6> it announced an empty level-6 heading and jumped the page's heading levels; the styling is
+           class-based (.replay-sidebar-header), which the CSS h6 rule already excludes. *@
+        <div class="replay-sidebar-header" id="replayEffortSidebarHeader">
+            <span><i class="bi bi-people-fill" aria-hidden="true"></i></span>
+            <button type="button" id="replayFollowToggle" class="replay-follow-toggle" title="Camera: follow an effort / free mode">(follow)</button>
+            <i class="bi bi-chevron-up replay-sidebar-chevron" aria-hidden="true"></i>
+        </div>
+        <div id="replayEffortList" class="replay-sidebar-body"></div>
+    </div>
+
+    @*
+        The bottom dock — the shared stack (_ReplayDock.cshtml), the same one the activity and race
+        replays render. It OVERLAYS the map rather than shrinking it: #map is pinned to 100vh on this
+        page, so a drawer that took layout space would fight it (see #segReplayDock in
+        segment-replay.css, which is what makes this one `fixed`).
+
+        Which picture the strip draws is decided from the data (segment-replay-profile.ts): a polyline
+        segment gets the segment's own terrain with one dot per effort; a shapes segment gets one
+        elevation line per effort, because there "50%" is a different place for every ride.
+    *@
+    <partial name="/Pages/Shared/_ReplayDock.cshtml" model="@(new ReplayDockModel(
+        DockId: "segReplayDock",
+        HandleId: "segReplayChartsHandle",
+        StripId: "segReplayCharts",
+        ControlsId: "segReplayControls",
+        PlayPauseId: "segReplayPlayPause",
+        SeekId: "segReplaySeek",
+        CurrentTimeId: "segReplayCurrentTime",
+        SpeedSlowerId: "segReplaySpeedSlower",
+        SpeedLabelId: "segReplaySpeedLabel",
+        SpeedFasterId: "segReplaySpeedFaster",
+        SpeedSelectId: "segReplaySpeed")
+    {
+        CanvasId = "segReplayProfile",
+        CanvasAriaLabel = "Elevation profile — the efforts' positions",
+        ModeButtonId = "segReplayMode",
+        LoadingStatusId = "segReplayLoadingStatus",
+        StartsPlaying = true,
+        // A shapes segment can have nothing worth drawing; the grip waits for a mounted strip.
+        HandleHiddenUntilMounted = true,
+    })" />
+
+    <button id="segReplayExitFloat" title="Exit replay" aria-label="Exit replay" class="seg-replay-exit-float" style="display:none;">
+        <i class="bi bi-x"></i>
+    </button>
+
+</div>

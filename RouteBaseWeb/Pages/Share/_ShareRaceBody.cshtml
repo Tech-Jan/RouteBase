@@ -1,0 +1,84 @@
+@model RouteBaseWeb.Models.Sharing.ShareRaceSeedDto
+@{
+    // Same seed pattern as _ShareLiveBody: the client owns every dynamic cell — it only needs to know which
+    // race, where to read it, and which basemap to open on. Serialized camelCase to match the TS mirror.
+    var seedJson = System.Text.Json.JsonSerializer.Serialize(
+        Model, System.Text.Json.JsonSerializerOptions.Web);
+}
+@*
+    PUBLIC race replay. A fork of Pages/Races/Replay.cshtml that renders its VIEW set and none of its edit
+    set — deliberately, and this is the whole maintenance story for race sharing:
+
+      here     the map + toolbar, the replay overlay, the charts (dock strip + speed panel), the results table
+      NOT here the Sections (checkpoint) editor, the Real riders panel, the results import, Clear field,
+               the Editing (edit-policy) dropdown, the Share button
+
+    Every element id below matches the owner page, because both mount the same race-sim/race-replay-view
+    module. Adding a VIEW element means adding it to both files; adding a CONTROL means adding it to the
+    owner page only — the fork then cannot show it, so there is nothing to gate and nothing to leak.
+
+    The Sections editor is absent by MOUNT, not by flag: race-replay-view only builds it when
+    #raceCheckpoints exists, so no "if share" appears anywhere in the shared module.
+*@
+@* No data-race-id here: the seed island below is the single source of that, and two would drift. *@
+<div class="cockpit-scroll" id="shareRaceApp">
+
+    @* Parsed, never eval'd, and no window global (same as the live fork's lv-share-data). *@
+    <script type="application/json" id="share-race-data">@Html.Raw(seedJson)</script>
+
+    <div class="race-layout">
+        <section class="race-stage" id="raceMapCard">
+
+            @* Style + Size only. The owner page's third dropdown (Editing) is a permission control. *@
+            <div class="race-map-toolbar">
+                <details class="map-dd" data-picker="true">
+                    <summary class="map-dd-summary">
+                        <span class="map-dd-label">Style</span>
+                        <span class="map-dd-value">Map</span>
+                        <svg class="map-dd-chevron" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+                    </summary>
+                    <div class="map-dd-menu" id="raceStyleSwitcher" role="group" aria-label="Map style"></div>
+                </details>
+
+                <details class="map-dd map-dd-end">
+                    <summary class="map-dd-summary">
+                        <span class="map-dd-label">Size</span>
+                        <svg class="map-dd-chevron" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+                    </summary>
+                    <div class="map-dd-menu" role="group" aria-label="Map size">
+                        <button id="raceMapGrow" type="button" class="map-dd-item" title="Make map taller">Taller</button>
+                        <button id="raceMapShrink" type="button" class="map-dd-item" title="Make map smaller">Smaller</button>
+                        <button id="raceMapReset" type="button" class="map-dd-item" title="Reset map size">Reset size</button>
+                    </div>
+                </details>
+            </div>
+
+            @* The SAME stage partial the owner page renders — map, chrome, chart drawer. It is a view, so
+               the fork gets it verbatim; click-to-place inside it is inert because race-replay-view builds
+               the profile with editable:false. *@
+            <partial name="/Pages/Races/_RaceHero.cshtml" model="false" />
+
+            @* Same view partial as the owner page, in the same place — under the map, where the dock's
+               elevation strip used to be read (it is fullscreen-only now). It draws only what this payload
+               contains, and ShareRaceReader has already dropped every real rider's GPS except the owner's
+               own, so the redaction that decides who is drawable happened server-side. model="false":
+               the course and its sections are drawn, but nothing on this chart can be moved. *@
+            <partial name="/Pages/Races/_RaceSpeedPanel.cshtml" model="false" />
+        </section>
+    </div>
+
+    @* Results. The same GridView the owner sees, Paint included — a visitor colours the filtered set to
+       read the field, and that paint is CLIENT-ONLY (race-replay-view passes paintMode "local" whenever
+       editable is false, so no write is attempted and a reload returns the owner's colours). Entrants
+       appear as the results file imported them: the event's published start list is not redacted (owner
+       decision, 2026-07-24). What the payload still withholds is every real rider's GPS except the owner's
+       own — those participants are dropped whole by ShareRaceReader. *@
+    <section class="race-panel race-results">
+        <div class="race-panel-head">
+            <span>Results</span>
+            <small>Filter, then paint · click a row to follow that rider</small>
+        </div>
+        <div id="raceResultsToolbar" class="grid-toolbar"></div>
+        <div class="grid-table-wrapper"><div id="raceResultsGrid"></div></div>
+    </section>
+</div>

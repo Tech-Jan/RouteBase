@@ -1,0 +1,108 @@
+@model RouteBaseWeb.Models.Sharing.SegmentDetailView
+
+<!-- Charts panel ─────────────────────────────────────────────────── -->
+@* Header removed: no title / no reset-zoom button. X-axis toggle (Time / % Complete) governs the Speed & Elevation charts. *@
+<div class="stats-card">
+    <div class="seg-chip-row">
+        <button class="chip-toggle active" data-chart-tab="speed" type="button" aria-pressed="true">
+            <i class="bi bi-speedometer2"></i> <span class="chip-label">Speed</span>
+        </button>
+        <button class="chip-toggle active" data-chart-tab="elevation" type="button" aria-pressed="true">
+            <svg class="chip-svg-icon" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M0.5 13.5 L5 5 L7.5 9 L10.5 3 L15.5 13.5 Z"/></svg> <span class="chip-label">Elevation</span>
+        </button>
+        <button class="chip-toggle" data-chart-tab="effort" type="button" aria-pressed="false">
+            <i class="bi bi-lightning-charge"></i> <span class="chip-label">Effort</span>
+        </button>
+        @if (Model.DetailedEfforts.Count > 1)
+        {
+            <button class="chip-toggle" data-chart-tab="progress" type="button" aria-pressed="false">
+                <i class="bi bi-graph-up-arrow"></i> <span class="chip-label">Progress</span>
+            </button>
+        }
+        <button class="chip-toggle" data-chart-tab="distribution" type="button" aria-pressed="false">
+            <i class="bi bi-bar-chart"></i> <span class="chip-label">Distribution</span>
+        </button>
+
+        <!-- X-axis switch for the Speed & Elevation charts (Time / % Complete) -->
+        <div class="seg-segmented seg-xaxis-switch" role="group" aria-label="Chart X-axis" id="chartXAxisControls">
+            <input type="radio" class="seg-radio" name="chartXAxis" id="chartXTime" value="time" checked autocomplete="off">
+            <label class="seg-segmented-btn" for="chartXTime" title="Time"><i class="bi bi-stopwatch"></i> <span class="seg-seg-label">Time</span></label>
+            <input type="radio" class="seg-radio" name="chartXAxis" id="chartXPercent" value="percent" autocomplete="off">
+            <label class="seg-segmented-btn" for="chartXPercent" title="% Complete"><i class="bi bi-percent"></i> <span class="seg-seg-label">Complete</span></label>
+        </div>
+
+        <!-- Aggregate view: collapse the bulk of efforts into a density backdrop + P25–P75 band + median (auto-on past 10 efforts) -->
+        <button id="chartAggregateToggle" class="chip-toggle" type="button" aria-pressed="false" title="Aggregate view (density + median)">
+            <i class="bi bi-layers"></i> <span class="chip-label">Aggregate</span>
+        </button>
+
+        @* Speed view switch — recorded vs smoothed. In the chip row rather than over the plot, where it
+           covered the y-axis on a phone. State painted by series-mode-control.ts from the stored pref. *@
+        <button class="chip-toggle chart-mode-toggle" id="segSpeedModeToggle" type="button" aria-pressed="false"></button>
+
+        <!-- Progressive chart-load counter (chunked performance-data); empty unless loading spans >1 chunk -->
+        <span id="segChartStatus" class="seg-map-status"></span>
+    </div>
+
+    @* Corner Δ buttons toggle each chart into "delta vs reference effort" mode independently. *@
+    <div id="chartPanelWrap" class="chart-panel-wrap">
+        <div class="chart-panel active" id="panel-speed">
+            <div class="chart-container">
+                <button class="chart-delta-toggle" data-delta-chart="speed" type="button" aria-pressed="false" title="Δ vs reference effort"><i class="bi bi-triangle"></i></button>
+                <canvas id="performanceChart"></canvas>
+            </div>
+        </div>
+        <div class="chart-panel active" id="panel-elevation">
+            <div class="chart-container">
+                <button class="chart-delta-toggle" data-delta-chart="elevation" type="button" aria-pressed="false" title="Δ vs reference effort"><i class="bi bi-triangle"></i></button>
+                <canvas id="elevationChart"></canvas>
+            </div>
+        </div>
+        <div class="chart-panel" id="panel-effort">
+            <div class="chart-container">
+                <button class="chart-delta-toggle" data-delta-chart="effort" type="button" aria-pressed="false" title="Δ vs reference effort"><i class="bi bi-triangle"></i></button>
+                <canvas id="effortChart"></canvas>
+            </div>
+        </div>
+        @if (Model.DetailedEfforts.Count > 1)
+        {
+            <div class="chart-panel" id="panel-progress">
+                <div class="seg-progress-controls">
+                    <span class="seg-ctrl-label">Metric:</span>
+                    <div class="seg-segmented" role="group">
+                        <input type="radio" class="seg-radio" name="progressYMetric" id="progressYTime" value="time" checked autocomplete="off">
+                        <label class="seg-segmented-btn" for="progressYTime"><i class="bi bi-stopwatch"></i> Time</label>
+                        <input type="radio" class="seg-radio" name="progressYMetric" id="progressYSpeed" value="speed" autocomplete="off">
+                        <label class="seg-segmented-btn" for="progressYSpeed"><i class="bi bi-speedometer2"></i> Speed</label>
+                        <input type="radio" class="seg-radio" name="progressYMetric" id="progressYPace" value="pace" autocomplete="off">
+                        <label class="seg-segmented-btn" for="progressYPace">Pace</label>
+                        @if (Model.DetailedEfforts.Any(e => e.AverageHeartRate.HasValue && e.AverageHeartRate.Value > 0))
+                        {
+                            <input type="radio" class="seg-radio" name="progressYMetric" id="progressYHr" value="heartRate" autocomplete="off">
+                            <label class="seg-segmented-btn" for="progressYHr"><i class="bi bi-heart-pulse"></i> HR</label>
+                        }
+                        @if (Model.DetailedEfforts.Any(e => e.AveragePower.HasValue))
+                        {
+                            <input type="radio" class="seg-radio" name="progressYMetric" id="progressYPower" value="power" autocomplete="off">
+                            <label class="seg-segmented-btn" for="progressYPower"><i class="bi bi-lightning-charge"></i> Power</label>
+                        }
+                        <input type="radio" class="seg-radio" name="progressYMetric" id="progressYElev" value="elevation" autocomplete="off">
+                        <label class="seg-segmented-btn" for="progressYElev"><i class="bi bi-graph-up"></i> Elev</label>
+                    </div>
+                    <span class="seg-ctrl-label">Spacing:</span>
+                    <div class="seg-segmented" role="group">
+                        <input type="radio" class="seg-radio" name="progressXAxis" id="progressXEqual" value="equal" checked autocomplete="off">
+                        <label class="seg-segmented-btn" for="progressXEqual">Equal</label>
+                        <input type="radio" class="seg-radio" name="progressXAxis" id="progressXDate" value="date" autocomplete="off">
+                        <label class="seg-segmented-btn" for="progressXDate">Date</label>
+                    </div>
+                </div>
+                <div class="chart-container"><canvas id="progressChart"></canvas></div>
+            </div>
+        }
+        <div class="chart-panel" id="panel-distribution">
+            @* Empty state is injected into .chart-container by core/chart-empty-state.ts (item 4). *@
+            <div class="chart-container"><canvas id="distributionChart"></canvas></div>
+        </div>
+    </div>
+</div>

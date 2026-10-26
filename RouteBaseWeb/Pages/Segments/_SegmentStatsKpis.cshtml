@@ -1,0 +1,64 @@
+@model RouteBaseWeb.Models.Sharing.SegmentDetailView
+
+@* Layout order (like the activity details page): statistics (KPI strip) → settings (map
+   toolbar with dropdowns) → map. *@
+
+@{
+// "/ Total" readouts use the precomputed effort aggregates (same source as the segment list),
+// not a live GPS sum. Pending = efforts exist but aggregates are still NULL → show "-".
+var totals = Model.EffortTotals;
+var pendingTotals = totals == null && Model.DetailedEfforts.Any();
+string distTotalStr = totals != null ? $" / {(totals.TotalDistance / 1000).ToString("F2")} km" : (pendingTotals ? " / -" : "");
+string elevTotalStr = totals != null ? $" / {totals.TotalElevation.ToString("F0")} m" : (pendingTotals ? " / -" : "");
+string timeTotalStr = "";
+if (totals != null && totals.TotalTime > 0)
+{
+    var ts = TimeSpan.FromSeconds(totals.TotalTime);
+    timeTotalStr = $" / {(int)ts.TotalHours}:{ts.Minutes:D2}:{ts.Seconds:D2}";
+}
+else if (pendingTotals)
+{
+    timeTotalStr = " / -";
+}
+}
+
+<!-- KPI strip (statistics) ───────────────────────────────────────── -->
+<div class="seg-kpi-strip">
+    <div class="seg-kpi-item">
+        <span class="seg-kpi-label">Distance @if (!string.IsNullOrEmpty(distTotalStr)) {<span class="seg-kpi-label-total">/ Total</span>}</span>
+        <span class="seg-kpi-value">@(((Model.Segment.SegmentDistance ?? 0) / 1000).ToString("F2"))<span class="seg-kpi-unit"> km</span><span class="seg-kpi-total">@distTotalStr</span></span>
+    </div>
+    <div class="seg-kpi-item">
+        <span class="seg-kpi-label">Elevation Gain @if (!string.IsNullOrEmpty(elevTotalStr)) {<span class="seg-kpi-label-total">/ Total</span>}</span>
+        <span class="seg-kpi-value">@(Model.Segment.SegmentAscent ?? 0)<span class="seg-kpi-unit"> m</span><span class="seg-kpi-total">@elevTotalStr</span></span>
+    </div>
+    <div class="seg-kpi-item">
+        <span class="seg-kpi-label">Elevation Loss</span>
+        <span class="seg-kpi-value">@((Model.Segment.SegmentDescent ?? 0).ToString("F0"))<span class="seg-kpi-unit"> m</span></span>
+    </div>
+    <div class="seg-kpi-item">
+        <span class="seg-kpi-label">Efforts</span>
+        <span class="seg-kpi-value"><span id="kpiEffortsShown">@Model.DetailedEfforts.Count</span><span class="seg-kpi-total"> / @Model.DetailedEfforts.Count</span></span>
+    </div>
+    @* Item 25: Best/Avg KPIs derive from ACTIVE (non-excluded) efforts so an excluded effort can't
+       be shown as the best, and Avg HR matches the anti-joined "/ Total". *@
+    @if (Model.DetailedEfforts.Any(e => !e.Excluded))
+    {
+        var activeEfforts = Model.DetailedEfforts.Where(e => !e.Excluded).ToList();
+        var bestKpi = activeEfforts.OrderBy(e => e.ElapsedTime).First();
+        var avgHrKpi = activeEfforts
+            .Where(e => e.AverageHeartRate.HasValue && e.AverageHeartRate.Value > 0)
+            .Average(e => (double?)e.AverageHeartRate);
+        <div class="seg-kpi-item">
+            <span class="seg-kpi-label">Best Time @if (!string.IsNullOrEmpty(timeTotalStr)) {<span class="seg-kpi-label-total">/ Total</span>}</span>
+            <span class="seg-kpi-value">@TimeSpan.FromSeconds(bestKpi.ElapsedTime).ToString(@"h\:mm\:ss")<span class="seg-kpi-total">@timeTotalStr</span></span>
+        </div>
+        <div class="seg-kpi-item">
+            <span class="seg-kpi-label">Avg HR</span>
+            <span class="seg-kpi-value">
+                @(avgHrKpi.HasValue ? avgHrKpi.Value.ToString("F0") : "--")
+                @if (avgHrKpi.HasValue) { <span class="seg-kpi-unit"> bpm</span> }
+            </span>
+        </div>
+    }
+</div>

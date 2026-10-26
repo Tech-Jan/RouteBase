@@ -1,0 +1,26 @@
+@model RouteBaseWeb.Models.Sharing.SegmentDetailView
+
+<!-- All Efforts Table ────────────────────────────────────────────── -->
+@if (Model.DetailedEfforts.Any())
+{
+    <div class="stats-card" data-collapsible-card="seg-efforts">
+        <div class="seg-table-header" data-collapsible-toggle>
+            <h4>All Efforts <i class="bi collapsible-chevron"></i></h4>
+        </div>
+        <div data-collapsible-body>
+            <div id="segEffortsToolbar" class="grid-toolbar"></div>
+            <div class="table-responsive">
+                <div id="segEffortsGrid"></div>
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    <div class="stats-card">
+        <div class="empty-state">
+            <i class="bi bi-info-circle"></i> No efforts found for this segment yet.
+            The system will automatically detect when you complete this segment in your activities.
+        </div>
+    </div>
+}

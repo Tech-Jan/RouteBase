@@ -1,0 +1,93 @@
+/* auth.css — the anonymous auth/error shell (_Layout) and its four pages
+   (Login, AccessDenied, Error, Logout). These are the only pages NOT on the app
+   cockpit shells (_DashboardLayout / _ShareLayout): a minimal, centered cockpit
+   layout with no sidebar or nav. Added by the CSS-system cleanup when the second
+   visual system (Bootstrap + site.css) was retired. */
+
+.auth-shell {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+}
+
+.auth-brand {
+  padding: 20px 24px;
+}
+.auth-brand-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--fg-0);
+  text-decoration: none;
+  letter-spacing: -0.01em;
+}
+.auth-brand-link:hover { color: var(--acc-cyan); }
+
+/* body.cockpit-active is overflow:hidden / height:100dvh, so the scroll box lives
+   here (mirrors .cockpit-main) — a short page centers, a tall one scrolls. */
+.auth-main {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  overflow-y: auto;
+}
+
+/* The centered panel shared by the login card and the message pages. */
+.auth-card {
+  width: 100%;
+  max-width: 400px;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: 32px 28px;
+  text-align: center;
+}
+
+.auth-icon {
+  display: block;
+  font-size: 32px;
+  margin-bottom: 12px;
+}
+.auth-icon--danger { color: var(--acc-red); }
+
+.auth-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--fg-0);
+  margin: 0 0 8px;
+  letter-spacing: -0.01em;
+}
+.auth-subtitle {
+  font-size: 13px;
+  color: var(--fg-2);
+  margin: 0 0 24px;
+  line-height: 1.5;
+}
+
+/* Full-width primary action (the sign-in button). */
+.auth-submit {
+  width: 100%;
+  justify-content: center;
+  padding: 10px 12px;
+  font-size: 13px;
+}
+
+.auth-actions {
+  margin-top: 20px;
+  display: flex;
+  justify-content: center;
+}
+
+.auth-error-code {
+  font-size: 12px;
+  color: var(--fg-2);
+  margin: 0 0 4px;
+}
+.auth-error-code code {
+  font-family: var(--font-mono);
+  color: var(--fg-1);
+}

@@ -1,0 +1,8 @@
+@model RouteBaseWeb.Models.EmptyStateModel
+<div class="empty-state @(Model.IsWarning ? "empty-state--warn" : "")">
+    @Model.Body
+    @if (!string.IsNullOrEmpty(Model.CtaHref) && !string.IsNullOrEmpty(Model.CtaLabel))
+    {
+        <a href="@Model.CtaHref">@Model.CtaLabel</a>
+    }
+</div>

@@ -1,0 +1,128 @@
+@using RouteBaseWeb.Models.Sharing
+@model RouteBaseWeb.Models.Activity
+@{
+    var currentUserId = ViewData["CurrentUserId"] as string ?? "";
+
+    var aType      = (Model.ActivityType ?? "").ToLowerInvariant();
+    var isBike     = aType.Contains("cycl") || aType.Contains("bik") || aType.Contains("ride");
+    var isRun      = aType.Contains("run") || aType.Contains("trail");
+    var isWalk     = aType.Contains("walk") || aType.Contains("hik");
+    var sportLabel = isBike ? "bike" : isRun ? "run" : isWalk ? "walk" : "other";
+
+    var distKmA = (Model.TotalDistance ?? 0) / 1000.0;
+    var durSec  = Model.TimeTotal ?? 0;
+    var durH    = (int)(durSec / 3600);
+    var durM    = (int)((durSec % 3600) / 60);
+    var durS    = (int)(durSec % 60);
+    var durStr  = durH > 0 ? $"{durH}:{durM:D2}:{durS:D2}" : $"{durM}:{durS:D2}";
+
+    var speedKph   = (Model.SpeedAvg ?? 0) * 3.6;
+    var speedStr   = isBike ? speedKph.ToString("N1")
+                           : speedKph > 0
+                               ? $"{(int)(60.0 / speedKph)}:{((int)((60.0 / speedKph % 1) * 60)):D2}"
+                               : "—";
+    var speedUnit  = isBike ? "km/h" : "/km";
+    var speedLabel = isBike ? "Avg speed" : "Avg pace";
+    var hrStr      = Model.HeartRateAvg.HasValue ? $"{(int)Model.HeartRateAvg.Value}" : "—";
+    var whenStr    = Model.StartDateTimeLocal?.ToString("ddd, dd.MM.yyyy · HH:mm") ?? "";
+
+    var vis        = (Model.Visibility ?? Visibilities.Friends).ToLowerInvariant();
+    var visIcon    = vis == Visibilities.Private ? "bi-lock-fill" : vis == Visibilities.Public ? "bi-globe" : "bi-people-fill";
+    var visTitle   = vis == Visibilities.Private ? "Private" : vis == Visibilities.Public ? "Public" : "Friends";
+    var visClass   = vis == Visibilities.Private ? "vis--private" : vis == Visibilities.Public ? "vis--public" : "vis--friends";
+
+    // Absent key reads as "never shared", which is what lets Trash and _ReviewCards render this partial
+    // unchanged. Null and an active 0 differ: 0 is a live link nobody has opened yet.
+    var shareBadge = new ShareBadgeModel(ViewData["ShareOpens"] as ShareOpens?, "activity-card-share");
+}
+@* FUX-02: the card is a wrapper <div>, not an <a>, because it holds a real <button> (delete) — a
+   <button> inside an <a> is an invalid content model that AT handles inconsistently. A stretched
+   overlay <a> (inset:0) makes the whole card navigate while keeping every native anchor affordance
+   the owner relies on — Enter/Space, middle-click and ctrl/⌘-click open-in-new-tab — none of which a
+   role="link" div would preserve. The delete button (z-index:3, from the CSS) sits above the overlay
+   (z-index:1) and is no longer nested inside it, so it stays clickable and the markup is valid. *@
+<div class="activity-card" data-track-id="@Model.TrackId" style="position:relative;">
+    <a class="activity-card-link" href="/Activities/Details/@Model.TrackId"
+       aria-label="Open @Model.TrackName" style="position:absolute;inset:0;z-index:1;"></a>
+    <!-- Map preview -->
+    <div class="activity-card-map">
+        <div class="minimap map-placeholder"
+             id="minimap-@Model.TrackId"
+             data-track-id="@Model.TrackId">
+        </div>
+        @* Decorative sport chip sits at z-index:3 (above the stretched overlay link) — pointer-events:none
+           lets a click on it fall through to the overlay so the corner still navigates (FUX-02). *@
+        <div class="activity-card-map-badge" style="pointer-events:none;">
+            <span class="chip">
+                @switch (sportLabel)
+                {
+                    case "bike":
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5.5" cy="17.5" r="3.5"/><circle cx="18.5" cy="17.5" r="3.5"/><path d="M15 6l-2 4h-4l2-4h-3M12 17.5l3-7 3 3"/><path d="M8 17.5l4-7"/></svg>
+                        break;
+                    case "run":
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 5.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3zM7 13l3-3 4 3v6M17 11l-4-4-4 4M5 20l3-2M17 17l2 3"/></svg>
+                        break;
+                    case "walk":
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="13" cy="4" r="1.5"/><path d="M7 21l3-6-3-3V8l4-2 2 4 3 2M14 21l-2-5"/></svg>
+                        break;
+                    default:
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/></svg>
+                        break;
+                }
+                @sportLabel
+            </span>
+        </div>
+        @* Owner only — legacy null-owner rows are view-only for everyone (OwnedActivities always
+           refuses their writes; a delete button here would lie). Matches Details' stance. *@
+        @if (Model.UserId == currentUserId)
+        {
+            <button type="button"
+                    class="activity-delete-btn"
+                    data-track-id="@Model.TrackId" data-track-name="@Model.TrackName"
+                    title="Delete activity">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg>
+            </button>
+        }
+    </div>
+
+    <!-- Body -->
+    <div class="activity-card-body">
+        <div class="activity-card-header">
+            <div class="activity-card-heading">
+                <div class="activity-card-when mono"><i class="bi @visIcon activity-card-vis @visClass" title="@visTitle" aria-label="@visTitle"></i><partial name="/Pages/Shared/_ShareBadge.cshtml" model="shareBadge" />@whenStr</div>
+                <div class="activity-card-title">@Model.TrackName<span class="activity-title-duration mono">@durStr</span></div>
+            </div>
+            <!-- Cover photos: lazy-filled by dashboard-card-photos.ts on first scroll into view.
+                 Only emitted when the activity has photos (PhotoCount via view-data) — otherwise every
+                 photo-less card scrolled into view would fire an empty /api/photos round-trip. -->
+            @if ((ViewData["PhotoCount"] as int? ?? 0) > 0)
+            {
+                <div class="activity-card-photos" data-photos-track-id="@Model.TrackId"></div>
+            }
+        </div>
+
+        <!-- Stats grid -->
+        <div class="activity-stats-grid">
+            <div class="activity-stat">
+                <div class="activity-stat-value mono tnum">@distKmA.ToString("N2")<span class="activity-stat-unit">km</span></div>
+                <div class="activity-stat-label mono">Distance</div>
+            </div>
+            <div class="activity-stat activity-stat--time">
+                <div class="activity-stat-value mono tnum">@durStr</div>
+                <div class="activity-stat-label mono">Time</div>
+            </div>
+            <div class="activity-stat">
+                <div class="activity-stat-value mono tnum" style="color:var(--acc-lime);">@((Model.TotalAscent ?? 0).ToString("N0"))<span class="activity-stat-unit">m</span></div>
+                <div class="activity-stat-label mono">Elev</div>
+            </div>
+            <div class="activity-stat">
+                <div class="activity-stat-value mono tnum" style="color:var(--acc-cyan);">@speedStr<span class="activity-stat-unit">@speedUnit</span></div>
+                <div class="activity-stat-label mono">@speedLabel</div>
+            </div>
+            <div class="activity-stat">
+                <div class="activity-stat-value mono tnum" style="color:var(--acc-amber);">@hrStr<span class="activity-stat-unit">@(hrStr != "—" ? "bpm" : "")</span></div>
+                <div class="activity-stat-label mono">Avg HR</div>
+            </div>
+        </div>
+    </div>
+</div>

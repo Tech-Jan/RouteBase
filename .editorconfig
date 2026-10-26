@@ -1,0 +1,83 @@
+# Analyzer severity settings. Rules run at package defaults unless listed here.
+# Convention (gate-header style): every rule silenced below MUST carry a one-line reason.
+# Adopting a family = fix its sites to zero, then raise it to error here; the error is the pin.
+root = true
+
+[*.cs]
+
+# ── REJECTED 2026-08-01 (style rules that contradict documented house conventions) ──
+
+# ASP.NET Core has no SynchronizationContext; repo is async-all-the-way WITHOUT ConfigureAwait.
+dotnet_diagnostic.CA2007.severity = none
+dotnet_diagnostic.MA0004.severity = none
+
+# Test naming is Method_Scenario_Expectation; underscores are the house style.
+dotnet_diagnostic.CA1707.severity = none
+
+# App, not library: DI, WebApplicationFactory and Razor need public types.
+dotnet_diagnostic.CA1515.severity = none
+
+# Slice cohesion beats file-per-type: payload records live beside their handlers (vertical slices).
+dotnet_diagnostic.MA0048.severity = none
+
+# NRT is enabled repo-wide and IS the null contract; runtime arg guards would duplicate it.
+dotnet_diagnostic.CA1062.severity = none
+
+# LoggerMessage source-gen + log-argument-cost guidance: irrelevant at this log volume.
+dotnet_diagnostic.CA1848.severity = none
+dotnet_diagnostic.CA1873.severity = none
+
+# Method-length is a review trigger, not a gate (file size is a review trigger too).
+dotnet_diagnostic.MA0051.severity = none
+
+# Wire DTOs expose List<T>/arrays/nested option types on purpose — OpenAPI→TS codegen shape.
+dotnet_diagnostic.CA1002.severity = none
+dotnet_diagnostic.CA2227.severity = none
+dotnet_diagnostic.CA1819.severity = none
+dotnet_diagnostic.MA0016.severity = none
+dotnet_diagnostic.CA1034.severity = none
+
+# == on strings is ordinal in C#; the culture-risky APIs are covered by MA0074/CA1307 (triage).
+dotnet_diagnostic.MA0006.severity = none
+
+# Test fakes throw NotImplemented/NotSupported by design.
+dotnet_diagnostic.MA0025.severity = none
+
+# Constant-array allocations: nearly all in test bodies; no hot-path evidence. Revisit on measurement.
+dotnet_diagnostic.CA1861.severity = none
+
+# ── ADOPTED K6 (2026-08-01): culture family at ERROR — the error is the pin ──
+# Product zeroed in S4 (16 sites: Convert/StringBuilder-interpolation/ToString → Invariant,
+# StartsWith → Ordinal, ToLower → Invariant; UserService keeps 2 #pragma'd EF-Where ToLower —
+# they translate to SQL LOWER(), no .NET culture involved). Enforced by dragnet builds + IDE;
+# CultureInvariantFormatRatchetTests carries zero-build-cost hand-gate backstops for plain
+# `dotnet test`. K6 adopted these three; the rest of the family followed below.
+# (K6b swept the tests, so the temporary RouteBaseWeb.Tests/.editorconfig downgrade is gone.)
+dotnet_diagnostic.CA1304.severity = error
+dotnet_diagnostic.CA1305.severity = error
+dotnet_diagnostic.CA1310.severity = error
+
+# ── ADOPTED (2026-08-02): string-comparison + time families at ERROR ──
+# 830 sites across 200 files driven to zero (108 product / 722 tests),
+# every fix semantics-preserving and verified under the th-TH/Pacific-Chatham matrix. The zero is
+# the pin: these rules exist because .NET's defaults disagree with each other — equality (==,
+# Dictionary, Except) is ordinal, ordering (OrderBy, Order, Comparer<string>.Default) is
+# CurrentCulture — and identical-looking code therefore behaves differently per machine locale.
+# Escape hatch for a genuine display-facing site: #pragma warning disable + a reason (precedent:
+# UserService's EF-Where ToLower, which becomes SQL LOWER() and never touches .NET culture).
+dotnet_diagnostic.MA0002.severity = error
+dotnet_diagnostic.CA1307.severity = error
+dotnet_diagnostic.MA0074.severity = error
+dotnet_diagnostic.MA0011.severity = error
+dotnet_diagnostic.CA1308.severity = error
+dotnet_diagnostic.S6562.severity = error
+
+# ── ADOPTED security triage (2026-08-02): regex evaluation timeout at ERROR ──
+# The triage found 0 real vulnerabilities in 43 flagged sites, but MA0009 was the one family worth
+# adopting: catastrophic backtracking is a denial-of-service that no amount of parameterisation
+# prevents, and the fix is per-site and cheap. Its 39 siblings (S2077/CA2100) stay at WARNING on
+# purpose — they fire on unavoidable dynamic SQL (int IN-lists, {n} placeholder tokens, PRAGMA, DDL
+# identifiers), so raising them would buy ~24 scattered suppressions and a gate nobody trusts.
+dotnet_diagnostic.MA0009.severity = error
+
+# ── everything else stays at package default pending triage (see d1-inventory.md) ──

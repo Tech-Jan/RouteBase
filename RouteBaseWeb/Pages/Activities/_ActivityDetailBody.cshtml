@@ -1,0 +1,424 @@
+@using RouteBaseWeb.Services.TrackEdit
+@using RouteBaseWeb.Services.Tracks
+@using RouteBaseWeb.Models.Sharing
+@model ActivityDetailView
+@* The activity detail body, shared by /Activities/Details/{id} and the read-only share view. Extracted
+   verbatim from Details.cshtml so both routes render one markup, not two copies that drift.
+
+   Everything owner- or app-specific is gated on Model.Surfaces rather than Model.IsOwner: share-ness is a
+   property of the ROUTE, so the owner opening their own share link must see the same page a stranger does.
+
+   The scroll container is included here because it is structural — both layouts nest it inside
+   .cockpit-main, where .cockpit-scroll's flex/overflow rules actually bound. *@
+@{
+    // The track-editor slice's markup lives in _TrackEditChrome.cshtml; this only names the two seams.
+    var trackEditChrome = new TrackEditChrome(
+        TrackEditChromePart.Toolbar, Model.Surfaces.CanEdit, Model.GpsData.Count, Model.ResumeHint);
+
+    // One pass over the full-res track for the KPI strip + HR chart gate (was up to 5 LINQ scans:
+    // Any/Max/Min over Altitude here, HasHeartRateData evaluated at two card sites below).
+    double? minAlt = null, maxAlt = null;
+    var hasHeartRate = Model.Activity.HeartRateAvg.HasValue;
+    foreach (var p in Model.GpsData)
+    {
+        if (p.Altitude is { } alt)
+        {
+            if (minAlt is null || alt < minAlt) minAlt = alt;
+            if (maxAlt is null || alt > maxAlt) maxAlt = alt;
+        }
+        if (!hasHeartRate && p.HeartRate is > 0) hasHeartRate = true;
+    }
+}
+
+<div class="cockpit-scroll">
+
+    <partial name="/Pages/Activities/_DetailsHeader.cshtml" model="Model" />
+
+    @* Review mode: the ride is not in circulation (awaiting review, or trashed). Reads the lifecycle
+       columns directly — the surfaces are already off, this is what SAYS why. Never renders on a share
+       view: that route refuses a non-released activity outright. *@
+    @if (Model.Activity.Lifecycle != RouteBaseWeb.Services.Lifecycle.LifecycleStates.Released)
+    {
+        <partial name="/Pages/Activities/_ReviewBanner.cshtml" model="Model.Activity" />
+    }
+
+    <!-- KPI strip (statistics) ──────────────────────────────────────────
+         Rendered first: statistics on top, then the map toolbar (settings), then the map. -->
+    <div class="kpi-strip kpi-strip--compact kpi-strip--auto" data-track-id="@Model.Activity.TrackId">
+        <div class="kpi-card">
+            <div class="kpi-label"><i class="bi bi-rulers"></i> Distance</div>
+            <div class="kpi-value tnum">@((Model.Activity.TotalDistance / 1000)?.ToString("N2")) km</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-label"><i class="bi bi-arrow-up"></i> Ascent</div>
+            <div class="kpi-value tnum">@Model.Activity.TotalAscent?.ToString("N0") m</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-label"><i class="bi bi-arrow-down"></i> Descent</div>
+            <div class="kpi-value tnum">@(Model.Activity.TotalDescent.HasValue ? Model.Activity.TotalDescent.Value.ToString("N0") + " m" : "N/A")</div>
+        </div>
+        @if (minAlt is not null)
+        {
+            <div class="kpi-card">
+                <div class="kpi-label"><i class="bi bi-mountain"></i> Elevation Range</div>
+                <div class="kpi-value tnum">@minAlt.Value.ToString("N0") – @maxAlt!.Value.ToString("N0") m</div>
+            </div>
+        }
+        <div class="kpi-card">
+            <div class="kpi-label"><i class="bi bi-clock"></i> Total Time</div>
+            <div class="kpi-value tnum">@TimeSpan.FromSeconds(Model.Activity.TimeTotal ?? 0).ToString(@"hh\:mm\:ss")</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-label"><i class="bi bi-play-fill"></i> Moving Time</div>
+            <div class="kpi-value tnum">@TimeSpan.FromSeconds(Model.Activity.TimeMoving ?? 0).ToString(@"hh\:mm\:ss")</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-label"><i class="bi bi-speedometer"></i> Avg Speed</div>
+            <div class="kpi-value tnum">@((Model.Activity.SpeedAvg * 3.6)?.ToString("N1")) km/h</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-label"><i class="bi bi-stopwatch"></i> Avg Pace</div>
+            <div class="kpi-value tnum">
+                @{
+                    var avgSpeedKmh = (Model.Activity.SpeedAvg ?? 0) * 3.6;
+                    if (avgSpeedKmh > 0)
+                    {
+                        var paceTotal = (int)Math.Round((60.0 / avgSpeedKmh) * 60);
+                        var paceMin = paceTotal / 60;
+                        var paceSec = paceTotal % 60;
+                        <text>@paceMin:@paceSec.ToString().PadLeft(2, '0') min/km</text>
+                    }
+                    else { <text>--</text> }
+                }
+            </div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-label"><i class="bi bi-speedometer2"></i> Max Speed</div>
+            <div class="kpi-value tnum">@((Model.Activity.SpeedMax * 3.6)?.ToString("N1")) km/h</div>
+        </div>
+        @if (Model.Activity.HeartRateAvg.HasValue)
+        {
+            <div class="kpi-card">
+                <div class="kpi-label"><i class="bi bi-heart-pulse"></i> Avg HR</div>
+                <div class="kpi-value tnum">@Model.Activity.HeartRateAvg?.ToString("N0") bpm</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-label"><i class="bi bi-heart-fill"></i> Max HR</div>
+                <div class="kpi-value tnum">@Model.Activity.HeartRateMax?.ToString("N0") bpm</div>
+            </div>
+        }
+    </div>
+
+    <!-- Map toolbar ──────────────────────────────────────────────────── -->
+    @* Each control group is a dropdown (<details>): the summary shows the current selection, the menu
+       holds the same buttons (IDs unchanged so the existing map JS still drives them). A small script
+       (setupToolbarDropdowns) syncs the summary label and handles open/close. *@
+    <div class="det-map-toolbar">
+        <div class="det-map-toolbar-group">
+            <!-- Play Replay button -->
+            <button id="playReplayBtn" class="det-replay-btn"
+                    style="display:none;" title="Start replay flythrough (fullscreen)">
+                <i class="bi bi-play-circle"></i> <span class="det-replay-label">Replay</span>
+            </button>
+
+            <!-- Track color mode -->
+            <details class="det-dd" data-picker="true">
+                <summary class="det-dd-summary">
+                    <span class="det-dd-label">Color</span>
+                    <span class="det-dd-value">Solid</span>
+                    <svg class="det-dd-chevron" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+                </summary>
+                <div class="det-dd-menu" role="group" aria-label="Track color mode">
+                    <button id="colorNoneBtn"    class="det-map-btn active">Solid</button>
+                    <button id="colorSpeedBtn"   class="det-map-btn">Speed</button>
+                    <button id="colorHrBtn"      class="det-map-btn">Heart Rate</button>
+                    <button id="colorElevBtn"    class="det-map-btn">Elevation</button>
+                    <button id="colorCadenceBtn" class="det-map-btn">Cadence</button>
+                </div>
+            </details>
+
+            @* Map style — MapShell renders one button per available basemap into #detMapStyleSwitcher
+               (keyed or keyless), so this dropdown is no longer key-gated. *@
+            <details class="det-dd" data-picker="true">
+                <summary class="det-dd-summary">
+                    <span class="det-dd-label">Style</span>
+                    <span class="det-dd-value">Map</span>
+                    <svg class="det-dd-chevron" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+                </summary>
+                <div id="detMapStyleSwitcher" class="det-dd-menu" role="group" aria-label="Map style"></div>
+            </details>
+        </div>
+
+        <div class="det-map-toolbar-group det-map-toolbar-group-end">
+            <!-- Photos overlay toggle (default on) — clustered markers + zoom-to-thumbnail, shared engine -->
+            <button type="button" id="detPhotosMapToggle" class="act-photos-toggle active"
+                    aria-pressed="true" title="Show photos on the map">
+                <i class="bi bi-camera"></i> <span class="det-photos-label">Photos</span>
+            </button>
+
+            <!-- Size controls (action menu — stays open for repeated grow/shrink) -->
+            <details class="det-dd det-dd-end">
+                <summary class="det-dd-summary">
+                    <span class="det-dd-label">Size</span>
+                    <svg class="det-dd-chevron" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+                </summary>
+                <div class="det-dd-menu" role="group" aria-label="Map size">
+                    <button id="mapGrowBtn"   class="det-map-btn" title="Make map taller">Taller</button>
+                    <button id="mapShrinkBtn" class="det-map-btn" title="Make map smaller">Smaller</button>
+                    <button id="mapResetBtn"  class="det-map-btn" title="Reset map size">Reset size</button>
+                </div>
+            </details>
+        </div>
+    </div>
+
+    <partial name="/Pages/Activities/_TrackEditChrome.cshtml" model="trackEditChrome" />
+
+    <!-- Map hero ─────────────────────────────────────────────────────── -->
+    <div class="det-map-hero" id="mapCard">
+        <div id="map"></div>
+
+        <!-- Top-right: fullscreen button -->
+        <div class="det-hero-overlay det-hero-tr">
+            <button id="mapFullscreenBtn" class="det-map-expand-btn" title="Toggle fullscreen">
+                <i class="bi bi-arrows-fullscreen"></i>
+            </button>
+        </div>
+
+        @* The bottom dock — the shared stack (_ReplayDock.cshtml), the same one the segment and race
+           replays render. The strip is mounted by activity-replay-profile.ts and only when this ride HAS
+           a profile worth drawing, so the markup being present is not a promise that it appears; the
+           whole dock is hidden until playback starts. *@
+        <partial name="/Pages/Shared/_ReplayDock.cshtml" model="@(new ReplayDockModel(
+            DockId: "activityReplayDock",
+            HandleId: "activityReplayChartsHandle",
+            StripId: "activityReplayCharts",
+            ControlsId: "replayControls",
+            PlayPauseId: "replayPlayPause",
+            SeekId: "replaySeek",
+            CurrentTimeId: "replayCurrentTime",
+            SpeedSlowerId: "replaySpeedSlower",
+            SpeedLabelId: "replaySpeedLabel",
+            SpeedFasterId: "replaySpeedFaster",
+            SpeedSelectId: "replaySpeed")
+        {
+            CanvasId = "activityReplayProfile",
+            CanvasAriaLabel = "Elevation profile — where the replay is along the ride",
+            StartsPlaying = true,
+            // The dock exists only during playback (activity-replay-ui.ts drives both displays).
+            HiddenUntilPlayback = true,
+            // A ride with no relief gets no strip; the grip waits for one.
+            HandleHiddenUntilMounted = true,
+        })" />
+
+        <!-- Exit button -->
+        <button id="replayExit" title="Exit replay" style="display: none;">
+            <i class="bi bi-x"></i>
+        </button>
+
+        <!-- Replay Info Overlay -->
+        <div id="replayInfo" class="replay-info-overlay" style="display: none;">
+            <h6 id="replayInfoTitle" class="replay-info-header">
+                <button type="button" id="replayFollowToggle" class="replay-follow-toggle is-following"
+                        title="Free camera — stop following the marker">(unfollow)</button>
+                <i class="bi bi-chevron-up replay-info-chevron"></i>
+            </h6>
+            <div class="replay-info-body">
+                <div class="replay-stat">
+                    <span class="replay-stat-label">Progress:</span>
+                    <span class="replay-stat-value" id="replayInfoCompletion">0.0%</span>
+                </div>
+                <div class="replay-stat">
+                    <span class="replay-stat-label">Distance:</span>
+                    <span class="replay-stat-value" id="replayInfoDistance">0.00 km</span>
+                </div>
+                <div class="replay-stat">
+                    <span class="replay-stat-label">Speed:</span>
+                    <span class="replay-stat-value" id="replayInfoSpeed">0 km/h</span>
+                </div>
+                <div class="replay-speed-bar-track" title="Speed relative to this activity">
+                    <div class="replay-speed-bar-fill" id="replayInfoSpeedBar"></div>
+                </div>
+                <div class="replay-stat">
+                    <span class="replay-stat-label">Altitude:</span>
+                    <span class="replay-stat-value" id="replayInfoAltitude">0 m</span>
+                </div>
+                <div class="replay-stat">
+                    <span class="replay-stat-label">Heart Rate:</span>
+                    <span class="replay-stat-value" id="replayInfoHR">-- bpm</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @* Gated on ShowAppNav: a tour name is the owner's label for a GROUP of rides, so it says something
+       about activities outside the one this link grants. Same class of in-app context as the breadcrumbs. *@
+    @if (Model.Surfaces.ShowAppNav && Model.Activity.MultiDayTour != null)
+    {
+        <div class="det-tour-link">
+            <i class="bi bi-calendar-week"></i> Part of:
+            @* No per-tour detail page exists; show the name as static text. *@
+            <span class="btn-cockpit btn-cockpit-ghost btn-cockpit-sm" style="margin-left:6px;">
+                @Model.Activity.MultiDayTour.MultiDayTourName
+            </span>
+        </div>
+    }
+
+    <!-- Photos + Segment action bar (grouped accordion — one body open at a time) ─── -->
+    <div class="det-actions" id="detActions">
+        <div class="det-actions-tabs" role="tablist">
+            <button type="button" class="det-actions-tab" id="detPhotosTab"
+                    aria-expanded="false" aria-controls="detPhotosBody">
+                <i class="bi bi-images" aria-hidden="true"></i> <span>Photos</span>
+                <span class="det-actions-count" id="detPhotosCount"></span>
+            </button>
+            @* Segment creation needs a signed-in identity to own the result — off for a share view. *@
+            @if (Model.Surfaces.CanCreateSegments)
+            {
+                <button type="button" class="det-actions-tab" id="detSegmentTab"
+                        aria-expanded="false" aria-controls="segmentCreator">
+                    <i class="bi bi-plus-circle" aria-hidden="true"></i> <span>Create Segment</span>
+                </button>
+            }
+        </div>
+
+        <partial name="/Pages/Activities/_ActivityPhotos.cshtml"
+                 model="new ActivityPhotosPanel(Model.Activity.TrackId.Value, Model.Surfaces.CanAddPhotos)" />
+
+        @if (Model.Surfaces.CanCreateSegments)
+        {
+            <div class="det-actions-body" id="segmentCreator" hidden>
+                @* Compact inline form: labels sit beside their boxes. On desktop the three groups share
+                   one row; on mobile each group wraps to its own line (coords · hints · name+actions). *@
+                <div class="det-seg-form">
+                    <!-- Chart-pick prompt + max distance (shown above the inputs) -->
+                    <div class="det-seg-hints">
+                        <span class="det-seg-picker-hint" id="segPickerHint"></span>
+                        <span class="det-seg-hint">Max: @((Model.Activity.TotalDistance / 1000)?.ToString("F2")) km</span>
+                    </div>
+
+                    <!-- Start + End -->
+                    <div class="det-seg-group det-seg-group-coords">
+                        <div class="det-seg-field">
+                            <label class="det-seg-label" for="segmentStartKm">Start</label>
+                            <input type="number" class="det-seg-input det-seg-input--km" id="segmentStartKm"
+                                   placeholder="0.0" step="0.01" min="0">
+                        </div>
+                        <div class="det-seg-field">
+                            <label class="det-seg-label" for="segmentEndKm">End</label>
+                            <input type="number" class="det-seg-input det-seg-input--km" id="segmentEndKm"
+                                   placeholder="0.0" step="0.01" min="0">
+                        </div>
+                    </div>
+
+                    <!-- Name + actions -->
+                    <div class="det-seg-group det-seg-group-name">
+                        <div class="det-seg-field det-seg-field-name">
+                            <label class="det-seg-label" for="segmentName">Name</label>
+                            <input type="text" class="det-seg-input" id="segmentName"
+                                   placeholder="e.g., Steep Climb">
+                        </div>
+                        <div class="det-seg-field-btns">
+                            <button id="createSegmentBtn" class="btn-cockpit btn-cockpit-primary btn-cockpit-sm" disabled>
+                                <i class="bi bi-save"></i> Save
+                            </button>
+                            <button id="cancelSegmentBtn" class="btn-cockpit btn-cockpit-ghost btn-cockpit-sm">
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div id="segmentPreview" class="det-seg-preview" style="display: none;">
+                    <div><strong>Distance:</strong> <span id="previewDistance">-</span> km</div>
+                    <div><strong>Elevation Gain:</strong> <span id="previewAscent">-</span> m</div>
+                    <div><strong>Time:</strong> <span id="previewTime">-</span></div>
+                    <div><strong>Avg Speed:</strong> <span id="previewSpeed">-</span> km/h</div>
+                </div>
+            </div>
+        }
+    </div>
+
+    <!-- Charts panel ─────────────────────────────────────────────────── -->
+    <div class="det-charts-panel" data-collapsible-card="act-charts">
+        <div class="det-charts-header" data-collapsible-toggle>
+            <ul class="det-chart-tabs" id="actChartTabs">
+                <li>
+                    <button class="det-chart-tab active" data-chart-tab="speed" type="button">
+                        <i class="bi bi-speedometer2"></i> Speed
+                    </button>
+                </li>
+                <li>
+                    <button class="det-chart-tab active" data-chart-tab="elevation" type="button">
+                        <i class="bi bi-bar-chart-line"></i> Elevation
+                    </button>
+                </li>
+                @if (hasHeartRate)
+                {
+                    <li>
+                        <button class="det-chart-tab active" data-chart-tab="heartrate" type="button">
+                            <i class="bi bi-heart-pulse"></i> Heart Rate
+                        </button>
+                    </li>
+                }
+                @* Speed view switch. In the tab list rather than over the plot, where it covered the
+                   y-axis on a phone — and inside the <ul> because the header is space-between, which
+                   would strand a third child in the middle. Wears the tab class so it matches its
+                   neighbours; its label/state is painted by series-mode-control.ts. *@
+                <li>
+                    <button class="det-chart-tab chart-mode-toggle" id="speedChartModeToggle" type="button" aria-pressed="false"></button>
+                </li>
+            </ul>
+        </div>
+        <div class="det-charts-body" data-collapsible-body>
+            <div id="actChartPanelWrap">
+                <div id="panel-speed" class="chart-panel active">
+                    <div class="chart-container"><canvas id="speedChart"></canvas></div>
+                </div>
+                <div id="panel-elevation" class="chart-panel active">
+                    <div class="chart-container"><canvas id="elevationChart"></canvas></div>
+                </div>
+                @if (hasHeartRate)
+                {
+                    <div id="panel-heartrate" class="chart-panel active">
+                        <div class="chart-container"><canvas id="heartRateChart"></canvas></div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Splits panel ─────────────────────────────────────────────────── -->
+    @if (Model.Splits.Any())
+    {
+        <partial name="/Pages/Activities/_DetailsSplits.cshtml" model="Model.Splits" />
+    }
+
+    @* Version history — owner only; the API enforces the same rule. *@
+    @if (Model.Surfaces.CanEdit)
+    {
+        <partial name="/Pages/Activities/_VersionHistoryPanel.cshtml" model="new VersionHistoryPanel(
+            Model.Activity.TrackId.Value, Model.Activity.Lifecycle,
+            Model.Activity.InEditSessionId is not null, Model.HistoryFacts)" />
+    }
+
+    <!-- Custom segments panel ─────────────────────────────────────────── -->
+    @* Gated with the Create Segment tab: activity-segments.ts fires GET /api/SegmentsApi on every page
+       load, so leaving this in place would have a share view calling an endpoint it has no grant for. *@
+    @if (Model.Surfaces.CanCreateSegments)
+    {
+        <div class="det-custom-panel">
+            <div class="det-custom-header">
+                <i class="bi bi-flag"></i> Custom Segments
+            </div>
+            <div class="det-custom-body">
+                <div id="segmentsList">
+                    <div class="det-notice det-notice--info">
+                        <i class="bi bi-info-circle" style="flex-shrink:0;"></i>
+                        <span>Create custom segments to track specific sections of your route and compare performance across different activities.
+                        Click "Create Segment" above to get started.</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
+</div>

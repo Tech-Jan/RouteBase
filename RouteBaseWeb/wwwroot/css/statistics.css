@@ -1,0 +1,289 @@
+/* statistics.css — Statistics page */
+
+/* 8-column KPI strip for overall stats (Activities, Distance, Ascent, Descent, Total/Moving Time, Speed, Pace) */
+.stats-page .kpi-strip {
+  grid-template-columns: repeat(8, 1fr);
+}
+
+/* Filter header — owner / type / date controls that drive every widget */
+.stats-filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px;
+  margin: 4px 0 14px;
+}
+.stats-filter-field {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.stats-filter-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--fg-2, #8b95a3);
+}
+.stats-filter-daterange {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.stats-filter-date {
+  width: auto;
+}
+.stats-filter-reset {
+  margin-left: auto;
+  padding: 3px 12px;
+  font-size: 12px;
+  color: var(--fg-1, #c4ccd6);
+  background: var(--bg-0, #0e1116);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  cursor: pointer;
+}
+.stats-filter-reset:hover {
+  color: var(--fg-0, #e7eaee);
+  border-color: var(--bd-1, rgba(255, 255, 255, 0.28));
+}
+
+/* Section heading above the per-type grid */
+.stats-section-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--fg-0);
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+
+/* Per-type stats grid */
+.stats-type-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+/* Stat panel (per-type card) */
+.stat-panel {
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.stat-panel-header {
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--line);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  color: var(--fg-1);
+  font-weight: 500;
+}
+
+.stat-panel-body { padding: 0; }
+
+.stat-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 7px 16px;
+  border-bottom: 1px solid var(--line);
+  font-size: 13px;
+}
+.stat-row:last-child { border-bottom: none; }
+
+.stat-row-label { color: var(--fg-2); }
+.stat-row-value {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--fg-0);
+}
+
+/* ── Cumulative progression chart ─────────────────────────────────────────── */
+
+.cumulative-panel {
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: 22px 24px 18px;
+}
+
+/* Icon-only line/bar switch — flows inline with the other control groups. */
+.cum-ctl-icons .cum-ctl-btn {
+  padding: 6px 12px;
+}
+.cum-ctl-icons .cum-ctl-btn i {
+  font-size: 15px;
+}
+
+/* Header row: optional date range, then metric tabs, then the view control — all left-aligned */
+/* Controls row above the chart holding all three groups. */
+.cum-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* Unified segmented control — shared by Metric, View and Type. Each group is its own bordered pill bar
+   so the three read as distinct, but they share button shape, sizing and active state for a unified look.
+   Metric/Type allow several active buttons (multi-select); View allows one. */
+.cum-ctl-group {
+  display: inline-flex;
+  align-items: center;
+  background: var(--bg-3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md, 8px);
+  padding: 2px;
+  gap: 2px;
+  flex: none;
+}
+
+.cum-ctl-btn {
+  appearance: none;
+  border: none;
+  background: transparent;
+  color: var(--fg-2);
+  font-family: var(--font-ui);
+  font-size: 12px;
+  line-height: 1;
+  padding: 6px 11px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  transition: background 0.12s, color 0.12s;
+}
+.cum-ctl-btn:hover { color: var(--fg-0); }
+.cum-ctl-btn.active {
+  background: var(--bg-1, var(--bg-2));
+  color: var(--fg-0);
+  box-shadow: inset 0 0 0 1px var(--line-2);
+}
+
+/* Headline value + caption */
+.cum-headline {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-top: 18px;
+  flex-wrap: wrap;
+  min-height: 34px;
+}
+.cum-headline-value {
+  font-size: 34px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+  color: var(--fg-0);
+  line-height: 1;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+.cum-headline-value .cum-metric-unit {
+  font-size: 15px;
+  color: var(--fg-2);
+  margin-left: 4px;
+}
+.cum-headline-value .cum-metric-extra { font-size: 20px; }
+.cum-headline-caption {
+  font-size: 11px;
+  letter-spacing: 0.03em;
+  color: var(--fg-2);
+  margin-left: 6px;
+}
+.cum-headline-caption .up { color: var(--acc-lime); }
+.cum-headline-caption .down { color: var(--acc-red); }
+
+/* Custom date-range inputs (shown only in the Custom range view; sit at the start of the header) */
+.cumulative-daterange {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.seg-date-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--fg-2);
+}
+.seg-date {
+  background: var(--bg-3);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  color: var(--fg-0);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  padding: 4px 8px;
+  color-scheme: dark;
+}
+
+.cumulative-chart-wrap {
+  position: relative;
+  height: 360px;
+  margin-top: 16px;
+  cursor: crosshair;
+}
+
+/* Floating crosshair readout box styling is shared — see .chart-readout* in cockpit-components.css. */
+
+/* Colour dot shown before each activity-type button (matches that type's line colour). */
+.cum-chip-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  flex: none;
+  background: var(--fg-2);
+}
+.cum-chip-dot[data-dot="all"]   { background: var(--acc-cyan); }
+.cum-chip-dot[data-dot="bike"]  { background: var(--acc-cyan); }
+.cum-chip-dot[data-dot="run"]   { background: var(--acc-amber); }
+.cum-chip-dot[data-dot="walk"]  { background: var(--acc-lime); }
+.cum-chip-dot[data-dot="other"] { background: var(--fg-1); }
+
+/* ── Responsive ─────────────────────────────────────────────────────────── */
+
+@media (max-width: 1024px) {
+  .stats-page .kpi-strip { grid-template-columns: repeat(4, 1fr); }
+  .stats-type-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 768px) {
+  /* Boxes span the full width (no side gutters) so they use the whole screen. */
+  .stats-page .kpi-strip {
+    grid-template-columns: repeat(2, 1fr);
+    margin: 0;
+  }
+  /* 7 KPIs in 2 columns leave a lone empty cell on the last row — let the last card
+     fill the row so there's no leftover box. */
+  .stats-page .kpi-strip .kpi-card:last-child { grid-column: 1 / -1; }
+  .stats-type-grid {
+    grid-template-columns: 1fr;
+    margin: 0;
+  }
+  .cumulative-panel { margin: 0; padding: 14px 8px; }
+  .cum-controls { gap: 8px; }
+  .cum-headline-value { font-size: 28px; }
+  .cumulative-chart-wrap { height: 280px; }
+}
+
+/* Phone: full-bleed boxes edge-to-edge (matches the dashboard). */
+@media (max-width: 600px) {
+  .stats-page .kpi-strip,
+  .stat-panel,
+  .cumulative-panel {
+    border-left: none;
+    border-right: none;
+    border-radius: 0;
+  }
+}

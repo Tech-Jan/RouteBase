@@ -1,0 +1,86 @@
+@page
+@model RouteBaseWeb.Pages.PhotosModel
+@{
+    Layout = "_DashboardLayout";
+    ViewData["Title"] = "Photos";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/photos.css" asp-append-version="true">
+    @* Shared full-size viewer controls (close / ‹ › / counter). *@
+    <link rel="stylesheet" href="~/css/photo-viewer.css" asp-append-version="true">
+}
+
+<div class="cockpit-scroll">
+    <partial name="_PageHeader" model="@(new PageHeaderModel(
+        Title: "Photos",
+        Subtitle: "Import photos and auto-link them to your activities by capture time and GPS.",
+        Breadcrumbs: new[] { ("/", "Dashboard"), ("/Photos", "Photos") }
+    ))" />
+
+    <div class="photos-layout">
+
+        <!-- Filters + import entry -->
+        <section class="photos-filters">
+            <label class="photos-filter">
+                <span>From</span>
+                <input type="date" id="filterFrom" class="photos-input" />
+            </label>
+            <label class="photos-filter">
+                <span>To</span>
+                <input type="date" id="filterTo" class="photos-input" />
+            </label>
+            <button id="btnApplyFilter" class="btn-cockpit btn-cockpit-ghost btn-cockpit-sm">
+                <i class="bi bi-funnel" aria-hidden="true"></i> Apply
+            </button>
+            <label class="photos-toggle"><input type="checkbox" id="groupByActivity" checked /> Group by activity</label>
+            <span id="photosCount" class="photos-count"></span>
+            <a href="/Import" class="btn-cockpit btn-cockpit-primary btn-cockpit-sm photos-import-link">
+                <i class="bi bi-upload" aria-hidden="true"></i> Import photos
+            </a>
+        </section>
+
+        <!-- Grid -->
+        <section id="photoGrid" class="photos-grid" aria-live="polite"></section>
+        <div id="photoGridEmpty" class="photos-empty" style="display:none">
+            <i class="bi bi-camera" aria-hidden="true"></i>
+            <p>No photos yet. Import some above.</p>
+        </div>
+        <div class="photos-pager" id="photoPager" style="display:none">
+            <button id="btnPrevPage" class="btn-cockpit btn-cockpit-ghost btn-cockpit-sm">Previous</button>
+            <span id="pageLabel" class="photos-page-label"></span>
+            <button id="btnNextPage" class="btn-cockpit btn-cockpit-ghost btn-cockpit-sm">Next</button>
+        </div>
+
+        <!-- Multi-select delete bar (shown when photos are marked) -->
+        <div id="photoSelectBar" class="photos-selectbar" style="display:none">
+            <span id="photoSelectCount" class="photos-selectbar-count"></span>
+            <button id="btnDeleteSelected" class="btn-cockpit btn-cockpit-danger btn-cockpit-sm">
+                <i class="bi bi-trash" aria-hidden="true"></i> Delete
+            </button>
+            <button id="btnClearSelected" class="btn-cockpit btn-cockpit-ghost btn-cockpit-sm">Clear</button>
+        </div>
+    </div>
+
+    <!-- Lightbox -->
+    @* Close / prev / next / counter are built by photos/photo-viewer-chrome.ts, which pins them to the
+       visual viewport so a pinch-zoom can't push them off screen. *@
+    <div id="lightbox" class="photos-lightbox" style="display:none" role="dialog" aria-modal="true" aria-label="Photo viewer">
+        <div class="photos-lightbox-body">
+            <div class="photos-lightbox-imgwrap">
+                <img id="lightboxImg" class="photos-lightbox-img" alt="" />
+            </div>
+            <aside class="photos-lightbox-side">
+                <div id="lightboxMeta" class="photos-lightbox-meta"></div>
+                <div id="lightboxMap" class="photos-lightbox-map"></div>
+                <a id="lightboxActivity" class="btn-cockpit btn-cockpit-ghost btn-cockpit-sm" href="#">
+                    <i class="bi bi-geo-alt" aria-hidden="true"></i> View activity
+                </a>
+            </aside>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script type="module" src="~/js/photos/photos.js" asp-append-version="true"></script>
+}

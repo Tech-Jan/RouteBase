@@ -1,0 +1,55 @@
+@*
+    Centralized CDN library <link> / <script> tags.
+    Usage from any page (Styles and Scripts both go through this one partial):
+      @section Styles {
+          <partial name="_CdnLibs" model="@("maplibre-css")" />
+      }
+      @section Scripts {
+          <partial name="_CdnLibs" model="@("maplibre-js,chartjs,chartjs-zoom,chartjs-datefns")" />
+      }
+    The model is a comma-separated list of library keys (see the switch below).
+*@
+@using RouteBaseWeb.Constants
+@model string
+@{
+    var libs = (Model ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+}
+@foreach (var lib in libs)
+{
+    switch (lib.ToLowerInvariant())
+    {
+        case "maplibre-css":
+            <link href="@CdnLibraries.MapLibreCss" rel="stylesheet"
+                  integrity="@CdnLibraries.MapLibreCssSri" crossorigin="anonymous" />
+            break;
+        case "maplibre-js":
+            <script src="@CdnLibraries.MapLibreJs"
+                    integrity="@CdnLibraries.MapLibreJsSri" crossorigin="anonymous"></script>
+            break;
+        case "chartjs":
+            <script src="@CdnLibraries.ChartJs"
+                    integrity="@CdnLibraries.ChartJsSri" crossorigin="anonymous"></script>
+            break;
+        case "chartjs-zoom":
+            <script src="@CdnLibraries.ChartJsZoom"
+                    integrity="@CdnLibraries.ChartJsZoomSri" crossorigin="anonymous"></script>
+            break;
+        case "chartjs-datefns":
+            <script src="@CdnLibraries.ChartJsDateFns"
+                    integrity="@CdnLibraries.ChartJsDateFnsSri" crossorigin="anonymous"></script>
+            break;
+        case "bootstrap-icons-css":
+            <link rel="stylesheet" href="@CdnLibraries.BootstrapIconsCss"
+                  integrity="@CdnLibraries.BootstrapIconsCssSri" crossorigin="anonymous" />
+            break;
+        case "signalr-js":
+            <script src="@CdnLibraries.SignalRJs"
+                    integrity="@CdnLibraries.SignalRJsSri" crossorigin="anonymous"></script>
+            break;
+        default:
+            @* A typo'd key silently emitted nothing — the page then breaks browser-only, which no
+               server-side test ever sees. Fail loudly at render instead. *@
+            throw new InvalidOperationException(
+                $"_CdnLibs: unknown library key '{lib}' — see the switch in _CdnLibs.cshtml");
+    }
+}

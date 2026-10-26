@@ -1,0 +1,23 @@
+@*
+    The #appSettings island — the ONE settings delivery, rendered by the three layouts, which _ViewStart
+    plus the per-page `Layout =` assignments make a partition of every page. That is what makes "every page
+    has settings" true by construction instead of a per-page decision each page could forget.
+
+    What it replaces emitted settings only inside `@if (!string.IsNullOrEmpty(MapTilerApiKey))`, so a page
+    with no MapTiler credential shipped NO settings and every reader silently fell back — a user's chart
+    smoothing ignored because an unrelated map credential was missing.
+
+    NO CREDENTIAL RIDES THIS ISLAND. The MapTiler key is a secret, not a preference, and this payload now
+    reaches anonymous share pages; it goes out separately via _MapTilerKeyBootstrap, on the two pages that
+    read it. BootstrapContractTests pins that the key never enters the settings JSON.
+
+    The payload is a MODEL, not an @@inject, on purpose: _ShareLayout passes SettingsPayload.Defaults, so
+    an anonymous surface never reads ambient identity at all. Making that a caller-visible decision beats
+    hiding it in provider logic — the layout you are reading tells you which one you get.
+
+    BootstrapJson (System.Text.Json) serializes culture-invariantly — never hand-build this literal per
+    page again; the old Activities copy used CurrentCulture and emitted "0,2" on comma-decimal locales.
+*@
+@using RouteBaseWeb.Models.Settings
+@model SettingsPayload
+<script type="application/json" id="appSettings">@Html.Raw(BootstrapJson.Serialize(Model))</script>

@@ -1,0 +1,59 @@
+@model bool
+@*
+    The replay stage: the map, its chrome, and the pull-up dock under it.
+
+    Shared by BOTH pages that show a race — the owner's /Races/Replay and the public /s/{token} fork —
+    because they render the identical stage and only differ in what lives AROUND it (the owner page adds
+    the Sections editor, the rider panels and the Share button; the fork adds none of them). The TS side
+    was unified first (race-sim/race-replay-view.ts); this is the Razor half of the same discipline, so a
+    change to the stage lands once instead of twice.
+
+    The model is one bool: whether the viewer may edit. It reaches the profile's aria-label through the
+    strip partial — the click-to-place behaviour itself is gated in race-replay-view (editable:false on
+    the fork).
+
+    The fullscreen button expands THIS whole block; a class flips it to fill the viewport. Everything but
+    the map is chrome that overlays it, in both states.
+*@
+<div class="race-hero" id="raceHero">
+    <div class="race-map-wrap">
+        <div id="raceMap" class="race-map"></div>
+
+        @* Manual fullscreen — Play stays inline; this is the only thing that goes fullscreen. *@
+        <button id="raceMapFullscreen" type="button" class="race-map-expand" title="Fullscreen replay" aria-label="Fullscreen replay">
+            <i class="bi bi-arrows-fullscreen"></i>
+        </button>
+
+        <div id="raceLoading" class="race-loading">Loading the field…</div>
+        @* A replay that cannot load must SAY so — it used to sit on "Loading the field…" forever. *@
+        <div id="raceError" class="race-error alert alert-danger" role="alert" hidden></div>
+
+        @* Follow sidebar + fullscreen close button. *@
+        <partial name="/Pages/Races/_RaceReplayOverlay.cshtml" />
+
+        @* The shared dock — [grip][transport][charts] as one stack over the map's bottom edge. It
+           OVERLAYS the map rather than sitting under it: as a sibling below the map the grip belonged to
+           neither the bar nor the charts, and the map's bottom edge left a dead band between them. *@
+        <partial name="/Pages/Shared/_ReplayDock.cshtml" model="@(new ReplayDockModel(
+            DockId: "raceChartsDrawer",
+            HandleId: "raceChartsHandle",
+            StripId: "raceCharts",
+            ControlsId: "raceReplayControls",
+            PlayPauseId: "raceReplayPlayPause",
+            SeekId: "raceReplaySeek",
+            CurrentTimeId: "raceReplayCurrentTime",
+            SpeedSlowerId: "raceReplaySpeedSlower",
+            SpeedLabelId: "raceReplaySpeedLabel",
+            SpeedFasterId: "raceReplaySpeedFaster",
+            SpeedSelectId: "raceReplaySpeed")
+        {
+            StripClass = "race-charts",
+            StripPartial = "/Pages/Races/_RaceChartsStrip.cshtml",
+            StripPartialModel = Model,
+            // The race opens paused, and its speed ladder is scaled to the event's duration — neither the
+            // play icon nor "1x" would be true here.
+            StartsPlaying = false,
+            SpeedLabelText = "--",
+        })" />
+    </div>
+</div>

@@ -1,0 +1,32 @@
+<!-- Unified background-operation progress toast (cockpit-styled) -->
+<!-- JS logic lives in op-toast.ts / op-toast.js. Same DOM ids as the Bootstrap version. -->
+<div id="opToast" style="position:fixed;bottom:1rem;right:1rem;z-index:1081;display:none;">
+    <div style="min-width:320px;background:var(--bg-2);border:1px solid var(--line);border-radius:var(--radius-lg);box-shadow:var(--shadow-2);overflow:hidden;">
+        <div id="opToastHeader" style="display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid var(--line);">
+            <span id="opToastIcon" style="font-size:15px;line-height:1;" aria-hidden="true"></span>
+            <strong id="opToastTitle" style="flex:1;font-size:13px;font-weight:600;color:var(--fg-0);font-family:var(--font-ui);"></strong>
+            <span id="opQueueBadge" class="chip mono" style="display:none;"></span>
+            <span id="opElapsed" style="font-family:var(--font-mono);font-size:11px;color:var(--fg-3);"></span>
+            <button type="button" id="opDismissBtn" aria-label="Dismiss"
+                    style="display:flex;align-items:center;justify-content:center;padding:2px;color:var(--fg-2);">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+        </div>
+        <div style="padding:10px 14px;display:flex;flex-direction:column;gap:8px;">
+            <div id="opPhase" style="font-size:13px;font-weight:600;color:var(--fg-0);font-family:var(--font-ui);min-height:1em;"></div>
+            <div style="height:6px;background:var(--bg-3);border-radius:999px;overflow:hidden;">
+                <div id="opProgressBar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"
+                     style="height:100%;width:0%;background:var(--acc-cyan);border-radius:999px;transition:width 0.4s linear,background 0.2s;"></div>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+                <small id="opDetail" style="font-size:11px;color:var(--fg-3);font-family:var(--font-mono);"></small>
+                @* Shown only by the export operation, which finishes with a file to collect. Wired in
+                   core/op-toast.ts; a real <a download> so the browser streams it straight to disk. *@
+                <a id="opDownloadBtn" class="btn-cockpit btn-cockpit-sm" download style="display:none;" href="#">
+                    <i class="bi bi-download"></i> Download
+                </a>
+                <button id="opCancelBtn" class="btn-cockpit btn-cockpit-danger btn-cockpit-sm" style="display:none;">Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>

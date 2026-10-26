@@ -1,0 +1,45 @@
+{
+  "fixtureVersion": 1,
+  "name": "deleteRange-distance-nan-junction",
+  "description": "E14: distance null at both junction neighbours -> nearest-present anchors (lastHead=0 @idx0, firstTail=400 @idx4)",
+  "sources": {
+    "111": {
+      "time": [1000, 1010, 1020, 1030, 1040, 1050],
+      "lat": [47000000, 47000100, 47000200, 47000300, 47000400, 47000500],
+      "lng": [8000000, 8000100, 8000200, 8000300, 8000400, 8000500],
+      "altitude": [1000, 1010, 1020, 1030, 1040, 1050],
+      "distance": [0, null, 200, null, 400, 500],
+      "speed": [500, 510, 520, 530, 540, 550],
+      "heartRate": [120, 121, 122, 123, 124, 125],
+      "gradeSmooth": [10, 11, 12, 13, 14, 15],
+      "cadence": [80, 81, 82, 83, 84, 85],
+      "power": [200, 201, 202, 203, 204, 205],
+      "pressure": [101300, 101310, 101320, 101330, 101340, 101350]
+    }
+  },
+  "script": { "schemaVersion": 1, "ops": [
+    { "op": "loadActivity", "activityId": 111 },
+    { "op": "deleteRange", "slot": 0, "from": 2, "to": 2, "timeMode": "keep" }
+  ] },
+  "expect": {
+    "slots": [
+      {
+        "slotId": 0,
+        "origin": { "activityId": 111 },
+        "channels": {
+          "time": [1000, 1010, 1030, 1040, 1050],
+          "lat": [47000000, 47000100, 47000300, 47000400, 47000500],
+          "lng": [8000000, 8000100, 8000300, 8000400, 8000500],
+          "altitude": [1000, 1010, 1030, 1040, 1050],
+          "distance": [0, null, null, 0, 100],
+          "speed": [500, 510, 530, 540, 550],
+          "heartRate": [120, 121, 123, 124, 125],
+          "gradeSmooth": [10, 11, 13, 14, 15],
+          "cadence": [80, 81, 83, 84, 85],
+          "power": [200, 201, 203, 204, 205],
+          "pressure": [101300, 101310, 101330, 101340, 101350]
+        }
+      }
+    ]
+  }
+}

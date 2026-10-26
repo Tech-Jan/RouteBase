@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- API 31+. Same exclusion as backup_rules.xml for both cloud backup and device-to-device transfer. -->
+<data-extraction-rules>
+    <!-- The Room DB (undelivered GPS points + open server session ids) is excluded for the same reason
+         as the prefs: restoring a live session's state to another device is wrong — the restored queue
+         would deliver the same rows the still-alive old device delivers, forking one ride into duplicate
+         activities. path="." excludes the whole domain, covering the -wal/-shm companions too. -->
+    <cloud-backup>
+        <exclude domain="sharedpref" path="gps_recorder_prefs.xml" />
+        <exclude domain="database" path="." />
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="sharedpref" path="gps_recorder_prefs.xml" />
+        <exclude domain="database" path="." />
+    </device-transfer>
+</data-extraction-rules>

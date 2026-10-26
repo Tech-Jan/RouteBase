@@ -1,0 +1,131 @@
+@page
+@model StatisticsModel
+@{
+    Layout = "_DashboardLayout";
+    ViewData["Title"] = "Statistics";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/grid-filter.css" asp-append-version="true">
+    <link rel="stylesheet" href="~/css/statistics.css" asp-append-version="true">
+}
+
+@section Scripts {
+    <partial name="_CdnLibs" model="@("chartjs,chartjs-zoom,chartjs-datefns")" />
+    <script type="module" src="~/js/pages/statistics.js" asp-append-version="true"></script>
+}
+
+<div class="cockpit-scroll stats-page">
+
+    <partial name="_PageHeader" model="@(new PageHeaderModel(
+        Title: "Statistics",
+        Breadcrumbs: new (string Href, string Label)[] { ("/", "Dashboard"), ("/Statistics", "Statistics") }
+    ))" />
+
+    @* Filter header — owner / type / date. Drives every widget below (built by statistics/statistics-filters.ts). *@
+    <div id="statsFilterBar"></div>
+
+    @* Summary KPI skeleton — filled in place by statistics/statistics-summary.ts (data-stat-kpi hooks).
+       Same classes as the _KpiStrip partial (left untouched for other pages); values start as "—". *@
+    <div class="kpi-strip">
+        <div class="kpi-card">
+            <div class="kpi-label mono">Activities</div>
+            <div class="kpi-value-row"><span class="kpi-value mono tnum" data-stat-kpi="activities">—</span></div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-label mono">Distance</div>
+            <div class="kpi-value-row"><span class="kpi-value mono tnum" style="color:var(--acc-cyan)" data-stat-kpi="distance">—</span><span class="kpi-unit mono">km</span></div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-label mono">Ascent</div>
+            <div class="kpi-value-row"><span class="kpi-value mono tnum" style="color:var(--acc-lime)" data-stat-kpi="ascent">—</span><span class="kpi-unit mono">m</span></div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-label mono">Descent</div>
+            <div class="kpi-value-row"><span class="kpi-value mono tnum" style="color:var(--acc-amber)" data-stat-kpi="descent">—</span><span class="kpi-unit mono">m</span></div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-label mono">Total Time</div>
+            <div class="kpi-value-row"><span class="kpi-value mono tnum" data-stat-kpi="totalTime">—</span><span class="kpi-unit mono">h</span></div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-label mono">Moving Time</div>
+            <div class="kpi-value-row"><span class="kpi-value mono tnum" data-stat-kpi="movingTime">—</span><span class="kpi-unit mono">h</span></div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-label mono">Avg Speed</div>
+            <div class="kpi-value-row"><span class="kpi-value mono tnum" data-stat-kpi="avgSpeed">—</span><span class="kpi-unit mono">km/h</span></div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-label mono">Avg Pace</div>
+            <div class="kpi-value-row"><span class="kpi-value mono tnum" data-stat-kpi="avgPace">—</span><span class="kpi-unit mono">min/km</span></div>
+        </div>
+    </div>
+
+    <div class="cumulative-panel">
+        @* All control groups share one segmented style (.cum-ctl-group / .cum-ctl-btn). Metric is multi-select;
+           chart-type / bucket / view are single-select — the JS keys off the data-* attrs. *@
+        <div class="cum-controls">
+            @* Icon-only line / multi-line / bar switch. Single-select; the JS keys off data-charttype. *@
+            <div class="cum-ctl-group cum-ctl-icons" id="cumulative-charttype" role="group" aria-label="Chart type">
+                <button type="button" class="cum-ctl-btn active" data-charttype="line" title="Line chart (aggregate)" aria-label="Line chart"><i class="bi bi-graph-up"></i></button>
+                <button type="button" class="cum-ctl-btn" data-charttype="multiline" title="Multi-line chart (one line per type)" aria-label="Multi-line chart">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <polyline points="1 11 5 6 8 8 12 3 15 6"></polyline>
+                        <polyline points="1 14 5 12 8 13 12 9 15 11" opacity="0.55"></polyline>
+                    </svg>
+                </button>
+                <button type="button" class="cum-ctl-btn" data-charttype="bar" title="Bar chart" aria-label="Bar chart"><i class="bi bi-bar-chart"></i></button>
+            </div>
+
+            <!-- Bucket (single-select) — bar mode only -->
+            <div class="cum-ctl-group" id="cumulative-bucket" role="group" aria-label="Bar bucket" style="display:none;">
+                <button type="button" class="cum-ctl-btn active" data-bucket="week">Weekly</button>
+                <button type="button" class="cum-ctl-btn" data-bucket="month">Monthly</button>
+            </div>
+
+            <!-- Metric (multi-select) -->
+            <div class="cum-ctl-group" id="cumulative-metric" role="group" aria-label="Metric">
+                <button type="button" class="cum-ctl-btn active" data-metric="distance">Distance</button>
+                <button type="button" class="cum-ctl-btn" data-metric="elevation">Elevation</button>
+                <button type="button" class="cum-ctl-btn" data-metric="time">Time</button>
+                <button type="button" class="cum-ctl-btn" data-metric="count">Activities</button>
+            </div>
+
+            <!-- View (single-select) -->
+            <div class="cum-ctl-group" id="cumulative-view" role="group" aria-label="Chart view">
+                <button type="button" class="cum-ctl-btn active" data-view="yoy">Year over year</button>
+                <button type="button" class="cum-ctl-btn" data-view="range">Range</button>
+            </div>
+        </div>
+
+        <div class="cum-headline">
+            <span class="cum-headline-value mono" id="cum-headline-value"></span>
+            <span class="cum-headline-caption mono" id="cum-headline-caption"></span>
+        </div>
+
+        @* Empty state is injected into #cumulative-chart-wrap by core/chart-empty-state.ts (item 4). *@
+        <div class="cumulative-chart-wrap" id="cumulative-chart-wrap">
+            <canvas id="cumulativeChart"></canvas>
+        </div>
+    </div>
+
+    <h2 class="stats-section-title">By Activity Type</h2>
+    @* Filled by statistics/statistics-by-type.ts; the empty state (below) is toggled when there are no types. *@
+    <div class="stats-type-grid" id="statsTypeGrid"></div>
+    <div id="statsTypeEmpty" style="display:none;">
+        <partial name="_EmptyState" model="@(new EmptyStateModel(
+            Body: "No statistics available yet. Add some activities first.",
+            CtaHref: "/Import",
+            CtaLabel: "Import activities"
+        ))" />
+    </div>
+
+</div>
+
+@* Bootstrap for the client widgets (statistics/*.ts). camelCase so it maps to the TS shapes. *@
+@{
+    var statsBootstrap = new StatisticsBootstrap(
+        Model.MultiUser, Model.ActivityTypes, Model.OwnerOptions, Model.HasAnyActivities);
+}
+<script type="application/json" id="statisticsBootstrap">@Html.Raw(BootstrapJson.Serialize(statsBootstrap))</script>

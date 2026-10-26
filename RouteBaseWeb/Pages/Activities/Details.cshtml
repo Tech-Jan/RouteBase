@@ -1,0 +1,28 @@
+@page "{id:int}"
+@model DetailsModel
+@{
+    Layout = "_DashboardLayout";
+    ViewData["Title"] = Model.Activity?.TrackName ?? "Activity Details";
+}
+@* Composition root only. Body and scripts live in partials over ActivityDetailView so the read-only share
+   view renders the same markup rather than a second copy. OnGetAsync returns NotFound() when the activity
+   is not visible, so Model.View is non-null here. *@
+
+@section Styles {
+    <partial name="_CdnLibs" model="@("maplibre-css")" />
+    <link rel="stylesheet" href="~/css/replay-controls.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/activity-details.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/share-dialog.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/activity-photos.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/photo-viewer.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/track-edit.css" asp-append-version="true" />
+}
+
+<partial name="_ActivityDetailBody" model="Model.View" />
+
+@section Scripts {
+    <partial name="_CdnLibs" model="@("maplibre-js")" />
+    <partial name="_CdnLibs" model="@("chartjs,chartjs-zoom")" />
+    @* maplibre-terrain is an imported chunk now (pulled by activity-details-page). *@
+    <partial name="_ActivityDetailScripts" model="Model.View" />
+}

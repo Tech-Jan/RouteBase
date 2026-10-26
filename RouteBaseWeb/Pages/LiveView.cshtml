@@ -1,0 +1,180 @@
+@page "{sessionId?}"
+@model RouteBaseWeb.Pages.LiveViewModel
+@{
+    Layout = "_DashboardLayout";
+    ViewData["Title"] = "Live View";
+
+    // The client owns every dynamic cell (elapsed, points, status, colour) — it only needs the seed.
+    // Same DTO the sessions/live poll returns, so seed and poll cannot drift. Web options = camelCase.
+    var sessionsJson = System.Text.Json.JsonSerializer.Serialize(
+        Model.Sessions.Select(RouteBaseWeb.Models.Recording.LiveSessionDto.From),
+        System.Text.Json.JsonSerializerOptions.Web);
+
+    var watchedIds = string.Join(',', Model.Sessions.Select(s => s.SessionId));
+    // The route form takes ONE id — a comma-joined list only resolves through the query form.
+    var selfHref = Model.Sessions.Count == 1 ? "/LiveView/" + watchedIds : "/LiveView?sessions=" + watchedIds;
+}
+
+@section Styles {
+    <partial name="_CdnLibs" model="@("maplibre-css")" />
+    <link rel="stylesheet" href="~/css/map-toolbar.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/liveview.css" asp-append-version="true" />
+    @if (Model.SelfTrackId is not null)
+    {
+        <link rel="stylesheet" href="~/css/share-dialog.css" asp-append-version="true" />
+    }
+}
+
+<div class="cockpit-scroll">
+
+    <partial name="_PageHeader" model="@(new PageHeaderModel(
+        Title: Model.Sessions.Count > 1 ? $"Live View — {Model.Sessions.Count} riders" : "Live View",
+        Breadcrumbs: new (string Href, string Label)[] { ("/", "Dashboard"), (selfHref, "Live View") },
+        RightActionsHtml: new HtmlString(
+            "<span id=\"lv-status-badge\" role=\"status\" class=\"lv-status-badge lv-status-badge--live\">" +
+                "<span class=\"lv-live-dot\" aria-hidden=\"true\"></span> LIVE" +
+            "</span>")
+    ))" />
+
+    <div class="lv-layout">
+
+        <div id="liveview-app">
+
+            @* Seed for the client — parsed, never eval'd, and no window global. *@
+            <script type="application/json" id="lv-sessions-data">@Html.Raw(sessionsJson)</script>
+
+            @* Plain-language ramp-up note — the client shows it only while CONNECTING and hides it at LIVE. *@
+            <div id="lv-live-hint" class="lv-live-hint" hidden>Getting live updates going — this can take up to 60 seconds.</div>
+
+            @* Share the viewer's OWN live map as a public link. Owner-gated by SelfTrackId; the wire kind +
+               track id go to setupShareLinks in live-recording-liveview.ts. Ids match core/share-links.ts. *@
+            @if (Model.SelfTrackId is not null)
+            {
+                <div style="display:flex;justify-content:flex-end;margin-bottom:12px;">
+                    <button class="btn-cockpit btn-cockpit-ghost btn-cockpit-sm" id="shareActivityBtn"
+                            title="Create a public link to your live map — works without signing in">
+                        <i class="bi bi-share"></i> Share live
+                    </button>
+                </div>
+                <partial name="/Pages/Shared/_ShareLinkDialog.cshtml"
+                         model="RouteBaseWeb.Models.Sharing.ShareLinkDialogModel.ForLiveRecording" />
+            }
+
+            <!-- Stat grid — the followed rider ─────────────────────────────── -->
+            <div class="kpi-strip kpi-strip--cards" style="margin-bottom:20px;">
+                <div class="kpi-card">
+                    <div class="kpi-value mono tnum" id="lv-elapsed">--:--</div>
+                    <div class="kpi-label"><i class="bi bi-clock" aria-hidden="true"></i> Elapsed</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-value mono tnum" id="lv-points">0</div>
+                    <div class="kpi-label"><i class="bi bi-pin-map" aria-hidden="true"></i> Points</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-value mono" id="lv-type">—</div>
+                    <div class="kpi-label"><i class="bi bi-activity" aria-hidden="true"></i> Type</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-value mono tnum" id="lv-started">--:--</div>
+                    <div class="kpi-label"><i class="bi bi-calendar-event" aria-hidden="true"></i> Started</div>
+                </div>
+            </div>
+
+            <div class="lv-main">
+
+                <!-- Riders panel ─────────────────────────────────────────────── -->
+                <aside class="lv-people-panel">
+                    <div class="lv-people-head">
+                        <span class="lv-people-title"><i class="bi bi-people" aria-hidden="true"></i> Riders</span>
+                        <button type="button" id="lv-follow-toggle" class="lv-follow-toggle is-following"
+                                title="Free camera — stop following">(unfollow)</button>
+                    </div>
+                    <div id="lv-people-list" class="lv-people-list"></div>
+                    <div id="lv-people-hint" class="lv-people-hint">
+                        Tick to draw on the map · click a name to follow
+                    </div>
+                </aside>
+
+                <!-- Map panel ────────────────────────────────────────────────── -->
+                <div id="lv-map-card" class="lv-map-panel">
+                    @* The shared .map-dd toolbar (map-toolbar.css + core/map-toolbar.ts), same as the segment
+                       and race pages. Option-button IDs are unchanged, so MapShell still drives them. *@
+                    <div class="lv-map-controls">
+                        <details class="map-dd" data-picker="true">
+                            <summary class="map-dd-summary">
+                                <span class="map-dd-label">Style</span>
+                                <span class="map-dd-value">Map</span>
+                                <svg class="map-dd-chevron" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+                            </summary>
+                            @* MapShell renders one .map-dd-item per registry basemap into here. *@
+                            <div class="map-dd-menu" id="lv-style-switcher" role="group" aria-label="Map style"></div>
+                        </details>
+                        <details class="map-dd map-dd-end">
+                            <summary class="map-dd-summary">
+                                <span class="map-dd-label">Size</span>
+                                <svg class="map-dd-chevron" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+                            </summary>
+                            <div class="map-dd-menu" role="group" aria-label="Map size">
+                                <button id="lv-map-grow-btn"   type="button" class="map-dd-item" title="Make map taller">Taller</button>
+                                <button id="lv-map-shrink-btn" type="button" class="map-dd-item" title="Make map smaller">Smaller</button>
+                                <button id="lv-map-reset-btn"  type="button" class="map-dd-item" title="Reset map size">Reset size</button>
+                            </div>
+                        </details>
+                    </div>
+                    <div class="lv-map-body">
+                        <div id="liveview-map"></div>
+                        @* Fullscreen rides the map, top-right — same idiom as the segment and race pages. *@
+                        <button id="lv-map-fullscreen-btn" type="button" class="lv-map-expand" title="Fullscreen map" aria-label="Fullscreen map">
+                            <i class="bi bi-arrows-fullscreen" aria-hidden="true"></i>
+                        </button>
+                        @* Fullscreen-only mirror of the riders-panel follow toggle (#lv-follow-toggle), which is
+                           hidden when the map is fullscreen. Shares its click handler + sync. *@
+                        <button type="button" id="lv-follow-toggle-map"
+                                class="lv-follow-toggle lv-follow-toggle--map lv-follow-toggle--fs-only is-following"
+                                title="Free camera — stop following">(unfollow)</button>
+                        @* FUX-01: a stalled engine (dead CDN / WebGL failure) must not fail to a blank map
+                           with nothing but a console warning. Ported from the public share twin
+                           (_ShareLiveBody.cshtml, FE-07): the client reveals this over the map after a
+                           generous wait; Retry re-inits the engine. Same markup + copy as the share view. *@
+                        <div id="lv-map-error" class="lv-map-error" role="alert" hidden>
+                            <i class="bi bi-exclamation-triangle" aria-hidden="true"></i>
+                            <p>The map couldn't load. Check your connection and try again.</p>
+                            <button type="button" id="lv-map-retry-btn" class="btn-cockpit btn-cockpit-primary btn-cockpit-sm">Retry</button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Stopped banner — every watched rider has finished ───────────── -->
+            <div id="lv-stopped-banner" class="lv-stopped-banner" style="display:none">
+                <i class="bi bi-check-circle" aria-hidden="true"></i> Recording finished —
+                <a id="lv-activity-link" href="#">View Activity</a>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+@* One rider row. Cloned per session — no string-built markup (LR-10). *@
+<template id="lv-person-template">
+    <div class="lv-person">
+        <input type="checkbox" class="lv-person-show" checked aria-label="Show this rider on the map" />
+        <span class="lv-person-swatch" aria-hidden="true"></span>
+        <button type="button" class="lv-person-name" title="Follow this rider"></button>
+        <span class="chip lv-person-type"></span>
+        <span class="lv-person-elapsed mono tnum">--:--</span>
+        <span class="lv-person-points mono tnum">0</span>
+        <span class="lv-person-status"></span>
+        <a class="lv-person-activity" href="#" hidden title="View the finished activity" aria-label="View the finished activity">
+            <i class="bi bi-box-arrow-up-right" aria-hidden="true"></i>
+        </a>
+    </div>
+</template>
+
+@section Scripts {
+    @* Key-only variant: null sections → profileSettings.map/charts/ui = null; readers optional-chain. *@
+    <partial name="_MapTilerKeyBootstrap" model="Model.MapTilerApiKey" />
+    <partial name="_CdnLibs" model="@("maplibre-js,signalr-js")" />
+    <script type="module" src="~/js/live-recording/live-recording.js" asp-append-version="true"></script>
+}

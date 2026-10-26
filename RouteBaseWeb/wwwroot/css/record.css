@@ -1,0 +1,519 @@
+/* record.css — live GPS recording page */
+
+.rec-layout {
+    padding: 0 var(--sp-4, 28px) var(--sp-6, 40px);
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+/* ── Start form panel ─────────────────────────────────────────────── */
+
+.rec-form-panel {
+    background: var(--bg-2);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    padding: 24px;
+}
+
+.rec-form-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--fg-0);
+    margin: 0 0 6px;
+}
+
+.rec-form-hint {
+    font-size: 12px;
+    color: var(--fg-2);
+    margin: 0 0 20px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.rec-form-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-bottom: 20px;
+}
+
+.rec-form-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.rec-form-label {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--fg-2);
+}
+
+.rec-input,
+.rec-select {
+    background: var(--bg-4);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-md);
+    color: var(--fg-0);
+    font-family: var(--font-ui);
+    font-size: 13px;
+    padding: 7px 10px;
+    width: 100%;
+    transition: border-color 0.12s;
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+.rec-input::placeholder { color: var(--fg-3); }
+
+.rec-input:focus,
+.rec-select:focus {
+    outline: none;
+    border-color: var(--acc-cyan);
+}
+
+.rec-select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23607080' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    padding-right: 28px;
+}
+
+.rec-start-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.rec-start-error {
+    font-size: 12px;
+    color: var(--acc-red);
+}
+
+/* ── GPS status bar ───────────────────────────────────────────────── */
+
+.rec-gps-status {
+    padding: 10px 14px;
+    background: var(--bg-3);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-md);
+    font-size: 13px;
+    color: var(--fg-1);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* ── Controls row ─────────────────────────────────────────────────── */
+
+.rec-controls {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.rec-share-link {
+    font-size: 12px;
+    color: var(--fg-2);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.rec-share-link a {
+    color: var(--acc-cyan);
+    text-decoration: none;
+}
+
+.rec-share-link a:hover { text-decoration: underline; }
+
+/* ── Stopped / finalizing banner ──────────────────────────────────── */
+
+.rec-stopped-banner {
+    padding: 14px 18px;
+    background: var(--bg-2);
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--acc-lime);
+    border-radius: var(--radius-md);
+    font-size: 0.875rem;
+    color: var(--fg-0);
+    line-height: 1.5;
+}
+
+.rec-stopped-banner a {
+    color: var(--acc-cyan);
+    text-decoration: none;
+    font-weight: 500;
+    margin-left: 8px;
+}
+
+.rec-stopped-banner a:hover { text-decoration: underline; }
+
+/* ── Active session container ─────────────────────────────────────── */
+
+.rec-active-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+/* ── Friends Live panel ───────────────────────────────────────────── */
+
+.rec-friends-panel {
+    background: var(--bg-2);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+}
+
+.rec-panel-header {
+    padding: 12px 18px;
+    border-bottom: 1px solid var(--line);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--fg-0);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.rec-friends-list {
+    display: flex;
+    flex-direction: column;
+}
+
+/* Multi-watch picker: tick riders, open them together on one LiveView map. */
+.rec-live-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 18px;
+    border-bottom: 1px solid var(--line);
+}
+
+.rec-live-selectall {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.75rem;
+    color: var(--fg-2);
+    cursor: pointer;
+}
+
+.rec-friend-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    justify-content: space-between;
+    padding: 12px 18px;
+    border-bottom: 1px solid var(--line);
+}
+
+.rec-friend-item .rec-live-pick { flex-shrink: 0; }
+.rec-friend-item .rec-friend-info { flex: 1; }
+
+.rec-friend-item:last-child { border-bottom: none; }
+
+.rec-friend-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    min-width: 0;
+}
+
+.rec-friend-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--fg-0);
+}
+
+.rec-friend-time {
+    font-size: 12px;
+    color: var(--fg-2);
+    font-family: var(--font-mono);
+}
+
+.rec-friends-empty {
+    padding: 16px 18px;
+    font-size: 13px;
+    color: var(--fg-2);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* ── Session status labels ────────────────────────────────────────── */
+
+.rec-status--recording {
+    color: var(--acc-red);
+    font-weight: 600;
+    font-size: 12px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.rec-status--paused {
+    color: var(--acc-amber);
+    font-weight: 600;
+    font-size: 12px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.rec-status--finalized {
+    color: var(--acc-lime);
+    font-size: 12px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.rec-status--stopped {
+    color: var(--fg-2);
+    font-size: 12px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.rec-status--abandoned {
+    color: var(--fg-3);
+    font-size: 12px;
+    text-decoration: line-through;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.rec-status--failed {
+    color: var(--acc-red);
+    font-weight: 600;
+    font-size: 12px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+/* ── Recent sessions panel ────────────────────────────────────────── */
+
+.rec-sessions-panel {
+    background: var(--bg-2);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+}
+
+.rec-sessions-header {
+    padding: 12px 18px;
+    border-bottom: 1px solid var(--line);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--fg-0);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.rec-sessions-count {
+    font-size: 11px;
+    color: var(--fg-2);
+    font-family: var(--font-mono);
+    font-weight: 400;
+}
+
+.rec-sessions-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+    color: var(--fg-1);
+}
+
+.rec-sessions-table thead tr {
+    border-bottom: 1px solid var(--line);
+}
+
+.rec-sessions-table th {
+    padding: 8px 12px;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--fg-3);
+    font-weight: 400;
+    white-space: nowrap;
+    text-align: left;
+}
+
+.rec-sessions-table td {
+    padding: 9px 12px;
+    border-bottom: 1px solid var(--line);
+    vertical-align: middle;
+    color: var(--fg-1);
+}
+
+.rec-sessions-table tbody tr:last-child td { border-bottom: none; }
+.rec-sessions-table tbody tr:hover td { background: var(--bg-3); }
+
+.rec-sessions-table td:last-child {
+    text-align: right;
+    white-space: nowrap;
+}
+
+.rec-cell-mono {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+}
+
+/* ── Review queue cards ────────────────────────────────────────────────
+   The cards are the dashboard's `.activity-card`, untouched (dashboard.css) — same construction as the
+   trash page. Everything that makes one a REVIEW card lives on the `.rec-review-card` wrapper. */
+
+.rec-review-panel {
+    background: var(--bg-2);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    padding: 14px;
+    margin-bottom: 20px;
+}
+
+.rec-review-cards {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px;
+}
+
+.rec-review-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    border-radius: 12px;
+    background: var(--bg-1);
+    border: 1px solid oklch(0.80 0.15 75 / 0.35);
+    transition: border-color 0.15s;
+}
+
+.rec-review-card:hover,
+.rec-review-card:focus-within { border-color: var(--acc-amber); }
+
+/* Rejected rides read as set aside — dimmed next to a pending one, full colour on hover (you are about to
+   act on this one). Same treatment as the trash cards. */
+.rec-review-card--trashed {
+    border-color: var(--line);
+    opacity: 0.72;
+    filter: grayscale(0.55);
+    transition: opacity 0.15s, filter 0.15s, border-color 0.15s;
+}
+
+.rec-review-card--trashed:hover,
+.rec-review-card--trashed:focus-within { opacity: 1; filter: none; border-color: var(--line-2); }
+
+/* The card's own delete button means "delete this activity" — but this ride is not one yet. The footer owns
+   the verbs that do mean something here (approve, delete-to-trash, restore). */
+.rec-review-card .activity-delete-btn { display: none; }
+
+/* The card is an <a> to Details, which opens a pending ride in review mode — keep the link live and let the
+   wrapper's own controls sit above it. */
+.rec-review-card .activity-card { border: none; background: transparent; border-radius: 12px 12px 0 0; }
+
+.rec-review-select {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    z-index: 3;
+    display: inline-flex;
+    padding: 4px;
+    border-radius: 6px;
+    background: oklch(from var(--bg-1) l c h / 0.82);
+    backdrop-filter: blur(4px);
+    cursor: pointer;
+}
+
+.rec-review-badge {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 3;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 9px;
+    border-radius: 999px;
+    background: oklch(from var(--bg-1) l c h / 0.85);
+    backdrop-filter: blur(4px);
+    border: 1px solid oklch(0.80 0.15 75 / 0.45);
+    color: var(--acc-amber);
+    font-size: 11px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.rec-review-badge--trashed { border-color: var(--line); color: var(--fg-3); }
+
+.rec-review-foot {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    padding: 10px 12px;
+    border-top: 1px solid var(--line);
+}
+
+@media (max-width: 1024px) {
+    .rec-review-cards { grid-template-columns: 1fr; }
+}
+
+.rec-review-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+.rec-review-type { padding: 5px 8px; font-size: 12px; }
+
+.rec-bulk-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-wrap: wrap;
+    padding: 8px 12px;
+    margin-bottom: 8px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--bg-3);
+    font-size: 12px;
+}
+
+.rec-bulk-selectall { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+.rec-bulk-count { color: var(--fg-3); font-family: var(--font-mono); }
+.rec-bulk-apply { display: inline-flex; align-items: center; gap: 6px; margin-left: auto; }
+/* padding-right keeps the .rec-select chevron gutter — a shorthand here would paint the caret over the label. */
+.rec-bulk-select { padding: 5px 28px 5px 8px; font-size: 12px; width: auto; }
+
+/* ── Responsive ───────────────────────────────────────────────────── */
+
+@media (max-width: 768px) {
+    .rec-form-grid {
+        grid-template-columns: 1fr;
+    }
+
+    /* The review cards keep their minimap here — they stack. Only the leftover session columns go. */
+    .rec-col-type,
+    .rec-col-points {
+        display: none;
+    }
+
+    .rec-review-foot { justify-content: flex-start; }
+}
+

@@ -1,0 +1,42 @@
+{
+  "fixtureVersion": 1,
+  "name": "append-mixed-channels",
+  "description": "E16: target has heartRate but not cadence, source the reverse -> NullQ fill both directions",
+  "sources": {
+    "301": {
+      "time": [1000, 1010],
+      "lat": [47000000, 47000100],
+      "lng": [8000000, 8000100],
+      "distance": [0, 100],
+      "heartRate": [120, 121]
+    },
+    "302": {
+      "time": [2000, 2010],
+      "lat": [47000200, 47000300],
+      "lng": [8000200, 8000300],
+      "distance": [0, 50],
+      "cadence": [80, 81]
+    }
+  },
+  "script": { "schemaVersion": 1, "ops": [
+    { "op": "loadActivity", "activityId": 301 },
+    { "op": "loadActivity", "activityId": 302 },
+    { "op": "append", "target": 0, "source": 1, "timeMode": "keep" }
+  ] },
+  "expect": {
+    "slots": [
+      {
+        "slotId": 0,
+        "origin": { "activityId": 301 },
+        "channels": {
+          "time": [1000, 1010, 2000, 2010],
+          "lat": [47000000, 47000100, 47000200, 47000300],
+          "lng": [8000000, 8000100, 8000200, 8000300],
+          "distance": [0, 100, 100, 150],
+          "heartRate": [120, 121, null, null],
+          "cadence": [null, null, 80, 81]
+        }
+      }
+    ]
+  }
+}

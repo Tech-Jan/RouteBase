@@ -1,0 +1,525 @@
+/* segment-statistics.css — Segment Statistics page-specific styles */
+/* Design tokens, shell, buttons, page-header, and empty-state live in cockpit-tokens/shell/components.css */
+
+/* ── Owner panel ─────────────────────────────────────────────────────────── */
+
+.seg-owner-panel {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+/* Segment name + attempts count on one baseline-aligned row. */
+.seg-title-row {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.seg-select {
+  width: 100%;
+  background: var(--bg-3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  color: var(--fg-0);
+  font-family: var(--font-ui);
+  font-size: 13px;
+  padding: 6px 10px;
+  cursor: pointer;
+  outline: none;
+}
+.seg-select:focus { border-color: var(--acc-cyan); }
+
+.seg-threshold-label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--fg-2);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.seg-number-input {
+  width: 52px;
+  background: var(--bg-3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  color: var(--fg-0);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  padding: 3px 6px;
+  text-align: center;
+  outline: none;
+  flex-shrink: 0;
+}
+.seg-number-input:focus { border-color: var(--acc-cyan); }
+
+.seg-reset-link {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--fg-3);
+  text-decoration: none;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.seg-reset-link:hover { color: var(--acc-cyan); }
+
+/* ── Hero map ────────────────────────────────────────────────────────────── */
+
+.seg-hero {
+  position: relative;
+  height: 700px;
+  min-height: 700px;
+  flex-shrink: 0;
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--line);
+  overflow: hidden;
+  background: var(--bg-2);
+}
+
+#map {
+  width: 100%;
+  height: 100%;
+  background-color: oklch(0.30 0.015 210);
+}
+
+.seg-hero-overlay {
+  position: absolute;
+  z-index: 1000;
+}
+
+.seg-hero-tr {
+  top: 12px;
+  right: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Map toolbar pills / controls */
+
+/* Surface + overlay stacking come from .toolbar-cockpit (cockpit-components.css). */
+
+/* ── Toolbar dropdowns (details/summary) ─────────────────────────────────── */
+/* Values hug their content so the controls stay compact and share one row. */
+/* Keep just the Show box stable (its options differ in length) so switching modes
+   doesn't shove the neighbouring controls; sized to the longest label. */
+#mapModeValue { min-width: 8ch; }
+
+/* "Filtered" cue — appears only when some efforts are hidden, so vanished map tracks
+   (and the re-fit charts) aren't a surprise. Toggled via the [hidden] attribute in JS. */
+.seg-filter-pill {
+  display: inline-flex;
+  align-items: center;
+  height: 30px;
+  padding: 0 10px;
+  flex-shrink: 0;
+  font-size: 11px;
+  font-weight: 600;
+  font-family: var(--font-ui);
+  white-space: nowrap;
+  color: var(--acc-cyan);
+  background: color-mix(in srgb, var(--acc-cyan) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--acc-cyan) 40%, transparent);
+  border-radius: var(--radius-md);
+}
+.seg-filter-pill[hidden] { display: none; }
+
+/* Live chunked-load progress counter next to the map toolbar (empty when idle). */
+.seg-map-status {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  font-size: 11px;
+  font-family: var(--font-ui);
+  white-space: nowrap;
+  color: var(--text-muted, #8a94a6);
+}
+.seg-map-status:empty { display: none; }
+
+.seg-map-expand-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: var(--radius-md);
+  background: oklch(0.14 0.008 240 / 0.85);
+  backdrop-filter: blur(8px);
+  border: 1px solid var(--line);
+  color: var(--fg-2);
+  font-size: 13px;
+  cursor: pointer;
+  transition: color 0.1s, border-color 0.1s;
+}
+.seg-map-expand-btn:hover { color: var(--fg-0); border-color: var(--line-2); }
+
+/* Hero fullscreen overlay */
+
+.seg-hero.map-fullscreen {
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  /* 9999, matching activities.css / activity-details.css / liveview.css. It was 1500 — the odd one out,
+     from before those settled on a tier, and the only .map-fullscreen not at 9999 even though the same
+     shared mapFullscreen() helper adds the class to all four. It only surfaced when the chart readout
+     had to be lifted over the race replay's dock (cockpit-components.css): anything tall enough to clear
+     9001 would have floated over THIS page's fullscreen map alone.
+     Safe to raise: the only other z-index here is .seg-hero-overlay's 1000, which is a CHILD of this box,
+     so it rides the new stacking context rather than competing with it. */
+  z-index: 9999 !important;
+  border-radius: 0 !important;
+  margin: 0 !important;
+}
+
+.seg-hero.map-fullscreen #map {
+  height: 100% !important;
+  width: 100% !important;
+  border-radius: 0 !important;
+}
+
+body.map-fullscreen-active { overflow: hidden; }
+body.map-fullscreen-active .cockpit-sidebar { display: none; }
+
+/* Replay button */
+
+.seg-map-toolbar .seg-replay-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 15px;
+  background: oklch(0.80 0.15 75);
+  border: 1px solid oklch(0.80 0.15 75);
+  border-radius: var(--radius-md);
+  color: oklch(0.10 0.02 75);
+  font-size: 13px;
+  font-weight: 600;
+  font-family: var(--font-ui);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.12s;
+}
+.seg-map-toolbar .seg-replay-btn:hover {
+  background: oklch(0.86 0.14 75);
+  border-color: oklch(0.86 0.14 75);
+}
+
+/* No efforts ticked → nothing to race; the tooltip says so (segment-stats-replay-ui.ts). */
+.seg-map-toolbar .seg-replay-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* Clicked before the map/effort data finished loading: the start is deferred, not refused, so the
+   button spins until it fires itself (core/pending-action-gate.ts). A click here cancels. */
+.seg-map-toolbar .seg-replay-btn.is-waiting {
+  background: oklch(0.80 0.15 75 / 0.55);
+  border-color: oklch(0.80 0.15 75 / 0.55);
+}
+.seg-map-toolbar .seg-replay-btn.is-waiting i {
+  display: inline-block;
+  animation: seg-replay-wait-spin 0.9s linear infinite;
+}
+@keyframes seg-replay-wait-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .seg-map-toolbar .seg-replay-btn.is-waiting i { animation: none; }
+}
+
+/* ── Heatmap "Show" view item ─────────────────────────────────────────────
+   Warm-red tint so the raster view reads as distinct from the line views.
+   NOTE: .map-dd-item sets display:block, which overrides the UA [hidden] rule —
+   so hidden/disabled states need explicit handling here. */
+.map-dd-item[hidden] { display: none; }
+.map-dd-item[data-heatmap-view]         { background: oklch(0.68 0.20 40 / 0.14); }
+.map-dd-item[data-heatmap-view]:hover   { background: oklch(0.68 0.20 40 / 0.26); color: var(--fg-0); }
+.map-dd-item[data-heatmap-view].active  { background: oklch(0.68 0.20 40 / 0.85); color: oklch(0.14 0.02 40); }
+.map-dd-item[data-heatmap-view]:disabled { opacity: 0.5; cursor: default; background: oklch(0.68 0.20 40 / 0.06); }
+/* Collapsed summary value echoes the heat colour when a heatmap view is selected. */
+.map-dd-value.is-heatmap { color: oklch(0.72 0.19 40); font-weight: 600; }
+
+/* Owner "stale" hint next to the Regenerate button */
+.seg-heatmap-stale-hint {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: oklch(0.78 0.14 75);
+  padding: 2px 6px;
+  border: 1px solid oklch(0.78 0.14 75 / 0.4);
+  border-radius: var(--radius-sm);
+}
+
+/* ── KPI strip (segment-specific variant) ────────────────────────────────── */
+
+.seg-kpi-strip {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+}
+
+.seg-kpi-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 14px;
+  border-right: 1px solid var(--line);
+}
+.seg-kpi-item:last-child { border-right: none; }
+
+.seg-kpi-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--fg-3);
+}
+
+.seg-kpi-value {
+  font-family: var(--font-mono);
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--fg-0);
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+.seg-kpi-value--sm { font-size: 16px; }
+
+.seg-kpi-unit {
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--fg-2);
+}
+
+/* Secondary "/ total" readout appended to a KPI value — dim, tracks the filtered efforts. */
+.seg-kpi-total {
+  color: var(--fg-3);
+  font-weight: 400;
+}
+.seg-kpi-total:empty { display: none; }
+
+.seg-kpi-label-total {
+  color: var(--fg-3);
+  opacity: 0.7;
+}
+
+/* ── Charts card ─────────────────────────────────────────────────────────── */
+
+.stats-card {
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: 18px 16px;
+}
+
+.stats-card h4 {
+  color: var(--fg-0);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* (chart panel styles in segment-statistics-charts.css) */
+
+/* ── Efforts grid cell helpers (the table itself is the reusable core/grid) ─── */
+/* Visibility (eye) + statsbox (list) selection columns and the filter/sort/resize chrome are styled by
+   grid-filter.css (.grid-table / .grid-sel-*). Only the per-cell content classes live here. */
+
+.rank-medal {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.rank-gold   { background: oklch(0.80 0.16 90);  color: oklch(0.20 0.04 90); }
+.rank-silver { background: oklch(0.72 0.04 240); color: oklch(0.20 0.01 240); }
+.rank-bronze { background: oklch(0.65 0.10 50);  color: oklch(0.20 0.03 50); }
+
+.effort-color-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  margin-right: 5px;
+  vertical-align: middle;
+  flex-shrink: 0;
+}
+
+/* ── Efforts grid helpers ────────────────────────────────────────────────── */
+
+.seg-dim          { color: var(--fg-3); }
+
+.seg-table-header {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 12px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+  user-select: none;
+  cursor: pointer;
+}
+.seg-table-header-actions { display: flex; gap: 6px; flex-shrink: 0; }
+
+.seg-act-type   { font-size: 11px; color: var(--fg-3); }
+.seg-rider-me   { font-size: 11px; color: var(--fg-3); }
+.seg-rider-other { font-size: 11px; color: var(--acc-cyan); }
+
+.seg-eff-name-link { color: inherit; text-decoration: none; }
+.seg-eff-name-link:hover { text-decoration: underline; color: var(--acc-cyan); }
+
+/* Rows marked for removal (pending Apply): grey out everything except the undo action. */
+#segEffortsGrid tr:has([data-pending-remove]) td { opacity: 0.45; }
+#segEffortsGrid tr:has([data-pending-remove]) td.seg-eff-actions { opacity: 1; }
+
+/* Apply button: sits with the other toolbar actions, highlighted once there's something to sync. */
+.seg-apply-btn { order: -1; }
+.seg-apply-btn--dirty {
+  border-color: var(--acc-cyan, #36c5d0);
+  color: var(--acc-cyan, #36c5d0);
+}
+.seg-apply-btn:disabled { opacity: 0.5; cursor: default; }
+.seg-apply-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  margin-left: 4px;
+  border-radius: 8px;
+  background: var(--acc-cyan, #36c5d0);
+  color: var(--bg-0, #0e1116);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.seg-match-badge {
+  display: inline-block;
+  padding: 2px 7px;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.seg-match-high { background: oklch(0.40 0.14 145 / 0.35); color: oklch(0.82 0.14 145); }
+.seg-match-med  { background: oklch(0.44 0.13 75 / 0.30);  color: oklch(0.82 0.13 75); }
+.seg-match-low  { background: var(--bg-4); color: var(--fg-3); }
+
+/* ── Replay markers ──────────────────────────────────────────────────────── */
+
+.seg-replay-marker {
+  border-radius: 50%;
+  border: 3px solid white;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.45);
+  will-change: transform;
+  backface-visibility: hidden;
+  transition: transform 0.12s ease, box-shadow 0.12s ease, opacity 0.12s ease;
+}
+
+.seg-replay-marker.marker-finished { opacity: 0.35; box-shadow: none; }
+
+.seg-replay-marker.marker-highlighted {
+  border-color: #ffe066;
+  border-width: 4px;
+  box-shadow:
+    0 0 0 4px rgba(255, 224, 102, 0.45),
+    0 0 14px 6px rgba(255, 200, 0, 0.35),
+    0 3px 8px rgba(0, 0, 0, 0.5);
+  transform: scale(1.45);
+  animation: seg-marker-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes seg-marker-pulse {
+  0%   { box-shadow: 0 0 0 4px rgba(255, 224, 102, 0.45), 0 0 14px 6px rgba(255, 200, 0, 0.35), 0 3px 8px rgba(0,0,0,0.5); }
+  50%  { box-shadow: 0 0 0 8px rgba(255, 224, 102, 0.20), 0 0 22px 10px rgba(255, 200, 0, 0.18), 0 3px 8px rgba(0,0,0,0.5); }
+  100% { box-shadow: 0 0 0 4px rgba(255, 224, 102, 0.45), 0 0 14px 6px rgba(255, 200, 0, 0.35), 0 3px 8px rgba(0,0,0,0.5); }
+}
+
+/* ── Collapsible chevron ─────────────────────────────────────────────────── */
+
+.stats-card[data-collapsible-card] [data-collapsible-toggle] { user-select: none; cursor: pointer; }
+
+.stats-card[data-collapsible-card] .collapsible-chevron {
+  float: right;
+  transition: transform 0.2s;
+  margin-top: 0.15em;
+  color: var(--fg-2);
+}
+
+/* ── Responsive ──────────────────────────────────────────────────────────── */
+
+@media (max-width: 1024px) {
+  .seg-kpi-strip { grid-template-columns: repeat(3, 1fr); }
+  .seg-kpi-item:nth-child(3) { border-right: none; }
+  .seg-kpi-item:nth-child(4),
+  .seg-kpi-item:nth-child(5),
+  .seg-kpi-item:nth-child(6) { border-top: 1px solid var(--line); }
+  .seg-kpi-item:nth-child(6) { border-right: none; }
+
+  .seg-hero { height: 500px; min-height: 500px; }
+  .seg-owner-panel { max-width: 100%; min-width: 0; }
+}
+
+/* Scroll container for the efforts grid: the shared grid's sticky header + filter row stay pinned
+   inside it, plus the usual sideways scroll when the fixed column widths exceed the card.
+   Constant-size scroll window: fixed height (not max-height) so the grid scrolls its own rows and the
+   page height never changes with the result count — no one-frame jump-to-top when a filter leaves few
+   efforts. Matches .act-table-wrapper. (Also drives the synced top scrollbar + page-first scroll lock.) */
+.table-responsive {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  height: clamp(320px, 60vh, 760px);
+  overflow-y: auto;
+  /* Reserve the scrollbar gutter so columns don't shift when the bar appears on filter. */
+  scrollbar-gutter: stable;
+}
+
+@media (max-width: 768px) {
+  .seg-kpi-strip { grid-template-columns: repeat(2, 1fr); }
+  .seg-kpi-item:nth-child(2) { border-right: none; }
+  .seg-kpi-item:nth-child(3),
+  .seg-kpi-item:nth-child(4),
+  .seg-kpi-item:nth-child(5),
+  .seg-kpi-item:nth-child(6) { border-top: 1px solid var(--line); }
+  .seg-kpi-item:nth-child(3),
+  .seg-kpi-item:nth-child(5) { border-right: 1px solid var(--line); }
+  .seg-kpi-item:nth-child(4),
+  .seg-kpi-item:nth-child(6) { border-right: none; }
+
+  .seg-hero { height: 550px; min-height: 550px; }
+  .seg-owner-panel { width: 100%; }
+
+  /* Tighter cards on phones so charts/tables use more of the screen width. */
+  .stats-card { padding: 14px 8px; }
+
+  .seg-map-toolbar {
+    padding: 6px 10px;
+    gap: 4px;
+  }
+
+  /* Replay stays filled amber like the activity details toolbar; collapse to
+     its ▶ icon so the toolbar (Show · Style · Replay · Size) stays on one row.
+     Bigger than the neighbouring pills — it's the primary action, and the lone
+     icon needs a real touch target. */
+  .seg-map-toolbar .seg-replay-btn {
+    padding: 4px 17px;
+    font-size: 17px;
+  }
+  .seg-map-toolbar .seg-replay-btn .seg-replay-label { display: none; }
+
+}

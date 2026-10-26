@@ -1,0 +1,504 @@
+/* Segment Replay - Multi-effort race comparison styling */
+
+/* ====================================================================
+   FULLSCREEN � applied to the existing map card (.stats-card)
+   ==================================================================== */
+
+.seg-replay-fullscreen {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    z-index: 8999 !important;
+    margin: 0 !important;
+    border-radius: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+}
+
+.seg-replay-fullscreen #map {
+    height: 100vh !important;
+    width: 100% !important;
+    border-radius: 0 !important;
+}
+
+/* Hide hero overlays so replay controls are the only UI during fullscreen */
+.seg-replay-fullscreen .seg-hero-overlay {
+    display: none !important;
+}
+
+/* MapLibre corner controls (compass + 3D terrain) live top-left, where the
+   effort sidebar covers them in fullscreen — drop them just below the
+   collapsed sidebar header. The expanded sidebar (z-index 9002, above the
+   map) intentionally covers them: collapse the list to reach the controls. */
+.seg-replay-fullscreen .maplibregl-ctrl-top-left {
+    /* Controls carry a 10px built-in margin → renders at 16px/56px, i.e.
+       left-aligned with the sidebar, snug below its collapsed bottom edge (~52px). */
+    left: 6px;
+    top: 46px;
+}
+
+body.seg-replay-fullscreen-active {
+    overflow: hidden;
+}
+
+/* Both bars, not just the sidebar: `.cockpit-main` is `isolation: isolate`, so the fixed stage inside it
+   cannot out-paint either. The tabbar half is today also covered by `replay-active` (fullscreen is only
+   reachable from a running replay) — stated here anyway, so this flag stands on its own. */
+body.seg-replay-fullscreen-active .cockpit-sidebar,
+body.seg-replay-fullscreen-active .cockpit-tabbar {
+    display: none;
+}
+
+/* ====================================================================
+   OVERLAY SHELL � fixed over the fullscreened map card
+   ==================================================================== */
+
+.segment-replay-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 9000;
+    display: none;
+    pointer-events: none;
+}
+
+.segment-replay-overlay.active {
+    display: block;
+}
+
+/* Every direct interactive child re-enables pointer events */
+#replayEffortSidebar,
+#segReplayControls,
+#segReplayExitFloat,
+#segReplayInfo {
+    pointer-events: auto;
+}
+
+/* ====================================================================
+   EFFORT SIDEBAR (LEFT)
+   ==================================================================== */
+
+.replay-effort-sidebar {
+    position: fixed;
+    top: 16px;
+    left: 16px;
+    z-index: 9002;
+    background: rgba(10, 10, 14, 0.93);
+    border-radius: 14px;
+    padding: 12px 10px;
+    color: white;
+    /* Shrink-wrap to the widest effort row (capped at the old fixed 230px) so
+       expanding/collapsing never changes the width — the hidden body keeps its
+       intrinsic width, so both states resolve to the same size. */
+    width: auto;
+    max-width: 230px;
+    max-height: calc(100vh - 160px);
+    overflow-y: auto;
+    overflow-x: hidden;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.55);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    font-size: 12px;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255,255,255,0.2) transparent;
+    transition: border-color 0.25s ease, box-shadow 0.25s ease, background-color 0.25s ease;
+}
+
+/* HELD OPEN — clicked, so it will not settle back until you click it again (core/panel-hold-open). The
+   same cue as the race sidebar's, deliberately: one behaviour should not look like two features. A lit
+   EDGE rather than another glow, because the panel already carries a heavy drop shadow. */
+.replay-effort-sidebar.is-held {
+    border-color: rgba(240, 168, 24, 0.55);
+    background: rgba(14, 12, 8, 0.95);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(240, 168, 24, 0.28);
+}
+
+/* The transition is decoration; the state is not. Someone who asked for less motion still needs to see
+   that the panel is latched. */
+@media (prefers-reduced-motion: reduce) {
+    .replay-effort-sidebar { transition: none; }
+}
+
+.replay-effort-sidebar::-webkit-scrollbar { width: 4px; }
+.replay-effort-sidebar::-webkit-scrollbar-thumb {
+    background: rgba(255,255,255,0.2);
+    border-radius: 2px;
+}
+
+/* ?? Sidebar collapsible header ???????????????????????????????????? */
+
+.replay-sidebar-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    margin: 0 0 10px 2px;
+    padding-bottom: 7px;
+    border-bottom: 1px solid oklch(0.80 0.15 75 / 0.25);
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    gap: 4px;
+}
+
+.replay-sidebar-header span {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    color: var(--acc-amber);
+    font-weight: 700;
+}
+
+.replay-sidebar-chevron {
+    font-size: 11px;
+    color: oklch(0.80 0.15 75 / 0.65);
+    transition: transform 0.25s ease;
+    flex-shrink: 0;
+}
+
+/* Follow/unfollow camera toggle in the sidebar header. margin-right:auto keeps it
+   snug to the icon while the dead space up to the chevron stays part of the header —
+   a stretched (flex:1) button swallowed collapse-taps aimed at that space. */
+.replay-follow-toggle {
+    margin-right: auto;
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    color: rgba(255, 255, 255, 0.55);
+    transition: color 0.15s;
+}
+
+.replay-follow-toggle:hover,
+.replay-follow-toggle.is-following {
+    color: var(--acc-amber);
+}
+
+/* Remove old h6 rule now that header is .replay-sidebar-header */
+.replay-effort-sidebar h6:not(.replay-sidebar-header) {
+    display: none;
+}
+
+/* Body � smooth collapse.
+   Compact by default (~5 rows, rows ~55px); selecting an effort or scrolling grows it (.is-expanded, via
+   effort-list-expand.ts) for a few seconds, then it eases back. The existing transition makes it smooth. */
+.replay-sidebar-body {
+    max-height: 280px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    transition: max-height 0.3s cubic-bezier(.4,0,.2,1),
+                opacity    0.25s ease;
+    opacity: 1;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255,255,255,0.2) transparent;
+}
+
+.replay-sidebar-body.is-expanded {
+    max-height: 70vh;
+}
+
+.replay-sidebar-body::-webkit-scrollbar { width: 4px; }
+.replay-sidebar-body::-webkit-scrollbar-thumb {
+    background: rgba(255,255,255,0.2);
+    border-radius: 2px;
+}
+
+.replay-effort-sidebar.rs-collapsed .replay-sidebar-body {
+    max-height: 0;
+    opacity: 0;
+    overflow: hidden;
+}
+
+.replay-effort-sidebar.rs-collapsed .replay-sidebar-chevron {
+    transform: rotate(180deg);
+}
+
+/* Collapsed: shrink to the header's content (icon · follow · chevron) instead
+   of holding the full 230px list width, and tighten the height. */
+.replay-effort-sidebar.rs-collapsed {
+    width: auto;
+    min-width: 0;
+    padding-bottom: 8px;
+    box-shadow: none;
+}
+
+.replay-effort-sidebar.rs-collapsed .replay-sidebar-header {
+    margin-bottom: 0;
+    padding-bottom: 0;
+    border-bottom: none;
+}
+
+/* ====================================================================
+   BOTTOM CONTROLS BAR
+   The bar reuses .replay-controls from replay-controls.css for the single-row
+   layout, glass background, border and shadow. These overrides only fix
+   positioning (fixed vs absolute); the segment-specific element IDs inherit
+   the shared button/stepper/seek styling.
+   ==================================================================== */
+
+/* ====================================================================
+   THE BOTTOM DOCK — shared with the activity replay; see .replay-dock in replay-controls.css for how the
+   stack works. Only two things are segment-specific: this page's map IS the viewport (#map is pinned to
+   100vh), so the dock is fixed rather than absolute, and it has to clear the replay overlay's z-layers.
+   ==================================================================== */
+
+#segReplayDock {
+    position: fixed;
+    z-index: 9002;
+}
+
+/* The transport bar carries no segment-specific skin: the seek slider (.replay-seek), the play button
+   (.replay-play), the mode toggle and the speed stepper are all styled once in replay-controls.css and
+   rendered once by _ReplayDock.cshtml. Only the dock's POSITION above is this page's business. */
+
+/* ====================================================================
+   FLOATING EXIT BUTTON � top-right
+   ==================================================================== */
+
+#segReplayExitFloat {
+    position: fixed;
+    top: 16px;
+    right: 16px;
+    z-index: 9010;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border-radius: 50%;
+    border: none;
+    background: rgba(220,53,69,0.85);
+    color: white;
+    font-size: 18px;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    backdrop-filter: blur(6px);
+    box-shadow: 0 2px 10px rgba(0,0,0,0.4);
+    transition: background 0.15s, transform 0.15s;
+    touch-action: manipulation;
+}
+#segReplayExitFloat:hover  { background: rgba(167,29,42,0.95); transform: scale(1.1); }
+#segReplayExitFloat:active { transform: scale(0.95); }
+#segReplayExitFloat i { color: white !important; font-size: 16px; }
+
+/* ====================================================================
+   LIVE STATS INFO OVERLAY � top-right, just left of exit button
+   Inherits glass panel look from .replay-info-overlay in
+   replay-controls.css; only position needs overriding.
+   ==================================================================== */
+
+#segReplayInfo {
+    position: fixed;
+    top: 16px;
+    right: 64px;   /* clear the 36px exit button + gap */
+    left: auto;
+    z-index: 9002;
+}
+
+/* ====================================================================
+   LOADING OVERLAY
+   ==================================================================== */
+
+.replay-loading-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 9010;
+    background: rgba(0,0,0,0.7);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    gap: 12px;
+    pointer-events: auto;
+}
+
+.replay-loading-overlay .spinner-border { width: 40px; height: 40px; }
+
+/* ====================================================================
+   DISABLE TOUCH-PASSTHROUGH ON MAP CANVAS DURING REPLAY
+   ==================================================================== */
+
+.seg-replay-fullscreen #map canvas { touch-action: none; }
+
+/* ====================================================================
+   RESPONSIVE
+   ==================================================================== */
+
+/* Nothing here for the dock: its width at every size, and the fact that its bar keeps the bottom edge in
+   both states, are the shared rules' business (.replay-dock-bar in replay-controls.css).
+   This page used to inset the bar by 32 px below 900 px while the strip under it stayed full-bleed — two
+   different widths for one surface, and on a phone the 32 px came straight out of the scrubber. */
+
+@media (max-width: 600px) {
+    #segReplayExitFloat { top: 12px; right: 12px; width: 34px; height: 34px; }
+
+    #segReplayInfo {
+        /* Stack below the exit button (12 + 34 + 8 gap) and align flush to the
+           same right edge, instead of being pinched left beside it. */
+        top: 54px;
+        right: 12px;
+        min-width: 130px;
+        max-width: calc(100% - 24px);
+        padding: 10px 12px;
+        border-radius: 12px;
+    }
+
+    .replay-effort-sidebar {
+        top: 8px;
+        left: 8px;
+        width: calc(50vw - 16px);
+        max-width: 220px;
+        max-height: 45vh;
+        padding: 8px;
+        font-size: 11px;
+    }
+
+    .rei-name  { font-size: 11px; }
+    .rei-speed { font-size: 11px; }
+    .rei-time  { font-size: 10px; min-width: 36px; }
+    .rei-gap   { font-size: 9px;  min-width: 30px; }
+
+    /* Seek thumb, play/pause and stepper sizing all come from the shared mobile rules (.replay-seek /
+       .replay-play in replay-controls.css) — this page's copy said the same thing twice. */
+}
+
+/* ====================================================================
+   EFFORT SIDEBAR ITEMS
+   ==================================================================== */
+
+.replay-effort-item {
+    padding: 8px 6px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.15s;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.replay-effort-item:last-child {
+    border-bottom: none;
+}
+
+.replay-effort-item:hover {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+/* Row A � swatch + name + rank */
+.rei-row-a {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 4px;
+}
+
+.rei-row-a .replay-effort-checkbox {
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+    accent-color: var(--acc-amber);
+    cursor: pointer;
+}
+
+.rei-swatch {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.rei-name {
+    font-size: 12px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.9);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex: 1;
+    min-width: 0;
+}
+
+.rei-rank {
+    font-size: 11px;
+    flex-shrink: 0;
+    color: rgba(255, 255, 255, 0.5);
+}
+
+.rei-rank.gold   { color: var(--acc-amber); }
+.rei-rank.silver { color: #C0C0C0; }
+.rei-rank.bronze { color: #CD7F32; }
+
+/* Row B � time + speed + gap */
+.rei-row-b {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+}
+
+.rei-time {
+    color: var(--fg-1);
+    font-variant-numeric: tabular-nums;
+    font-family: var(--font-mono);
+    min-width: 48px;
+    flex-shrink: 0;
+}
+
+.rei-speed {
+    color: var(--fg-0);
+    font-variant-numeric: tabular-nums;
+    font-family: var(--font-mono);
+    min-width: 60px;
+    flex-shrink: 0;
+}
+
+.rei-gap {
+    color: oklch(0.80 0.15 75 / 0.7);
+    font-size: 10px;
+    font-variant-numeric: tabular-nums;
+    font-family: var(--font-mono);
+    min-width: 36px;
+    flex-shrink: 0;
+}
+
+/* Speed bar */
+.rei-bar-track {
+    height: 4px;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 2px;
+    margin-top: 4px;
+    overflow: hidden;
+}
+
+.rei-bar-fill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 0.15s ease;
+    min-width: 0;
+}
+
+/* ====================================================================
+   LOADING OVERLAY
+   ==================================================================== */
+
+/* Full-res sharpening progress counter in the controls bar (RS2-06). Muted; collapses when empty. */
+.replay-loading-status {
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.6);
+    white-space: nowrap;
+    align-self: center;
+}
+
+.replay-loading-status:empty {
+    display: none;
+}

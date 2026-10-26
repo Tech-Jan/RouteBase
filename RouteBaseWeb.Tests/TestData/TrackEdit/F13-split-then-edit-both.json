@@ -1,0 +1,64 @@
+{
+  "fixtureVersion": 1,
+  "name": "split-then-edit-both",
+  "description": "sequential ops on both split halves (invariant 2): split -> crop head -> head-delete tail",
+  "sources": {
+    "101": {
+      "time": [1000, 1010, 1020, 1030, 1040, 1050],
+      "lat": [47000000, 47000100, 47000200, 47000300, 47000400, 47000500],
+      "lng": [8000000, 8000100, 8000200, 8000300, 8000400, 8000500],
+      "altitude": [1000, 1010, 1020, 1030, 1040, 1050],
+      "distance": [0, 100, 200, 300, 400, 500],
+      "speed": [500, 510, 520, 530, 540, 550],
+      "heartRate": [120, 121, 122, 123, 124, 125],
+      "gradeSmooth": [10, 11, 12, 13, 14, 15],
+      "cadence": [80, 81, 82, 83, 84, 85],
+      "power": [200, 201, 202, 203, 204, 205],
+      "pressure": [101300, 101310, 101320, 101330, 101340, 101350]
+    }
+  },
+  "script": { "schemaVersion": 1, "ops": [
+    { "op": "loadActivity", "activityId": 101 },
+    { "op": "splitAt", "slot": 0, "index": 3 },
+    { "op": "cropTo", "slot": 0, "from": 1, "to": 3 },
+    { "op": "deleteRange", "slot": 1, "from": 0, "to": 0, "timeMode": "keep" }
+  ] },
+  "expect": {
+    "slots": [
+      {
+        "slotId": 0,
+        "origin": { "activityId": 101 },
+        "channels": {
+          "time": [1010, 1020, 1030],
+          "lat": [47000100, 47000200, 47000300],
+          "lng": [8000100, 8000200, 8000300],
+          "altitude": [1010, 1020, 1030],
+          "distance": [0, 100, 200],
+          "speed": [510, 520, 530],
+          "heartRate": [121, 122, 123],
+          "gradeSmooth": [11, 12, 13],
+          "cadence": [81, 82, 83],
+          "power": [201, 202, 203],
+          "pressure": [101310, 101320, 101330]
+        }
+      },
+      {
+        "slotId": 1,
+        "origin": { "splitFromSlotId": 0 },
+        "channels": {
+          "time": [1040, 1050],
+          "lat": [47000400, 47000500],
+          "lng": [8000400, 8000500],
+          "altitude": [1040, 1050],
+          "distance": [0, 100],
+          "speed": [540, 550],
+          "heartRate": [124, 125],
+          "gradeSmooth": [14, 15],
+          "cadence": [84, 85],
+          "power": [204, 205],
+          "pressure": [101340, 101350]
+        }
+      }
+    ]
+  }
+}

@@ -1,0 +1,158 @@
+/* Trash page — deleted rides, restorable until purged. Cockpit tokens (dark surface, see cockpit-tokens.css).
+ *
+ * The cards are the dashboard's `.activity-card`, untouched (dashboard.css). Everything that makes one a TRASH
+ * card lives on the `.trash-card` wrapper below: the grey, the badge, the checkbox, the actions. Keeping it in
+ * the wrapper is what lets the shared card stay ignorant of the trash. */
+
+.trash-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+    padding: 12px 0 16px;
+}
+
+.trash-selectall {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.85rem;
+    color: var(--fg-2);
+    cursor: pointer;
+    user-select: none;
+}
+
+.trash-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.trash-status {
+    padding: 24px 0;
+    color: var(--fg-2);
+    font-size: 0.9rem;
+}
+
+/* ── Card grid ──────────────────────────────────────────────────────────────────
+   Grid, not flow: the shared card binding orders survivors with the CSS `order`
+   property, which only applies to flex/grid children. */
+.trash-cards {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px;
+}
+
+.trash-cards .trash-card.is-hidden {
+    display: none;
+}
+
+@media (max-width: 1024px) {
+    .trash-cards {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ── The trash card = shared card + wrapper chrome ───────────────────────────── */
+.trash-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    border-radius: 12px;
+    background: var(--bg-1);
+    border: 1px solid var(--line);
+    /* Trashed rides read as set aside — dimmed and desaturated next to a live card, without going so far
+       that the minimap stops being recognisable. Full colour on hover: you are about to act on this one. */
+    opacity: 0.72;
+    filter: grayscale(0.55);
+    transition: opacity 0.15s, filter 0.15s, border-color 0.15s;
+}
+
+.trash-card:hover,
+.trash-card:focus-within {
+    opacity: 1;
+    filter: none;
+    border-color: var(--line-2);
+}
+
+/* The card's own delete button is meaningless here — the ride is already deleted. The wrapper's footer owns
+   the two verbs that ARE meaningful (restore, delete permanently). */
+.trash-card .activity-delete-btn {
+    display: none;
+}
+
+/* The card ships as an <a> to Details, and that link works again: the details route opens the owner's own
+   non-released ride in review mode (ActivityViewOptions.AllowOwnerNonReleased). Only the card's own chrome is
+   flattened here — the wrapper draws the border and background. */
+.trash-card .activity-card {
+    background: transparent;
+    border: none;
+    border-radius: 12px 12px 0 0;
+}
+
+.trash-card-select {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    z-index: 3;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 5px;
+    border-radius: 6px;
+    background: oklch(0.2 0.01 250 / 0.72);
+    cursor: pointer;
+}
+
+.trash-row-check,
+#trashSelectAll {
+    accent-color: var(--acc-cyan);
+    cursor: pointer;
+    margin: 0;
+}
+
+/* Status symbol: this is in the trash. */
+.trash-card-badge {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 3;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    border-radius: 6px;
+    background: oklch(0.2 0.01 250 / 0.72);
+    color: var(--fg-2);
+    font-size: 13px;
+}
+
+/* ── Footer: why it's here + what you can do about it ────────────────────────── */
+.trash-card-foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    padding: 10px 14px;
+    border-top: 1px solid var(--line);
+}
+
+.trash-card-why {
+    font-size: 0.78rem;
+    color: var(--fg-3);
+    min-width: 0;
+}
+
+/* A merge source whose product still exists: purging it is the one irreversible choice on this page. */
+.trash-card-why--warn {
+    color: var(--acc-red);
+}
+
+.trash-card-actions {
+    display: flex;
+    gap: 8px;
+    flex: none;
+}

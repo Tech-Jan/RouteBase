@@ -1,0 +1,158 @@
+/* friends.css — Friends page */
+
+/* ── Section panels ─────────────────────────────────────────────────────── */
+.friends-section {
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.friends-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--line);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--fg-0);
+  letter-spacing: -0.01em;
+}
+
+.friends-badge {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--bg-3);
+  border: 1px solid var(--line);
+  color: var(--fg-2);
+  font-weight: 400;
+}
+
+/* ── Table ──────────────────────────────────────────────────────────────── */
+.friends-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.friends-table th {
+  padding: 8px 16px;
+  text-align: left;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--fg-3);
+  border-bottom: 1px solid var(--line);
+}
+
+.friends-table td {
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--line);
+  color: var(--fg-0);
+}
+.friends-table tr:last-child td { border-bottom: none; }
+.friends-table tbody tr:hover td { background: color-mix(in oklch, var(--bg-3) 60%, transparent); }
+
+.friends-table .col-actions {
+  width: 1%;
+  white-space: nowrap;
+  text-align: right;
+}
+
+.friends-table .col-meta {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--fg-2);
+}
+
+/* ── Search section ─────────────────────────────────────────────────────── */
+.friends-search-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--line);
+}
+
+.friends-search-input {
+  flex: 1;
+  max-width: 420px;
+  background: var(--bg-3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  color: var(--fg-0);
+  font-family: var(--font-ui);
+  font-size: 13px;
+  padding: 6px 12px;
+  outline: none;
+  transition: border-color 0.12s;
+}
+.friends-search-input::placeholder { color: var(--fg-3); }
+.friends-search-input:focus { border-color: var(--acc-cyan); }
+
+#searchResults:not(:empty) { padding-bottom: 4px; }
+
+.friends-no-results {
+  padding: 16px 20px;
+  font-size: 13px;
+  color: var(--fg-2);
+}
+
+.friends-error {
+  padding: 16px 20px;
+  font-size: 13px;
+  color: var(--acc-red);
+}
+
+/* ── Toast notifications ────────────────────────────────────────────────── */
+.cockpit-toast-container {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 2000;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.cockpit-toast {
+  padding: 10px 16px;
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  color: var(--fg-0);
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow-2);
+  min-width: 200px;
+  max-width: 360px;
+  animation: toast-slide-in 0.18s ease;
+}
+
+.cockpit-toast--success   { border-color: var(--acc-lime);  color: var(--acc-lime); }
+.cockpit-toast--danger    { border-color: var(--acc-red);   color: var(--acc-red);  }
+.cockpit-toast--secondary { border-color: var(--line);      color: var(--fg-1);     }
+
+@keyframes toast-slide-in {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Responsive ─────────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  /* Hide Email + Date columns on narrow screens */
+  .friends-table .col-hide-mobile { display: none; }
+
+  .friends-search-bar {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 12px 16px;
+  }
+  .friends-search-input { max-width: 100%; }
+}

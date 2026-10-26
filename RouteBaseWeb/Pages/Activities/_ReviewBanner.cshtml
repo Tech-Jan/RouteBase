@@ -1,0 +1,72 @@
+@using RouteBaseWeb.Services.Lifecycle
+@model RouteBaseWeb.Models.Activity
+@* The bar above a ride that is NOT in circulation — an auto-detected recording awaiting review, or a
+   trashed one. It renders only on /Activities/Details/{id}, and only for the owner: every other read path
+   refuses a non-released ride (VisibilityService.VisibleActivities), so there is nothing to gate here.
+
+   The verbs live on the review/trash APIs, not on this page's own action bar — approving a ride is a
+   lifecycle transition, and ActivityViewSurfaces.ForOwnerReview has already turned the editor, segment
+   creation and photo import off. Element ids are DOM contracts (activity/review-banner.ts). *@
+@{
+    var isTrashed = Model.Lifecycle == LifecycleStates.Trashed;
+    var isAuto = Model.Source == ActivitySources.AutoRecording;
+    // Pending = the review queue's own state. A parked in-work ride (no UI mints one today) gets the
+    // explanatory bar without verbs rather than an Approve button that would mean something else.
+    var isPending = !isTrashed && isAuto && Model.LifecycleReason == LifecycleReasons.AwaitingReview;
+    var activityTypes = ActivityTypeVocabulary.Recordable;
+}
+
+<div id="reviewBanner" class="det-review-banner @(isTrashed ? "det-review-banner--trashed" : "")"
+     data-track-id="@Model.TrackId"
+     data-review-source="@(isAuto ? "auto" : "other")"
+     role="status">
+    <div class="det-review-text">
+        @if (isTrashed)
+        {
+            <i class="bi bi-trash3-fill" aria-hidden="true"></i>
+            <span><strong>In the trash</strong> — not counted in your statistics, and permanently deleted once the purge window closes.</span>
+        }
+        else if (isPending)
+        {
+            <i class="bi bi-hourglass-split" aria-hidden="true"></i>
+            <span><strong>Pending review</strong> — this recording is not counted in your statistics and is hidden from your activity list until you approve it.</span>
+        }
+        else
+        {
+            <i class="bi bi-pause-circle" aria-hidden="true"></i>
+            <span><strong>Not in circulation</strong> — hidden from lists, statistics and segments.</span>
+        }
+    </div>
+
+    <div class="det-review-actions">
+        @if (isTrashed)
+        {
+            <button type="button" id="reviewRestoreBtn" class="btn-cockpit btn-cockpit-primary btn-cockpit-sm">
+                <i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i> Restore
+            </button>
+            <a href="/Activities/Trash" class="btn-cockpit btn-cockpit-ghost btn-cockpit-sm">
+                <i class="bi bi-trash" aria-hidden="true"></i> Trash
+            </a>
+        }
+        else if (isPending)
+        {
+            @* Preserve a detected type outside the fixed list so Approve doesn't silently retype it (LR-06). *@
+            <select id="reviewTypeSelect" class="det-select det-review-type" aria-label="Activity type">
+                @if (!string.IsNullOrEmpty(Model.ActivityType) && !activityTypes.Contains(Model.ActivityType))
+                {
+                    <option value="@Model.ActivityType" selected>@Model.ActivityType</option>
+                }
+                @foreach (var t in activityTypes)
+                {
+                    <option value="@t" selected="@(t == Model.ActivityType)">@t</option>
+                }
+            </select>
+            <button type="button" id="reviewApproveBtn" class="btn-cockpit btn-cockpit-primary btn-cockpit-sm">
+                <i class="bi bi-check-lg" aria-hidden="true"></i> Approve
+            </button>
+            <button type="button" id="reviewTrashBtn" class="btn-cockpit btn-cockpit-danger btn-cockpit-sm">
+                <i class="bi bi-trash" aria-hidden="true"></i> Delete
+            </button>
+        }
+    </div>
+</div>

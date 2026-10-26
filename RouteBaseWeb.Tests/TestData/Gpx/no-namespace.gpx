@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="ThirdPartyTool">
+  <trk>
+    <name>Namespace Free Walk</name>
+    <type>walking</type>
+    <trkseg>
+      <trkpt lat="47.2692" lon="11.4041">
+        <ele>500</ele>
+        <time>2023-06-15T09:00:00Z</time>
+      </trkpt>
+      <trkpt lat="47.2700" lon="11.4050">
+        <ele>505</ele>
+        <time>2023-06-15T09:01:00Z</time>
+      </trkpt>
+      <trkpt lat="47.2710" lon="11.4060">
+        <ele>510</ele>
+        <time>2023-06-15T09:02:00Z</time>
+      </trkpt>
+    </trkseg>
+  </trk>
+</gpx>

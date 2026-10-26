@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="Garmin"
+     xmlns="http://www.topografix.com/GPX/1/1"
+     xmlns:gpxtpx="http://www.garmin.com/xmlschemas/TrackPointExtension/v1"
+     xmlns:gpxtrkx="http://www.garmin.com/xmlschemas/TrackStatsExtension/v1">
+  <trk>
+    <name>Morning Run</name>
+    <type>running</type>
+    <extensions>
+      <gpxtrkx:TrackStatsExtension>
+        <gpxtrkx:Distance>5000</gpxtrkx:Distance>
+        <gpxtrkx:Ascent>120</gpxtrkx:Ascent>
+        <gpxtrkx:Descent>80</gpxtrkx:Descent>
+        <gpxtrkx:Calories>350</gpxtrkx:Calories>
+        <gpxtrkx:AvgHeartRate>148</gpxtrkx:AvgHeartRate>
+        <gpxtrkx:AvgCadence>172</gpxtrkx:AvgCadence>
+        <gpxtrkx:TimerTime>1800</gpxtrkx:TimerTime>
+        <gpxtrkx:TotalElapsedTime>1900</gpxtrkx:TotalElapsedTime>
+      </gpxtrkx:TrackStatsExtension>
+    </extensions>
+    <trkseg>
+      <trkpt lat="47.2692" lon="11.4041">
+        <ele>600</ele>
+        <time>2023-06-15T08:00:00Z</time>
+        <extensions>
+          <gpxtpx:TrackPointExtension>
+            <gpxtpx:hr>140</gpxtpx:hr>
+            <gpxtpx:cad>165</gpxtpx:cad>
+            <gpxtpx:power>200</gpxtpx:power>
+          </gpxtpx:TrackPointExtension>
+        </extensions>
+      </trkpt>
+      <trkpt lat="47.2700" lon="11.4050">
+        <ele>610</ele>
+        <time>2023-06-15T08:05:00Z</time>
+        <extensions>
+          <gpxtpx:TrackPointExtension>
+            <gpxtpx:hr>145</gpxtpx:hr>
+            <gpxtpx:cad>170</gpxtpx:cad>
+            <gpxtpx:power>210</gpxtpx:power>
+          </gpxtpx:TrackPointExtension>
+        </extensions>
+      </trkpt>
+      <trkpt lat="47.2710" lon="11.4060">
+        <ele>620</ele>
+        <time>2023-06-15T08:10:00Z</time>
+        <extensions>
+          <gpxtpx:TrackPointExtension>
+            <gpxtpx:hr>150</gpxtpx:hr>
+            <gpxtpx:cad>175</gpxtpx:cad>
+            <gpxtpx:power>220</gpxtpx:power>
+          </gpxtpx:TrackPointExtension>
+        </extensions>
+      </trkpt>
+    </trkseg>
+  </trk>
+</gpx>

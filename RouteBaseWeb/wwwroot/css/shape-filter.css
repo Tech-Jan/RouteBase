@@ -1,0 +1,422 @@
+/* shape-filter.css — painted zone/gate overlay + control panel on the activities map. */
+
+/* ── Overlay (sits above the map container) ───────────────────────────────── */
+.shape-filter-overlay {
+    position: absolute;
+    inset: 0;
+    /* Must sit above Leaflet's map-pane (z-index 400, tiles + markers) so the shapes are
+       visible, but below Leaflet/MapLibre controls (~800-1000) so zoom buttons stay usable.
+       On MapLibre the canvas has no high z-index, so this is safely above it too. */
+    z-index: 450;
+    pointer-events: none; /* toggled to 'auto' by shape-interactions while editing */
+    /* While the overlay is capturing (pointer-events: auto), keep the browser from
+       claiming touch-drags as scroll/pan — otherwise it fires pointercancel mid-drag
+       and you can only place a tiny square on mobile. */
+    touch-action: none;
+}
+
+.shape-filter-svg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+    /* The SVG never captures by itself — in draw mode the overlay div captures, and in
+       select mode only the individual shapes/handles below opt back in. */
+    pointer-events: none;
+}
+
+/* In SELECT mode the overlay is click-through (so empty space pans the map); only the
+   shapes and their handles catch pointers, so tapping a shape starts a move/resize. */
+.shape-filter-overlay--select .shape-rect,
+.shape-filter-overlay--select .shape-gate-line,
+.shape-filter-overlay--select .shape-gate-hit,
+.shape-filter-overlay--select .shape-handle {
+    pointer-events: auto;
+}
+
+/* Fat transparent pickable band around a gate line — see shape-layer.renderGate. */
+.shape-gate-hit {
+    stroke: transparent;
+    stroke-width: 22;
+    fill: none;
+    pointer-events: none;
+}
+
+.shape-rect {
+    fill: rgba(13, 110, 253, 0.12);
+    stroke: #0d6efd;
+    stroke-width: 2;
+    pointer-events: none;
+}
+
+.shape-rect--any {
+    fill: rgba(253, 126, 20, 0.12);
+    stroke: #fd7e14;
+    stroke-dasharray: 6 4;
+}
+
+.shape-rect--selected {
+    stroke-width: 3;
+    fill: rgba(13, 110, 253, 0.2);
+}
+
+.shape-rect--any.shape-rect--selected {
+    fill: rgba(253, 126, 20, 0.2);
+}
+
+/* avoid = "no entry" (red): tracks touching this zone are excluded. Diagonal hatch (via the
+   <pattern> shape-layer.ts defines once per overlay) reads as "excluded" even without color. */
+.shape-hatch-line {
+    stroke: #dc3545;
+    stroke-width: 3;
+}
+
+.shape-rect--avoid {
+    fill: url(#shape-hatch-avoid);
+    stroke: #dc3545;
+    stroke-dasharray: 3 3;
+}
+
+.shape-rect--avoid.shape-rect--selected {
+    stroke-width: 3;
+}
+
+/* within = "fence" (amber): the effort must never leave these zones. No fill —
+   it reads as a boundary, not a target area. */
+.shape-rect--within {
+    fill: none;
+    stroke: #ffc107;
+    stroke-width: 3;
+    stroke-dasharray: 10 6;
+}
+
+.shape-rect--within.shape-rect--selected {
+    fill: rgba(255, 193, 7, 0.08);
+}
+
+/* endpoint anchors: start = green, finish = purple, either = teal. The track's first/last
+   sample must land inside — solid outline (a target area), distinct hue per endpoint. */
+.shape-rect--start {
+    fill: rgba(25, 135, 84, 0.12);
+    stroke: #198754;
+}
+
+.shape-rect--start.shape-rect--selected {
+    fill: rgba(25, 135, 84, 0.2);
+}
+
+.shape-rect--finish {
+    fill: rgba(111, 66, 193, 0.12);
+    stroke: #6f42c1;
+}
+
+.shape-rect--finish.shape-rect--selected {
+    fill: rgba(111, 66, 193, 0.2);
+}
+
+.shape-rect--either {
+    fill: rgba(32, 201, 151, 0.12);
+    stroke: #20c997;
+}
+
+.shape-rect--either.shape-rect--selected {
+    fill: rgba(32, 201, 151, 0.2);
+}
+
+.shape-badge {
+    fill: var(--bs-body-color, #212529);
+    font-size: 11px;
+    font-weight: 600;
+    paint-order: stroke;
+    stroke: var(--bs-body-bg, #fff);
+    stroke-width: 3px;
+    pointer-events: none;
+}
+
+.shape-handle {
+    fill: #fff;
+    stroke: #0d6efd;
+    stroke-width: 2;
+    cursor: grab;
+    pointer-events: none;
+}
+
+/* ── Gates: bold directed line + ticks + arrowhead(s) + start/finish badge ──────────── */
+.shape-gate-line {
+    stroke: #6f42c1;
+    stroke-width: 4;
+    stroke-linecap: round;
+    pointer-events: none;
+}
+
+.shape-gate-line--selected {
+    stroke-width: 6;
+}
+
+.shape-gate-tick {
+    stroke: #6f42c1;
+    stroke-width: 2;
+    pointer-events: none;
+}
+
+.shape-gate-arrow {
+    fill: #6f42c1;
+    pointer-events: none;
+}
+
+.shape-gate-badge {
+    fill: var(--bs-body-color, #212529);
+    font-size: 12px;
+    font-weight: 600;
+    text-anchor: middle;
+    paint-order: stroke;
+    stroke: var(--bs-body-bg, #fff);
+    stroke-width: 3px;
+    pointer-events: none;
+}
+
+/* ── Control panel (its own toolbar below the map) ────────────────────────── */
+/* The paint module is a vertical stack of rows so each logical group keeps its own
+   line — this stays tidy on mobile instead of collapsing into one wrapping blob. */
+.shape-filter-panel {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.4rem;
+    width: 100%;
+}
+
+.shape-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    width: 100%;
+}
+
+.shape-controls[hidden] {
+    display: none;
+}
+
+.shape-section-title {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--bs-secondary-color, #6c757d);
+    margin-top: 0.2rem;
+}
+
+/* Live legend sentence: "Efforts run G1 → G2, passing Z1 or Z2, … 34 tracks · 61 efforts." */
+.shape-summary {
+    font-size: 0.78rem;
+    color: var(--bs-secondary-color, #6c757d);
+    font-style: italic;
+}
+
+/* One horizontal group; wraps only as a last resort on extremely narrow screens. */
+.shape-row {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    flex-wrap: wrap;
+}
+
+/* The role, mode/action, and save rows span the full panel width as a uniform grid so
+   their columns line up. Buttons flex to equal widths; the save row's name field flexes
+   while Save keeps its natural size. We deliberately leave the buttons' min-width at its
+   `auto` default (their content size) so they wrap to a new line on very narrow / mobile
+   widths instead of overflowing — keeping the layout readable on small screens. */
+.shape-row--fill {
+    width: 100%;
+}
+
+.shape-row--fill > .shape-btn {
+    flex: 1 1 0;
+    text-align: center;
+}
+
+/* Save keeps its intrinsic width; the name field beside it grows to fill the row, so the
+   save row matches the full width of the button rows above it. */
+.shape-row--fill > .shape-btn--save {
+    flex: 0 0 auto;
+}
+
+.shape-row--fill > .shape-name-input {
+    max-width: none;
+}
+
+/* Reserve enough width for "Done · 234 act." so the inline count (which rides on this
+   button) doesn't jitter the tool buttons beside it as the number refines/changes. */
+.shape-btn--activate {
+    min-width: 8.5rem;
+    text-align: left;
+}
+
+.shape-btn {
+    border: 1px solid var(--bs-border-color, #ced4da);
+    background: var(--bs-body-bg, #fff);
+    color: var(--bs-body-color, #212529);
+    border-radius: 0.25rem;
+    padding: 0.2rem 0.55rem;
+    font-size: 0.8rem;
+    line-height: 1.2;
+    cursor: pointer;
+}
+
+.shape-btn:hover:not(:disabled) {
+    background: var(--bs-secondary-bg, #e9ecef);
+}
+
+.shape-btn:disabled {
+    opacity: 0.5;
+    cursor: default;
+}
+
+.shape-btn.active {
+    background: #0d6efd;
+    border-color: #0d6efd;
+    color: #fff;
+}
+
+.shape-btn--activate.active {
+    background: #198754;
+    border-color: #198754;
+}
+
+/* Armed before the overview map finished loading: the activation is held, not refused
+   (shape-filter.ts activateWhenMapReady). Clicking again cancels. */
+.shape-btn--activate.is-waiting {
+    background: var(--bs-secondary-bg, #e9ecef);
+    color: var(--bs-secondary-color, #6c757d);
+    cursor: progress;
+    animation: shape-activate-wait 1.2s ease-in-out infinite;
+}
+@keyframes shape-activate-wait { 50% { opacity: 0.55; } }
+@media (prefers-reduced-motion: reduce) {
+    .shape-btn--activate.is-waiting { animation: none; }
+}
+
+/* ── Dropdowns (role / direction / effort-extent / gate gap) — styled to match the buttons ── */
+.shape-select {
+    border: 1px solid var(--bs-border-color, #ced4da);
+    background: var(--bs-body-bg, #fff);
+    color: var(--bs-body-color, #212529);
+    border-radius: 0.25rem;
+    padding: 0.2rem 0.4rem;
+    font-size: 0.8rem;
+    line-height: 1.2;
+    cursor: pointer;
+    max-width: 100%;
+}
+
+.shape-select:disabled {
+    opacity: 0.5;
+    cursor: default;
+}
+
+/* The effort-extent select fills the remaining width of its row (Clear all keeps its size). */
+.shape-select--extent {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+/* Same-gate crossing debounce, shown only under the "between gates" extent. Keeps its intrinsic
+   width so the extent select beside it still absorbs the row's slack. */
+.shape-select--gate-gap {
+    flex: 0 0 auto;
+}
+
+/* ── Selection-context row: focused-shape name + its role/direction dropdowns + Delete ── */
+.shape-row--selection {
+    width: 100%;
+}
+
+/* Names the focused shape ("Z1 (2/3)") or shows the "tap a shape" hint; takes leading space. */
+.shape-context-label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+}
+
+/* Inline caption before a dropdown ("Role:", "Direction:", "Effort:", "Min gap:"). */
+.shape-context-tag {
+    font-size: 0.78rem;
+    color: var(--bs-secondary-color, #6c757d);
+}
+
+/* Hidden dropdowns/tags collapse out of the flex flow entirely. */
+.shape-select[hidden],
+.shape-context-tag[hidden] {
+    display: none;
+}
+
+.shape-name-input {
+    border: 1px solid var(--bs-border-color, #ced4da);
+    background: var(--bs-body-bg, #fff);
+    color: var(--bs-body-color, #212529);
+    border-radius: 0.25rem;
+    padding: 0.2rem 0.5rem;
+    font-size: 0.8rem;
+    line-height: 1.2;
+    max-width: 16rem;
+    /* The name field flexes to fill its row so Save sits at the end on any width. */
+    flex: 1 1 auto;
+    min-width: 8rem;
+}
+
+.shape-name-input:focus {
+    outline: none;
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 0.15rem rgba(13, 110, 253, 0.25);
+}
+
+.shape-btn--save {
+    font-weight: 600;
+}
+
+/* Heatmap opt-in toggle: orange accent matching the count colormap; solid when on. */
+.shape-btn--heatmap {
+    font-weight: 600;
+    border-color: #fd7e14;
+    color: #fd7e14;
+}
+
+.shape-btn--heatmap:hover:not(:disabled),
+.shape-btn--heatmap.active {
+    background: #fd7e14;
+    color: #fff;
+}
+
+/* Activity-type chips turn solid when active (included in the heatmap). */
+.shape-btn--type.active {
+    background: #0d6efd;
+    border-color: #0d6efd;
+    color: #fff;
+}
+
+/* ── Adopt filters from table — one checkbox re-using the activities grid's column filters ──── */
+
+.shape-adopt-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.shape-adopt-label {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    cursor: pointer;
+}
+
+.shape-adopt-check {
+    flex: 0 0 auto;
+    margin: 0;
+}
+
+.shape-adopt-status {
+    flex: 1 1 auto;
+    min-width: 0;
+    font-size: 0.78rem;
+    opacity: 0.75;
+}

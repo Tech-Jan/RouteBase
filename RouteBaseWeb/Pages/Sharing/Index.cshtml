@@ -1,0 +1,36 @@
+@page
+@using RouteBaseWeb.Models
+@model IndexModel
+@{
+    Layout = "_DashboardLayout";
+    ViewData["Title"] = "Shared Links";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/sharing-inventory.css" asp-append-version="true" />
+}
+
+<div class="cockpit-scroll">
+
+    <partial name="_PageHeader" model="@(new PageHeaderModel(
+        Title: "Shared Links",
+        Subtitle: "Everything you are publishing right now",
+        Breadcrumbs: new (string Href, string Label)[] { ("/", "Dashboard"), ("/Sharing", "Shared Links") }
+    ))" />
+
+    @* Every row is built by pages/sharing-inventory.ts from GET /api/sharelinks/mine. Nothing is
+       server-rendered here: the list must reflect expiry at the moment it is read, and it re-fetches
+       itself after each revoke. *@
+    <p class="share-inv-intro">
+        A share link is a capability URL: anyone holding it can open the page it points at, with no account
+        and no password. Revoking takes effect on the next request.
+    </p>
+
+    <div id="shareInventory" class="share-inv" aria-live="polite" aria-busy="true">
+        <p class="share-inv-loading">Loading…</p>
+    </div>
+</div>
+
+@section Scripts {
+    <script type="module" src="~/js/pages/sharing-inventory.js" asp-append-version="true"></script>
+}

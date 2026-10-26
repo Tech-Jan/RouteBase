@@ -1,0 +1,51 @@
+@model RouteBaseWeb.Models.Sharing.ShareLinkDialogModel
+@*
+    The owner's share-link dialog, for any shareable resource. Lives in Pages/Shared so it resolves from
+    any executing page (Pages/Activities, Pages/Segments) without an absolute path.
+
+    Element ids are deliberately UNCHANGED from the activity-only version — only one dialog exists per
+    page, core/share-links.ts keys off these ids, and the render guards pin them. Renaming would be churn
+    with no behavioural gain.
+
+    Render this only inside an owner gate: core/share-links.ts no-ops when the markup is absent, so a
+    non-owner page simply has no dialog.
+
+    The minted URL is shown ONCE: only the token's SHA-256 is stored, so the list below can offer revoke
+    but can never re-display a link.
+*@
+<dialog id="shareLinkDialog" class="share-dlg">
+    <form method="dialog" class="share-dlg-form">
+        <h2 class="share-dlg-title"><i class="bi bi-share" aria-hidden="true"></i> @Model.Title</h2>
+        <p class="share-dlg-help">@Model.Help</p>
+
+        <div class="share-dlg-controls">
+            <label class="share-dlg-label" for="shareLinkTtl">Expires after</label>
+            <select id="shareLinkTtl" class="det-select"></select>
+            <button type="button" id="shareLinkCreate"
+                    class="btn-cockpit btn-cockpit-primary btn-cockpit-sm">
+                Create link
+            </button>
+        </div>
+
+        <p class="share-dlg-status" id="shareLinkStatus" role="status"></p>
+
+        <div class="share-dlg-result" id="shareLinkResult" hidden>
+            <label class="share-dlg-label" for="shareLinkUrl">
+                Copy this now — it cannot be shown again
+            </label>
+            <div class="share-dlg-urlrow">
+                <input type="text" id="shareLinkUrl" class="det-input" readonly />
+                <button type="button" id="shareLinkCopy"
+                        class="btn-cockpit btn-cockpit-ghost btn-cockpit-sm">Copy</button>
+            </div>
+        </div>
+
+        <h3 class="share-dlg-subtitle">Existing links</h3>
+        <div id="shareLinkList" class="share-dlg-list"></div>
+
+        <div class="share-dlg-actions">
+            <button type="button" id="shareLinkClose"
+                    class="btn-cockpit btn-cockpit-ghost btn-cockpit-sm">Close</button>
+        </div>
+    </form>
+</dialog>

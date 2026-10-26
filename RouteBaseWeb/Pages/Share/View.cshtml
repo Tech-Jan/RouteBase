@@ -1,0 +1,104 @@
+@page "/s/{shareToken}"
+@model RouteBaseWeb.Pages.Share.ShareViewModel
+@{
+    Layout = "_ShareLayout";
+}
+@* Anonymous share view. The leading "/" in the @@page directive replaces the folder-derived route
+   entirely, so this page is reachable ONLY at /s/{shareToken} — one canonical URL, which is what makes
+   revoking a token kill every copy of the link.
+
+   ONE route serves both kinds: the kind is deliberately not in the URL (it would be enumerable
+   information), so OnGetAsync resolves the grant and sets exactly one of ActivityView / SegmentView.
+   Each branch renders the SAME partials as its canonical page; only the layout, the surfaces and the
+   absent MapTiler key differ.
+
+   The style sets are branched too, so a share view never loads the other kind's stylesheets — and the
+   segment branch reuses _SegmentStatsStyles rather than restating the list, which is what keeps
+   share rule 4 (a stylesheet added on one route but not the other) from biting here.
+
+   Partial paths must be absolute: name resolution searches the current page's directory (Pages/Share)
+   then Pages/Shared, so a bare "_ActivityDetailBody" would not be found here.
+
+   OnGetAsync returns NotFound() unless exactly one view is non-null. *@
+
+@section Styles {
+    @if (Model.LiveSeed is not null)
+    {
+        <partial name="_CdnLibs" model="@("maplibre-css")" />
+        <link rel="stylesheet" href="~/css/map-toolbar.css" asp-append-version="true" />
+        <link rel="stylesheet" href="~/css/liveview.css" asp-append-version="true" />
+    }
+    else if (Model.RaceSeed is not null)
+    {
+        @* The same list as Pages/Races/Replay.cshtml minus share-dialog.css (no mint button here). Because
+           the race body is a FORK rather than a shared partial, there is no cross-page style-drift gap of
+           the share rule-4 kind — the two files are read side by side. *@
+        <partial name="_CdnLibs" model="@("maplibre-css")" />
+        <link rel="stylesheet" href="~/css/map-toolbar.css" asp-append-version="true" />
+        <link rel="stylesheet" href="~/css/grid-filter.css" asp-append-version="true" />
+        <link rel="stylesheet" href="~/css/replay-controls.css" asp-append-version="true" />
+        <link rel="stylesheet" href="~/css/races.css" asp-append-version="true" />
+        <link rel="stylesheet" href="~/css/race-replay.css" asp-append-version="true" />
+    }
+    else if (Model.SegmentView is not null)
+    {
+        <partial name="/Pages/Segments/_SegmentStatsStyles.cshtml" />
+    }
+    else
+    {
+        <partial name="_CdnLibs" model="@("maplibre-css")" />
+        <link rel="stylesheet" href="~/css/replay-controls.css" asp-append-version="true" />
+        <link rel="stylesheet" href="~/css/activity-details.css" asp-append-version="true" />
+        <link rel="stylesheet" href="~/css/share-dialog.css" asp-append-version="true" />
+        <link rel="stylesheet" href="~/css/activity-photos.css" asp-append-version="true" />
+        <link rel="stylesheet" href="~/css/photo-viewer.css" asp-append-version="true" />
+        @* No track-edit.css: no editor chrome renders on a share view. *@
+    }
+}
+
+@if (Model.LiveSeed is not null)
+{
+    <partial name="/Pages/Share/_ShareLiveBody.cshtml" model="Model.LiveSeed" />
+}
+else if (Model.RaceSeed is not null)
+{
+    <partial name="/Pages/Share/_ShareRaceBody.cshtml" model="Model.RaceSeed" />
+}
+else if (Model.SegmentView is not null)
+{
+    <partial name="/Pages/Segments/_SegmentStatsBody.cshtml" model="Model.SegmentView" />
+}
+else
+{
+    <partial name="/Pages/Activities/_ActivityDetailBody.cshtml" model="Model.ActivityView" />
+}
+
+@section Scripts {
+    @if (Model.LiveSeed is not null)
+    {
+        @* Map-only live view. No signalr-js (anonymous viewers poll), no chartjs, no MapTiler key
+           (the map-api-key seam is never initialised here → its '' default → keyless liberty basemap, keyed entries auto-hidden). *@
+        <partial name="_CdnLibs" model="@("maplibre-js")" />
+        <script type="module" src="~/js/live-recording/share-live-view.js" asp-append-version="true"></script>
+    }
+    else if (Model.RaceSeed is not null)
+    {
+        @* Same libs as the owner replay page. The LIVE surface is still hand-drawn canvas — the dock
+           strip (race-profile over core/profile-chart) animates 500 riders at 30 Hz and must never go
+           through Chart.js; that half of the old perf boundary stands. chartjs is here for the speed
+           PANEL only, which is static per build, draws a handful of riders and has to zoom — the same
+           trade the segment and activity share pages already make. No MapTiler key → keyless basemap. *@
+        <partial name="_CdnLibs" model="@("maplibre-js,chartjs,chartjs-zoom")" />
+        <script type="module" src="~/js/race-sim/share-race-view.js" asp-append-version="true"></script>
+    }
+    else if (Model.SegmentView is not null)
+    {
+        <partial name="/Pages/Segments/_SegmentStatsScripts.cshtml" model="Model.SegmentView" />
+    }
+    else
+    {
+        <partial name="_CdnLibs" model="@("maplibre-js")" />
+        <partial name="_CdnLibs" model="@("chartjs,chartjs-zoom")" />
+        <partial name="/Pages/Activities/_ActivityDetailScripts.cshtml" model="Model.ActivityView" />
+    }
+}

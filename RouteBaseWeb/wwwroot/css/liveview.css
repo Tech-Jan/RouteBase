@@ -1,0 +1,390 @@
+/* liveview.css — LiveView observer page */
+
+.lv-layout {
+    padding: 0 var(--sp-4) var(--sp-6);
+}
+
+/* ── Status badge ─────────────────────────────────────────────────── */
+
+.lv-status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+    border-radius: 99px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    font-family: var(--font-mono);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    border: 1px solid;
+    flex-shrink: 0;
+}
+
+.lv-status-badge--live {
+    color: var(--acc-red);
+    border-color: var(--acc-red);
+    background: oklch(from var(--acc-red) l c h / 0.12);
+}
+
+.lv-status-badge--paused {
+    color: var(--acc-amber);
+    border-color: var(--acc-amber);
+    background: oklch(from var(--acc-amber) l c h / 0.12);
+}
+
+.lv-status-badge--ended {
+    color: var(--fg-3);
+    border-color: var(--line);
+    background: var(--bg-3);
+}
+
+/* Live updates interrupted (reconnect failed / initial connect failed) — LR-08. */
+.lv-status-badge--stale {
+    color: var(--acc-amber);
+    border-color: var(--acc-amber);
+    background: oklch(from var(--acc-amber) l c h / 0.12);
+    opacity: 0.7;
+}
+
+/* Cadence warm-up: a viewer just tuned in and the recorder hasn't yet sped up to the watched cadence. */
+.lv-status-badge--warming {
+    color: var(--acc-amber);
+    border-color: var(--acc-amber);
+    background: oklch(from var(--acc-amber) l c h / 0.12);
+}
+
+/* Soft amber pulse so "CONNECTING" reads as alive/working, not broken. CSS-only (a flex item via the
+   badge's gap) — the JS-injected .lv-live-dot still fires only for the confirmed-fast LIVE state. */
+.lv-status-badge--warming::before {
+    content: "";
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+    animation: lv-pulse-soft 2.4s ease-in-out infinite;
+}
+
+@keyframes lv-pulse-soft {
+    0%, 100% { opacity: 0.9; }
+    50%       { opacity: 0.3; }
+}
+
+/* Was live, then updates stopped arriving (likely lost signal). */
+.lv-status-badge--waiting {
+    color: var(--acc-amber);
+    border-color: var(--acc-amber);
+    background: oklch(from var(--acc-amber) l c h / 0.12);
+    opacity: 0.7;
+}
+
+.lv-live-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+    animation: lv-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes lv-pulse {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0.25; }
+}
+
+/* Plain-language "getting live" note shown under the badge through the ramp; the client toggles [hidden]. */
+.lv-live-hint {
+    font-size: 0.75rem;
+    color: var(--fg-3);
+    margin: -8px 0 16px;
+}
+
+.lv-live-hint[hidden] { display: none; }
+
+/* ── Map panel ────────────────────────────────────────────────────── */
+
+.lv-map-panel {
+    background: var(--bg-2);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    margin-bottom: 24px;
+}
+
+.lv-map-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--line);
+    background: var(--bg-2);
+}
+
+.lv-map-body {
+    position: relative;
+}
+
+/* Only fullscreen lives on the map, as on the segments and race pages. */
+.lv-map-expand {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    z-index: 5;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border-radius: var(--radius-md);
+    background: oklch(from var(--bg-1) l c h / 0.82);
+    border: 1px solid var(--line);
+    backdrop-filter: blur(4px);
+    color: var(--fg-2);
+    font-size: 13px;
+    cursor: pointer;
+    transition: color 0.1s, border-color 0.1s;
+}
+.lv-map-expand:hover { color: var(--fg-0); border-color: var(--line-2); }
+
+#liveview-map {
+    height: 600px;
+}
+
+/* Share live view: the map IS the page — on desktop fill the viewport minus the chrome above it
+   (topbar + badge row + KPI strip + map toolbar ≈ 340px) instead of the fixed 600px.
+   901px pairs the 900px .lv-main stack point below (was 992, a stale Bootstrap-lg value that left
+   901–991px falling through both blocks): the map goes tall exactly when the layout turns two-column.
+   Kept in step with defaultHeight in share-live-view.ts (window.innerWidth >= 901) so Reset returns
+   to this same height. */
+@media (min-width: 901px) {
+    .cockpit-shell--share #liveview-map {
+        height: max(600px, calc(100vh - 340px));
+    }
+}
+
+/* Map load failure (FE-07) — the share view's map is the whole page, so a stalled engine surfaces this
+   over the empty pane instead of failing silently. Client toggles [hidden]; Retry re-inits the engine. */
+.lv-map-error {
+    position: absolute;
+    inset: 0;
+    z-index: 6;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 24px;
+    text-align: center;
+    background: var(--bg-1);
+    border-radius: var(--radius-lg);
+    color: var(--fg-1);
+}
+.lv-map-error[hidden] { display: none; } /* beats display:flex, which the UA [hidden] rule would not */
+.lv-map-error .bi { font-size: 1.75rem; color: var(--acc-amber); }
+.lv-map-error p { margin: 0; max-width: 32ch; font-size: 0.9rem; }
+
+/* ── Riders panel + map, side by side ─────────────────────────────── */
+
+.lv-main {
+    display: grid;
+    grid-template-columns: minmax(260px, 320px) 1fr;
+    gap: var(--sp-4);
+    align-items: start;
+}
+
+.lv-people-panel {
+    background: var(--bg-2);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+}
+
+.lv-people-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--line);
+}
+
+.lv-people-title {
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--fg-2);
+}
+
+/* Camera toggle — reads as the action a click performs, like the segment replay's. */
+.lv-follow-toggle {
+    background: none;
+    border: none;
+    padding: 2px 4px;
+    cursor: pointer;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--fg-3);
+}
+
+.lv-follow-toggle.is-following { color: var(--acc-cyan); }
+.lv-follow-toggle:hover { text-decoration: underline; }
+
+/* Share live view has no riders panel, so its follow toggle rides the map itself, top-left. A pill keeps
+   it legible over any basemap; same (un)follow idiom as the replays. */
+.lv-follow-toggle--map {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    z-index: 5;
+    padding: 5px 11px;
+    border-radius: 999px;
+    background: oklch(from var(--bg-1) l c h / 0.82);
+    border: 1px solid var(--line);
+    backdrop-filter: blur(4px);
+    color: var(--fg-2);
+}
+.lv-follow-toggle--map:hover { border-color: var(--acc-cyan); text-decoration: none; }
+
+/* The toggle now shares the top-left corner with the map's nav/terrain/buildings control stack, so nudge
+   that stack down to clear the pill. Share view: pill is always on. LiveView: only in fullscreen (its
+   riders-panel toggle covers the non-fullscreen case). */
+#share-live-app .maplibregl-ctrl-top-left,
+.map-fullscreen .maplibregl-ctrl-top-left {
+    padding-top: 40px;
+}
+
+/* LiveView shows its on-map pill only in fullscreen — the riders-panel toggle is hidden there. */
+.lv-follow-toggle--fs-only { display: none; }
+.map-fullscreen .lv-follow-toggle--fs-only { display: block; }
+
+.lv-person {
+    display: grid;
+    grid-template-columns: auto auto 1fr auto;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px;
+    border-bottom: 1px solid var(--line);
+}
+
+.lv-person:last-child { border-bottom: none; }
+.lv-person--followed { background: oklch(from var(--acc-cyan) l c h / 0.08); }
+
+/* The rider's identity colour — always beside their name, never colour alone. */
+.lv-person-swatch {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.lv-person-name {
+    background: none;
+    border: none;
+    padding: 0;
+    text-align: left;
+    cursor: pointer;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--fg-0);
+}
+
+.lv-person-name:hover { color: var(--acc-cyan); }
+
+.lv-person-type,
+.lv-person-elapsed,
+.lv-person-points,
+.lv-person-status,
+.lv-person-activity {
+    font-size: 0.75rem;
+    color: var(--fg-3);
+}
+
+.lv-person-elapsed, .lv-person-points { font-family: var(--font-mono); }
+
+.lv-person-status--live { color: var(--acc-red); }
+.lv-person-status--paused { color: var(--acc-amber); }
+.lv-person-status--ended { color: var(--fg-3); }
+.lv-person-status--unavailable { color: var(--acc-amber); cursor: help; }
+.lv-person-status--warming { color: var(--acc-amber); cursor: help; }
+.lv-person-status--waiting { color: var(--acc-amber); opacity: 0.7; cursor: help; }
+
+.lv-person-activity { color: var(--acc-cyan); text-decoration: none; }
+
+.lv-people-hint {
+    padding: 8px 14px;
+    font-size: 0.6875rem;
+    color: var(--fg-3);
+    border-top: 1px solid var(--line);
+}
+
+/* ── Fullscreen (MapUtils adds .map-fullscreen / body.map-fullscreen-active) */
+
+.map-fullscreen {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    z-index: 9999 !important;
+    margin: 0 !important;
+    border-radius: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+}
+
+/* Fill the height left by the toolbar so #liveview-map's 100% has a definite
+   parent — .lv-map-body otherwise has auto height and the map collapses to 0. */
+.map-fullscreen .lv-map-body {
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+}
+
+.map-fullscreen #liveview-map {
+    height: 100% !important;
+    width: 100% !important;
+    border-radius: 0 !important;
+}
+
+.map-fullscreen .lv-map-controls {
+    position: sticky;
+    top: 0;
+    z-index: 10000;
+    background: var(--bg-1) !important;
+}
+
+body.map-fullscreen-active {
+    overflow: hidden;
+}
+
+/* ── Stopped banner ───────────────────────────────────────────────── */
+
+.lv-stopped-banner {
+    padding: 14px 18px;
+    background: var(--bg-2);
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--acc-lime);
+    border-radius: var(--radius-md);
+    font-size: 0.875rem;
+    color: var(--fg-0);
+    line-height: 1.5;
+}
+
+.lv-stopped-banner a {
+    color: var(--acc-cyan);
+    text-decoration: none;
+    font-weight: 500;
+    margin-left: 8px;
+}
+
+.lv-stopped-banner a:hover {
+    text-decoration: underline;
+}
+
+/* ── Responsive ───────────────────────────────────────────────────── */
+
+/* Below this the two-column split starves the map — stack the riders panel on top. */
+@media (max-width: 900px) {
+    .lv-main { grid-template-columns: 1fr; }
+}
+

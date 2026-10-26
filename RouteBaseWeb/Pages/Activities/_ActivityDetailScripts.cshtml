@@ -1,0 +1,29 @@
+@using RouteBaseWeb.Models.Sharing
+@model ActivityDetailView
+@* Page config + module tags for the activity detail view, shared by the canonical page and the share view.
+
+   The config island is how the whole page boots: it carries the FULL-RESOLUTION track (~0.4-4 MB), which is
+   why activity replay makes no network request at all. A share view therefore needs no replay endpoint. *@
+
+@* Owner-only bundles. These were loaded unconditionally before the share slice; gating them is both a
+   correctness fix (their controls do not render for a non-owner) and a payload saving on every
+   friend's-activity view. *@
+@if (Model.Surfaces.CanEdit)
+{
+    <script type="module" src="~/js/activity/activity-edit.js" asp-append-version="true"></script>
+    <script type="module" src="~/js/activity/activity-actions.js" asp-append-version="true"></script>
+}
+
+@* Page config for activity-details-page.ts. Default STJ encoder escapes </> (safe inside a
+   <script> element). *@
+@{
+    // Named DTO since F2a (ActivityDetailsConfigDto — casing via its [JsonPropertyName] pins).
+    var activityDetailsConfigJson = System.Text.Json.JsonSerializer.Serialize(Model.GetConfigForJavaScript());
+}
+<script type="application/json" id="activityDetailsConfig">@Html.Raw(activityDetailsConfigJson)</script>
+
+@if (Model.Surfaces.CanEdit)
+{
+    <script type="module" src="~/js/activity/version-history.js" asp-append-version="true"></script>
+}
+<script type="module" src="~/js/activity/activity-details-page.js" asp-append-version="true"></script>

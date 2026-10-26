@@ -1,0 +1,45 @@
+# Built application files
+*.apk
+*.aar
+*.aab
+*.ap_
+
+# Dalvik/ART VM files
+*.dex
+
+# Java class files
+*.class
+
+# Gradle build outputs and cache
+.gradle/
+build/
+app/build/
+
+# Kotlin compiler daemon session files (appeared with the AGP/Kotlin toolchain; pure build scratch)
+.kotlin/
+
+# Local configuration (SDK path - machine-specific, never commit)
+local.properties
+
+# Android Studio / IntelliJ IDE files
+.idea/
+*.iml
+captures/
+.navigation/
+
+# External native build
+.externalNativeBuild/
+.cxx/
+
+# Keystore files (uncomment if you don't want to track these)
+# *.jks
+# *.keystore
+
+# Log files
+*.log
+
+# Profiling
+*.hprof
+
+# Keep Gradle wrapper jar (jars are usually ignored but this one is needed)
+!gradle/wrapper/gradle-wrapper.jar

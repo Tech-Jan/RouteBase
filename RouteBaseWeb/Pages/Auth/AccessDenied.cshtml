@@ -1,0 +1,13 @@
+@page
+@{
+    ViewData["Title"] = "Access Denied";
+}
+
+<div class="auth-card">
+    <i class="bi bi-shield-lock auth-icon auth-icon--danger" aria-hidden="true"></i>
+    <h1 class="auth-title">Access Denied</h1>
+    <p class="auth-subtitle">You do not have permission to access this resource.</p>
+    <div class="auth-actions">
+        <a asp-page="/Index" class="btn-cockpit btn-cockpit-ghost">Go to Dashboard</a>
+    </div>
+</div>

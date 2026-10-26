@@ -1,0 +1,263 @@
+/* segments-index.css — Segments list page */
+
+/* ── Minimap load counter ───────────────────────────────────────────────────
+   Left-aligned mono status above the controls strip, matching the activities
+   overview track counter (.act-map-status). */
+.seg-index-status-bar {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+  min-height: 16px;
+}
+.seg-index-map-status {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--fg-3);
+}
+.seg-index-map-status:empty { display: none; }
+
+/* ── List flows with the page ────────────────────────────────────────────────
+   No inner vertical scroll window: the list (controls strip + cards) grows naturally and the page
+   itself scrolls. The toolbar sits above; the reusable grid runs in controls-only mode
+   (externalResults) — its header + filter row are the strip, matching/order drives the cards. */
+
+/* Controls strip stays pinned at the top of the viewport while the cards scroll under it. Keeps its
+   own horizontal scroll: the column sizer sets the table's min-width, so the columns hold a fixed
+   minimal size and scroll sideways instead of squeezing. */
+.seg-controls-grid {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  overflow-x: auto;
+  background: var(--bg-3);
+}
+
+/* Cards filtered out by the controls grid (toggled via the shared card binding's `is-hidden`). */
+.seg-card-grid .seg-card.is-hidden {
+  display: none;
+}
+
+.seg-empty-filtered {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--fg-2);
+  padding: 24px 4px;
+  text-align: center;
+}
+
+/* ── Segment card grid ──────────────────────────────────────────────────── */
+.seg-card-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  /* Inset the cards from the list-window frame (the controls strip above spans full width). */
+  padding: 16px;
+}
+
+/* ── Segment card ───────────────────────────────────────────────────────────
+   Surface + hover come from .card-cockpit (cockpit-components.css); only the
+   layout and off-screen virtualisation are card-specific. */
+.seg-card {
+  display: block;
+  text-decoration: none;
+  cursor: pointer;
+  /* Card grid can reach MaxCards (2000): skip layout/paint of off-screen cards natively.
+     Estimate ≈ minimap (200px) + body text; 'auto' remembers the real height after first render. */
+  content-visibility: auto;
+  contain-intrinsic-size: auto 280px;
+}
+
+.seg-card-body {
+  display: flex;
+  align-items: stretch;
+}
+
+/* ── Minimap column (left) ──────────────────────────────────────────────── */
+.seg-card-map {
+  flex: 0 0 240px;
+  width: 240px;
+  height: 200px;
+  border-right: 1px solid var(--line);
+  background: var(--bg-3);
+  overflow: hidden;
+  position: relative;
+}
+
+.seg-card-map .segment-minimap {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* ── Info column (right) ────────────────────────────────────────────────── */
+.seg-card-info {
+  flex: 1;
+  min-width: 0;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.seg-card-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+/* Visibility + active-share markers. Same icons and colours as the dashboard activity card
+   (.activity-card-vis / .activity-card-share) so one symbol means one thing across the app.
+   No margin: .seg-card-meta is a flex row with its own gap. */
+.seg-card-vis {
+  font-size: 11px;
+  line-height: 1;
+}
+.seg-card-vis.vis--private { color: var(--acc-red); }
+.seg-card-vis.vis--public  { color: var(--acc-lime); }
+.seg-card-vis.vis--friends { color: var(--acc-cyan); }
+
+.seg-card-share {
+  font-size: 11px;
+  line-height: 1;
+  color: var(--acc-amber);
+}
+
+.seg-card-owner {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--acc-cyan);
+  letter-spacing: 0.04em;
+}
+
+.seg-card-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--fg-0);
+  margin: 0;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── KPI strip ──────────────────────────────────────────────────────────── */
+.seg-card-kpis {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+  padding: 4px 0;
+  border-top: 1px solid var(--line);
+  margin-top: auto;
+}
+
+.seg-card-kpi {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.seg-card-kpi-value {
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--fg-0);
+}
+.seg-card-kpi-value--cyan   { color: var(--acc-cyan); }
+.seg-card-kpi-value--lime   { color: var(--acc-lime); }
+.seg-card-kpi-value--orange { color: var(--acc-orange, oklch(0.78 0.15 60)); }
+
+.seg-card-kpi-unit {
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--fg-3);
+}
+
+.seg-card-kpi-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--fg-3);
+}
+
+/* "/ total" readout appended to a card KPI — dim, sums all efforts on the segment. */
+.seg-card-kpi-total {
+  font-weight: 400;
+  color: var(--fg-3);
+}
+.seg-card-kpi-label-total { opacity: 0.7; }
+
+/* ── Delete button (overlay on minimap) ─────────────────────────────────── */
+.seg-delete-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--acc-red);
+  padding: 6px;
+  border: none;
+  border-radius: 6px;
+  background: oklch(0.18 0.01 240 / 0.8);
+  backdrop-filter: blur(6px);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.seg-delete-btn:hover { background: oklch(0.72 0.18 25 / 0.22); }
+
+/* ── Inline spinner for "Analyze All" button state ──────────────────────── */
+@keyframes btn-spin { to { transform: rotate(360deg); } }
+.btn-spinner {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: btn-spin 0.7s linear infinite;
+  vertical-align: middle;
+}
+
+/* ── Responsive ─────────────────────────────────────────────────────────── */
+@media (max-width: 1024px) {
+  .seg-card-map { flex: 0 0 220px; width: 220px; }
+}
+
+@media (max-width: 768px) {
+  .seg-card-grid { grid-template-columns: 1fr; }
+  .seg-list-panel { margin-left: 16px; margin-right: 16px; }
+
+  /* Stacked layout: map on top, info below */
+  .seg-card-body { flex-direction: column; }
+  .seg-card-map {
+    flex: none;
+    width: 100%;
+    height: 260px;
+    border-right: none;
+    border-bottom: 1px solid var(--line);
+  }
+}
+
+@media (max-width: 480px) {
+  .seg-card-map { height: 220px; }
+}
+
+/* Phone: full-bleed cards so the preview minimap spans the screen edge-to-edge,
+   matching the dashboard activity feed. Drop the panel's side chrome and the card
+   grid's horizontal padding; cards keep their own border so they still read as cards. */
+@media (max-width: 600px) {
+  .seg-list-panel {
+    margin-left: 0;
+    margin-right: 0;
+    border-left: none;
+    border-right: none;
+    border-radius: 0;
+  }
+  .seg-card-grid {
+    padding-left: 0;
+    padding-right: 0;
+  }
+}

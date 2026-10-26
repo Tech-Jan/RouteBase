@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- API < 31. Exclude prefs (encrypted API key + session state): the Keystore key isn't backed up, so
+     a restored ciphertext is undecryptable, and restoring a live session to another device is wrong. -->
+<full-backup-content>
+    <exclude domain="sharedpref" path="gps_recorder_prefs.xml" />
+    <!-- Same rationale for the Room DB: a restored queue + session ids would double-deliver against the
+         still-alive old device, forking one ride into duplicate activities. -->
+    <exclude domain="database" path="." />
+</full-backup-content>

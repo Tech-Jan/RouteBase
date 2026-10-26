@@ -1,0 +1,64 @@
+/* /Sharing — every live share link in one list. Loaded only by Pages/Sharing/Index.cshtml.
+   Rows are built by pages/sharing-inventory.ts, so every class here is also spelled there. */
+
+.share-inv-intro {
+  margin: 0 0 16px;
+  color: var(--fg-2);
+  font-size: 0.85rem;
+  line-height: 1.5;
+  max-width: 70ch;
+}
+
+.share-inv-count {
+  margin: 0 0 12px;
+  color: var(--fg-1);
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.share-inv-loading,
+.share-inv-empty,
+.share-inv-error { margin: 0; color: var(--fg-3); font-size: 0.85rem; line-height: 1.5; max-width: 60ch; }
+.share-inv-error { color: var(--acc-red); }
+
+.share-inv-group { margin: 0 0 22px; }
+
+.share-inv-kind {
+  margin: 0 0 8px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--fg-2);
+}
+
+.share-inv-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+
+/* Name takes the slack; the two readouts and the button keep their intrinsic width. Wraps on narrow
+   screens rather than truncating the name — which link this is matters more than the layout. */
+.share-inv-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--bg-2);
+}
+
+.share-inv-name {
+  flex: 1;
+  min-width: 12ch;
+  color: var(--fg-0);
+  font-size: 0.9rem;
+  text-decoration: none;
+}
+.share-inv-name:hover { text-decoration: underline; }
+
+.share-inv-expiry,
+.share-inv-opens {
+  color: var(--fg-2);
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+}

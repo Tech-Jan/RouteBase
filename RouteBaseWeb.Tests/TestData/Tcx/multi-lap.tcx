@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<TrainingCenterDatabase xmlns="http://www.garmin.com/xmlschemas/TrainingCenterDatabase/v2">
+  <Activities>
+    <Activity Sport="Running">
+      <Id>2026-02-02T09:00:00Z</Id>
+      <Lap StartTime="2026-02-02T09:00:00Z">
+        <TotalTimeSeconds>20</TotalTimeSeconds>
+        <DistanceMeters>100.0</DistanceMeters>
+        <MaximumSpeed>5.0</MaximumSpeed>
+        <Calories>10</Calories>
+        <Track>
+          <Trackpoint>
+            <Time>2026-02-02T09:00:00Z</Time>
+            <Position>
+              <LatitudeDegrees>47.200000</LatitudeDegrees>
+              <LongitudeDegrees>8.200000</LongitudeDegrees>
+            </Position>
+            <AltitudeMeters>400.0</AltitudeMeters>
+            <HeartRateBpm><Value>150</Value></HeartRateBpm>
+          </Trackpoint>
+          <Trackpoint>
+            <Time>2026-02-02T09:00:20Z</Time>
+            <Position>
+              <LatitudeDegrees>47.200600</LatitudeDegrees>
+              <LongitudeDegrees>8.200600</LongitudeDegrees>
+            </Position>
+            <AltitudeMeters>404.0</AltitudeMeters>
+            <HeartRateBpm><Value>160</Value></HeartRateBpm>
+          </Trackpoint>
+        </Track>
+      </Lap>
+      <Lap StartTime="2026-02-02T09:00:20Z">
+        <TotalTimeSeconds>25</TotalTimeSeconds>
+        <DistanceMeters>120.0</DistanceMeters>
+        <MaximumSpeed>7.0</MaximumSpeed>
+        <Calories>15</Calories>
+        <Track>
+          <Trackpoint>
+            <Time>2026-02-02T09:00:40Z</Time>
+            <Position>
+              <LatitudeDegrees>47.201200</LatitudeDegrees>
+              <LongitudeDegrees>8.201200</LongitudeDegrees>
+            </Position>
+            <AltitudeMeters>402.0</AltitudeMeters>
+            <HeartRateBpm><Value>170</Value></HeartRateBpm>
+          </Trackpoint>
+          <Trackpoint>
+            <Time>2026-02-02T09:01:05Z</Time>
+            <Position>
+              <LatitudeDegrees>47.201800</LatitudeDegrees>
+              <LongitudeDegrees>8.201800</LongitudeDegrees>
+            </Position>
+            <AltitudeMeters>408.0</AltitudeMeters>
+            <HeartRateBpm><Value>175</Value></HeartRateBpm>
+          </Trackpoint>
+        </Track>
+      </Lap>
+    </Activity>
+  </Activities>
+</TrainingCenterDatabase>

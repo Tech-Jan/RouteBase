@@ -1,0 +1,73 @@
+@model RouteBaseWeb.Models.Sharing.SegmentDetailView
+
+<!-- Map toolbar: dropdown controls + replay ───────────────────────── -->
+@* Each control group is a dropdown (<details>); option buttons keep their IDs so MapShell still
+   drives them. setupSegToolbarDropdowns() syncs the summary labels and handles open/close. *@
+<div class="seg-map-toolbar">
+    @if (Model.DetailedEfforts.Count >= 1)
+    {
+        <button id="segReplayBtn" type="button" class="seg-replay-btn" title="Race replay - compare efforts on the map">
+            <i class="bi bi-play-circle"></i> <span class="seg-replay-label">Replay</span>
+        </button>
+    }
+    @if (Model.DetailedEfforts.Any())
+    {
+        @* Map view picker. Heatmap is one of the mutually-exclusive views (shapes segments only,
+           hidden until a render exists; JS reveals + labels it via heatmap-controls status). *@
+        <details class="map-dd" data-picker="true">
+            <summary class="map-dd-summary">
+                <span class="map-dd-label">Show</span>
+                <span class="map-dd-value" id="mapModeValue">Seg. + Eff.</span>
+                <svg class="map-dd-chevron" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+            </summary>
+            <div class="map-dd-menu">
+                @if (Model.Segment.SegmentKind == "shapes" && Model.Surfaces.ShowHeatmap)
+                {
+                    <button type="button" class="map-dd-item" data-map-view="heatmap" data-heatmap-view @(Model.Heatmap == null ? "hidden" : "")>Heatmap</button>
+                    <button type="button" class="map-dd-item" data-map-view="heateff" data-heatmap-view @(Model.Heatmap == null ? "hidden" : "")>Heatmap + Eff.</button>
+                }
+                <button type="button" class="map-dd-item active" data-map-view="segeff">Seg. + Eff.</button>
+                <button type="button" class="map-dd-item" data-map-view="efforts">Efforts</button>
+                <button type="button" class="map-dd-item" data-map-view="segment">Segment</button>
+            </div>
+        </details>
+    }
+    @* Map style — MapShell renders one button per available basemap into #segMapStyleSwitcher
+       (keyed or keyless), so this dropdown is no longer key-gated. *@
+    <details class="map-dd" data-picker="true">
+        <summary class="map-dd-summary">
+            <span class="map-dd-label">Style</span>
+            <span class="map-dd-value">Map</span>
+            <svg class="map-dd-chevron" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+        </summary>
+        <div class="map-dd-menu" id="segMapStyleSwitcher" role="group" aria-label="Map style"></div>
+    </details>
+    <!-- Map size -->
+    <details class="map-dd map-dd-end">
+        <summary class="map-dd-summary">
+            <span class="map-dd-label">Size</span>
+            <svg class="map-dd-chevron" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+        </summary>
+        <div class="map-dd-menu" role="group" aria-label="Map size">
+            <button id="segMapGrowBtn"   class="map-dd-item" title="Make map taller">Taller</button>
+            <button id="segMapShrinkBtn" class="map-dd-item" title="Make map smaller">Smaller</button>
+            <button id="segMapResetBtn"  class="map-dd-item" title="Reset map size">Reset size</button>
+        </div>
+    </details>
+    <!-- Shown only when some efforts are hidden, so vanished tracks aren't surprising -->
+    <span id="segMapFilterPill" class="seg-filter-pill" hidden></span>
+    <!-- Live "X / Y tracks" counter while a large effort set loads in chunks -->
+    <span id="segMapStatus" class="seg-map-status"></span>
+</div>
+
+<!-- Hero map ─────────────────────────────────────────────────────── -->
+<div id="segHero" class="seg-hero">
+    <div id="map"></div>
+
+    <!-- Top-right: fullscreen only -->
+    <div class="seg-hero-overlay seg-hero-tr">
+        <button id="segMapExpandBtn" class="seg-map-expand-btn" title="Fullscreen map">
+            <i class="bi bi-arrows-fullscreen"></i>
+        </button>
+    </div>
+</div>

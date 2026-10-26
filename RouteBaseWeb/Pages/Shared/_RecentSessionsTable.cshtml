@@ -1,0 +1,117 @@
+@model List<RouteBaseWeb.Models.RecentSessionView>
+@* Recording sessions that are NOT in the review queue: live, finalized, abandoned, finalize-failed.
+   Pending and trashed auto rides render as cards instead (_ReviewCards.cshtml) — a decision you make by
+   looking at the map, which a table column cannot carry on a phone. That is why there is no map column
+   here and no minimap: every row left is either still running or already a real activity you can open. *@
+@{
+    var rows = Model.Where(s => !s.IsPending && !s.IsTrashed).ToList();
+}
+
+<div style="overflow-x:auto;">
+    <table class="rec-sessions-table">
+        <thead>
+            <tr>
+                <th>Status</th>
+                <th>Started</th>
+                <th class="rec-col-type">Type</th>
+                <th class="rec-col-points">Points</th>
+                <th>Duration</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var s in rows)
+            {
+                var isActive = s.Status is "recording" or "paused";
+                var duration = s.DurationEndUtc - s.StartedAt;
+                var durationStr = duration.TotalHours >= 1
+                    ? $"{(int)duration.TotalHours}h {duration.Minutes:D2}m"
+                    : $"{duration.Minutes}m {duration.Seconds:D2}s";
+
+                <tr data-track-id="@s.TrackId">
+                    <td>
+                        @if (s.Status == "recording")
+                        {
+                            <span class="rec-status--recording"><i class="bi bi-record-circle-fill" aria-hidden="true"></i> Live</span>
+                        }
+                        else if (s.Status == "paused")
+                        {
+                            <span class="rec-status--paused"><i class="bi bi-pause-circle-fill" aria-hidden="true"></i> Paused</span>
+                        }
+                        else if (s.Status == "finalized")
+                        {
+                            <span class="rec-status--finalized"><i class="bi bi-check-circle-fill" aria-hidden="true"></i> Done</span>
+                        }
+                        else if (s.Status == "stopped")
+                        {
+                            <span class="rec-status--stopped"><i class="bi bi-stop-circle" aria-hidden="true"></i> Stopped</span>
+                        }
+                        else if (s.Status == "finalize_failed")
+                        {
+                            <span class="rec-status--failed"><i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i> Finalize failed</span>
+                        }
+                        else
+                        {
+                            <span class="rec-status--abandoned"><i class="bi bi-x-circle" aria-hidden="true"></i> Abandoned</span>
+                        }
+                    </td>
+                    @* Server-rendered "dd.MM. HH:mm" was ToLocalTime()'d on the SERVER clock, which reads
+                       UTC in the Docker deployment — wrong for any viewer elsewhere. Emit the UTC ISO
+                       instant and format it from the browser's own clock instead (record-review.ts). *@
+                    <td class="rec-cell-mono" data-utc-ts="@s.StartedAt.ToUtcIso()">—</td>
+                    <td class="rec-col-type">@s.ActivityType</td>
+                    <td class="rec-cell-mono rec-col-points">@s.PointCount</td>
+                    <td class="rec-cell-mono">@(isActive ? "ongoing" : durationStr)</td>
+                    <td>
+                        @if (isActive)
+                        {
+                            <a href="/LiveView/@s.SessionId" target="_blank"
+                               class="btn-cockpit btn-cockpit-ghost btn-cockpit-sm"
+                               title="Watch this session live">
+                                <i class="bi bi-broadcast" aria-hidden="true"></i> Live View
+                            </a>
+                            <button class="btn-cockpit btn-cockpit-danger btn-cockpit-sm session-abandon-btn"
+                                    data-session-id="@s.SessionId"
+                                    title="Abandon this session"
+                                    style="margin-left:6px;">
+                                <i class="bi bi-x-circle" aria-hidden="true"></i> Abandon
+                            </button>
+                        }
+                        else if (s.Status == "finalize_failed")
+                        {
+                            @* RF-02: finalization gave up after its automatic retry — the recording's data
+                               is kept. Retry re-attempts finalize now; Discard abandons it (7-day purge). *@
+                            <div class="rec-review-actions">
+                                <button type="button" class="btn-cockpit btn-cockpit-primary btn-cockpit-sm session-retry-btn"
+                                        data-session-id="@s.SessionId"
+                                        title="Retry finalizing this recording">
+                                    <i class="bi bi-arrow-clockwise" aria-hidden="true"></i> Retry
+                                </button>
+                                <button type="button" class="btn-cockpit btn-cockpit-danger btn-cockpit-sm session-abandon-btn"
+                                        data-session-id="@s.SessionId"
+                                        title="Give up and discard this recording">
+                                    <i class="bi bi-x-circle" aria-hidden="true"></i> Discard
+                                </button>
+                            </div>
+                        }
+                        else if (s.Status is "finalized" or "stopped")
+                        {
+                            <a href="/Activities/Details/@s.TrackId"
+                               class="btn-cockpit btn-cockpit-ghost btn-cockpit-sm">
+                                <i class="bi bi-eye" aria-hidden="true"></i> View
+                            </a>
+                        }
+                        else if (s.Status == "abandoned")
+                        {
+                            <button class="btn-cockpit btn-cockpit-ghost btn-cockpit-sm session-delete-btn"
+                                    data-session-id="@s.SessionId"
+                                    title="Delete this abandoned session">
+                                <i class="bi bi-trash" aria-hidden="true"></i> Delete
+                            </button>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

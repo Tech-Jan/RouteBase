@@ -1,0 +1,39 @@
+<Project>
+
+  <!-- Supply-chain hardening — applies to every project in the repo.
+
+       NO packages.lock.json (removed 2026-08-16 — do not re-add without solving the below).
+       RestorePackagesWithLockFile made every restore REWRITE the file, and Visual Studio's
+       restore on the Windows box resolves zero packages: it rewrote the lock to three empty
+       framework sections, that got committed to the deploy repo, and Docker's locked-mode
+       restore failed the deployment closed (NU1004). A tripwire the local tooling trips on
+       its own is worse than none. NuGetAudit below is the half that still earns its keep. -->
+  <PropertyGroup>
+    <!-- Report known-vulnerable packages during restore, transitive deps included.
+         Complements the lock file: lock catches unexpected CHANGES (hijack tripwire),
+         audit catches KNOWN CVEs. Warnings only — a disclosed-but-unpatched CVE
+         should not hard-block deploys. Flip to error via WarningsAsErrors if desired. -->
+    <NuGetAudit>true</NuGetAudit>
+    <NuGetAuditMode>all</NuGetAuditMode>
+    <NuGetAuditLevel>low</NuGetAuditLevel>
+  </PropertyGroup>
+
+  <!-- Analyzer dragnet: maximum rule surface, severity decisions live in the
+       root .editorconfig (every silenced rule carries a reason there). Analyzers are
+       build-time only (PrivateAssets=all) — nothing ships. Warnings stay warnings; a rule
+       family the triage ADOPTS gets its sites fixed to zero, and the zero is the pin. -->
+  <PropertyGroup>
+    <AnalysisLevel>latest-all</AnalysisLevel>
+    <!-- Dragnet is OPT-IN: full analyzer execution costs +27s/build (31.1s → 57.9s measured
+         2026-08-01), so normal builds skip it. Run via the gates.sh dragnet flag or
+         `dotnet build -p:Dragnet=true`. Packages stay referenced unconditionally so the
+         restore graph is identical either way — only rule EXECUTION is conditional. -->
+    <RunAnalyzers Condition="'$(Dragnet)' != 'true'">false</RunAnalyzers>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Meziantou.Analyzer" Version="3.0.138" PrivateAssets="all" />
+    <PackageReference Include="SonarAnalyzer.CSharp" Version="10.31.0.145097" PrivateAssets="all" />
+    <PackageReference Include="AsyncFixer" Version="2.1.0" PrivateAssets="all" />
+  </ItemGroup>
+
+</Project>

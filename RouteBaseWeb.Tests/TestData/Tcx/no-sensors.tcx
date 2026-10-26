@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<TrainingCenterDatabase xmlns="http://www.garmin.com/xmlschemas/TrainingCenterDatabase/v2">
+  <Activities>
+    <Activity Sport="Walking">
+      <Id>2026-03-03T10:00:00Z</Id>
+      <Lap StartTime="2026-03-03T10:00:00Z">
+        <TotalTimeSeconds>40</TotalTimeSeconds>
+        <DistanceMeters>60.0</DistanceMeters>
+        <Track>
+          <Trackpoint>
+            <Time>2026-03-03T10:00:00Z</Time>
+            <Position>
+              <LatitudeDegrees>47.300000</LatitudeDegrees>
+              <LongitudeDegrees>8.300000</LongitudeDegrees>
+            </Position>
+            <AltitudeMeters>300.0</AltitudeMeters>
+          </Trackpoint>
+          <Trackpoint>
+            <Time>2026-03-03T10:00:40Z</Time>
+            <Position>
+              <LatitudeDegrees>47.300400</LatitudeDegrees>
+              <LongitudeDegrees>8.300400</LongitudeDegrees>
+            </Position>
+            <AltitudeMeters>302.0</AltitudeMeters>
+          </Trackpoint>
+        </Track>
+      </Lap>
+    </Activity>
+  </Activities>
+</TrainingCenterDatabase>

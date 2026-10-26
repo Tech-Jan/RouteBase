@@ -1,0 +1,45 @@
+@inject RouteBaseWeb.Services.Settings.IAppSettingsProvider AppSettings
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@(ViewData["Title"] != null ? ViewData["Title"] + " – " : "")RouteBase</title>
+    <!-- Google Fonts: Geist + Geist Mono -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="~/css/cockpit-tokens.css" asp-append-version="true">
+    <link rel="stylesheet" href="~/css/cockpit-shell.css" asp-append-version="true">
+    <link rel="stylesheet" href="~/css/cockpit-components.css" asp-append-version="true">
+    <link rel="stylesheet" href="~/css/auth.css" asp-append-version="true">
+    <partial name="_CdnLibs" model="@("bootstrap-icons-css")" />
+    @await RenderSectionAsync("Styles", required: false)
+</head>
+<body class="cockpit-active">
+    @* Minimal anonymous cockpit shell — only the auth/error pages use this layout (every app page sets
+       _DashboardLayout or _ShareLayout). No sidebar/nav/toast: a locked-out or anonymous visitor gets just
+       the brand and the page. Was Bootstrap + site.css (a second visual system); retired by the CSS-system cleanup. *@
+    <div class="auth-shell">
+        <header class="auth-brand">
+            <a href="/" class="auth-brand-link">
+                <span aria-hidden="true">🏃</span>
+                <span class="mono">RouteBase</span>
+            </a>
+        </header>
+        <main role="main" class="auth-main">
+            @RenderBody()
+        </main>
+    </div>
+
+        @* Settings island, before core.js: core/core.ts reads it at boot, and module graphs evaluate in
+       document order. Rendered HERE rather than per page — _ViewStart plus the per-page `Layout =`
+       assignments make the three layouts a partition of every page. *@
+    @{ var appSettings = await AppSettings.GetAsync(); }
+    <partial name="_AppSettingsBootstrap" model="appSettings" />
+
+    <script type="module" src="~/js/core/core.js" asp-append-version="true"></script>
+
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

@@ -1,0 +1,416 @@
+/* cockpit-shell.css — app shell, sidebar, main area, tabbar, and responsive layout */
+
+/* ── hidden means hidden ─────────────────────────────────────────────────────── */
+/* The UA sheet's `[hidden] { display: none }` has specificity (0,0,1) — ANY class that sets `display` beats
+   it, so an element with both a display-setting class and the `hidden` attribute is silently VISIBLE. This
+   has bitten the app five times (.shape-controls, .shape-select, .seg-filter-pill, .map-dd-item, .race-loading
+   and the version-history panel's notice + actions), each patched locally with one more `.foo[hidden]` rule.
+   Fixed once, here: the attribute now wins over any class, so `el.hidden = true` means what it says and the
+   per-class patches are no longer load-bearing. Loaded on every page (_DashboardLayout). */
+[hidden] {
+  display: none !important;
+}
+
+/* ── Cockpit app shell ───────────────────────────────────────────────────────── */
+.cockpit-shell {
+  display: flex;
+  height: 100dvh;
+  overflow: hidden;
+}
+
+/* ── Sidebar ─────────────────────────────────────────────────────────────────── */
+.cockpit-sidebar {
+  width: var(--sidebar-w);
+  flex: 0 0 var(--sidebar-w);
+  background: var(--bg-1);
+  border-right: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  position: relative;
+  z-index: 10;
+}
+
+.sidebar-logo {
+  padding: 18px 20px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.sidebar-logo-emoji {
+  font-size: 20px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.sidebar-logo-text {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-weight: 600;
+  color: var(--fg-0);
+}
+
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 0 12px;
+  flex-shrink: 0;
+}
+
+.sidebar-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 12px;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--fg-1);
+  font-size: 13px;
+  text-decoration: none;
+  border-left: 2px solid transparent;
+  transition: background 0.12s, color 0.12s;
+}
+.sidebar-nav-item:hover {
+  background: var(--bg-3);
+  color: var(--fg-0);
+}
+.sidebar-nav-item.active {
+  background: var(--bg-3);
+  color: var(--fg-0);
+  border-left-color: var(--acc-cyan);
+  padding-left: 10px;
+}
+
+.sidebar-spacer { flex: 1; }
+
+body.cockpit-active button.sidebar-nav-item {
+  background: none;
+  border-top: none;
+  border-right: none;
+  border-bottom: none;
+  font: inherit;
+  cursor: pointer;
+  text-align: left;
+  -webkit-appearance: none;
+  appearance: none;
+  padding: 9px 12px;
+}
+
+.sidebar-subnav form {
+  margin: 0;
+}
+
+body.cockpit-active button.sidebar-subnav-item {
+  width: 100%;
+  border: none;
+  background: none;
+  font: inherit;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+  padding: 6px 8px 6px 32px;
+}
+
+/* ── Main content area ───────────────────────────────────────────────────────── */
+.cockpit-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+/* A map's fullscreen overlay (.map-fullscreen, position:fixed z-index:9999) lives inside .cockpit-main,
+   whose `isolation: isolate` traps its z-index below the sidebar (z-index:10) in the parent stacking
+   context — so the sidebar painted over the "fullscreen" map. Raising the whole main column above the
+   sidebar for the duration of fullscreen lets the overlay actually cover the viewport. */
+body.map-fullscreen-active .cockpit-main {
+  z-index: 9999;
+}
+
+.cockpit-scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px 28px 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.cockpit-scroll > * { flex-shrink: 0; }
+
+/* ── Bottom mobile tab bar ───────────────────────────────────────────────────── */
+.cockpit-tabbar {
+  display: none;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 60px;
+  background: var(--bg-1);
+  border-top: 1px solid var(--line);
+  z-index: 100;
+  align-items: stretch;
+}
+
+.tabbar-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  color: var(--fg-2);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  text-decoration: none;
+  transition: color 0.12s;
+}
+.tabbar-item:hover, .tabbar-item.active { color: var(--acc-cyan); }
+
+.tabbar-cta {
+  flex: 0 0 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 6px;
+  border-radius: 50%;
+  background: var(--acc-cyan);
+  color: oklch(0.18 0.02 240);
+  text-decoration: none;
+}
+
+.tabbar-more-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+}
+
+.tabbar-more-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.45);
+  z-index: 110;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+.tabbar-more-backdrop.open {
+  display: block;
+  opacity: 1;
+}
+
+.tabbar-more-sheet {
+  display: none;
+  position: fixed;
+  bottom: 60px;
+  left: 0;
+  right: 0;
+  background: var(--bg-1);
+  border-top: 1px solid var(--line);
+  border-radius: 16px 16px 0 0;
+  z-index: 120;
+  padding: 8px 0 16px;
+  transform: translateY(100%);
+  transition: transform 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.tabbar-more-sheet.open {
+  display: block;
+  transform: translateY(0);
+}
+
+.tabbar-more-handle {
+  width: 36px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--line);
+  margin: 4px auto 12px;
+}
+
+.tabbar-more-nav {
+  display: flex;
+  flex-direction: column;
+}
+
+.tabbar-more-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 24px;
+  color: var(--fg-2);
+  text-decoration: none;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  transition: color 0.12s, background 0.12s;
+}
+.tabbar-more-item:hover,
+.tabbar-more-item.active {
+  color: var(--acc-cyan);
+  background: color-mix(in oklch, var(--acc-cyan) 8%, transparent);
+}
+
+.tabbar-more-divider {
+  height: 1px;
+  background: var(--line);
+  margin: 8px 0;
+}
+
+.tabbar-more-logout {
+  width: 100%;
+  text-align: left;
+  border: none;
+  background: none;
+  font: inherit;
+  cursor: pointer;
+  color: var(--acc-red);
+}
+
+/* ── Sidebar toggle button (tablet) ─────────────────────────────────────────── */
+.sidebar-toggle {
+  display: none;
+  position: fixed;
+  top: 14px;
+  left: 14px;
+  z-index: 200;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  color: var(--fg-1);
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+/* ── Expandable sidebar nav group ────────────────────────────────────────────── */
+.sidebar-nav-group {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.sidebar-nav-group > .sidebar-nav-item {
+  flex: 1;
+}
+
+.sidebar-nav-toggle {
+  flex-shrink: 0;
+  margin-right: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: none;
+  background: none;
+  color: var(--fg-2);
+  cursor: pointer;
+  border-radius: 4px;
+  transition: color 0.15s, background 0.15s;
+  padding: 0;
+}
+.sidebar-nav-toggle:hover { color: var(--fg-0); background: var(--bg-2); }
+.sidebar-nav-toggle svg { transition: transform 0.2s; }
+.sidebar-nav-group.open > .sidebar-nav-toggle svg { transform: rotate(180deg); }
+
+.sidebar-nav-toggle-full {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  border: none;
+  background: none;
+  cursor: pointer;
+  text-align: left;
+}
+.sidebar-nav-toggle-full > span { flex: 1; }
+.sidebar-nav-toggle-full svg:last-child { flex-shrink: 0; transition: transform 0.2s; }
+.sidebar-nav-group.open > .sidebar-nav-toggle-full svg:last-child { transform: rotate(180deg); }
+
+.sidebar-subnav {
+  display: none;
+  width: 100%;
+  list-style: none;
+  margin: 2px 0 4px;
+  padding: 0;
+}
+.sidebar-nav-group.open > .sidebar-subnav { display: block; }
+
+.sidebar-subnav-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px 6px 32px;
+  border-radius: 6px;
+  color: var(--fg-2);
+  text-decoration: none;
+  font-size: 13px;
+  transition: color 0.15s, background 0.15s;
+}
+.sidebar-subnav-item:hover { color: var(--fg-0); background: var(--bg-2); }
+.sidebar-subnav-item.active { color: var(--fg-0); background: var(--bg-2); font-weight: 500; }
+
+/* ── Friends pending pip ─────────────────────────────────────────────────────── */
+.nav-pip {
+  display: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--acc-red);
+  flex-shrink: 0;
+}
+.nav-pip.visible { display: inline-block; }
+
+/* ── Responsive breakpoints ──────────────────────────────────────────────────── */
+
+/* Mobile: no sidebar, bottom tab bar, stack layout */
+@media (max-width: 1600px) {
+  html, body { overflow-x: hidden; }
+
+  .cockpit-sidebar { display: none; }
+  .sidebar-toggle  { display: none; }
+  .cockpit-shell   { overflow-x: hidden; }
+
+  .cockpit-scroll {
+    padding: 16px max(16px, calc(50% - 430px)) 80px;
+    overflow-x: hidden;
+    scrollbar-width: none;
+  }
+  .cockpit-scroll::-webkit-scrollbar { display: none; }
+
+  .cockpit-tabbar { display: flex; }
+  body.replay-active .cockpit-tabbar { display: none; }
+}
+
+@media (max-width: 600px) {
+  .cockpit-scroll { padding: 16px 0 80px; }
+}
+
+/* ── Touch: never let focusing a field zoom the page ──────────────────────────── */
+/* iOS Safari force-zooms the whole document whenever a focused input is under 16px, and does not
+   reliably zoom back out on blur — the page just stays magnified. Roughly 20 rules across the app
+   set 11-13px, the per-column grid filter among them, so this is the one place to hold the floor.
+   Page zoom itself stays available on purpose (WCAG 1.4.4); this removes a reason it fires by
+   accident, it does not disable it. Loaded on every real page (_DashboardLayout + _ShareLayout);
+   site.css carries the same rule for the four auth/error pages on _Layout. */
+@media (pointer: coarse) {
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+  }
+}

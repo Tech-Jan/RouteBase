@@ -1,0 +1,96 @@
+/* multiday.css — Multi-Day Tours page */
+
+/* ── Tour grid ──────────────────────────────────────────────────────────── */
+.tour-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+/* ── Tour card ──────────────────────────────────────────────────────────── */
+.tour-card {
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.tour-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--line);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--fg-0);
+  letter-spacing: -0.01em;
+}
+
+.tour-card-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px 16px;
+}
+
+.tour-description {
+  font-size: 13px;
+  color: var(--fg-1);
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* Chips for date range / days / activities */
+.tour-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+/* ── Stats mini-list ────────────────────────────────────────────────────── */
+.tour-stats {
+  border-top: 1px solid var(--line);
+  padding-top: 10px;
+}
+
+.tour-stats-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 5px 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 12px;
+}
+.tour-stats-row:last-child { border-bottom: none; }
+
+.tour-stats-label { color: var(--fg-2); }
+.tour-stats-value {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--fg-0);
+}
+
+/* ── Card footer with full-width CTA ────────────────────────────────────── */
+.tour-card-footer {
+  padding: 12px 16px;
+  border-top: 1px solid var(--line);
+}
+
+.tour-card-footer > .btn-cockpit {
+  width: 100%;
+  justify-content: center;
+}
+
+/* ── Responsive ─────────────────────────────────────────────────────────── */
+@media (max-width: 1024px) {
+  .tour-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 768px) {
+  .tour-grid { grid-template-columns: 1fr; margin: 0 16px; }
+}

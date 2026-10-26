@@ -1,0 +1,672 @@
+/* cockpit-components.css — KPI strip, buttons, page header, and empty state */
+
+/* ── KPI strip ───────────────────────────────────────────────────────────────── */
+/* Panel wraps the strip so the period reads as the title for all the stats below it,
+   rather than a caption floating disconnected above them. */
+.kpi-panel {
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.kpi-panel-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 20px;
+  border-bottom: 1px solid var(--line);
+}
+
+/* Accent dot + period — the active timeframe every card below reports on */
+.kpi-panel-period {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--fg-1);
+}
+.kpi-panel-period::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--acc-cyan);
+}
+
+/* Inside the panel the strip is just the grid — the panel owns the border/background. */
+.kpi-panel .kpi-strip {
+  border: none;
+  border-radius: 0;
+  background: transparent;
+}
+
+.kpi-strip {
+  display: grid;
+  grid-template-columns: repeat(var(--kpi-cols, 5), 1fr);
+  gap: 0;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.kpi-card {
+  padding: 18px 20px;
+  border-left: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.kpi-card:first-child { border-left: none; }
+
+.kpi-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--fg-3);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+
+.kpi-value-row {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.kpi-value {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 32px;
+  font-weight: 500;
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+
+.kpi-unit {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--fg-3);
+}
+
+.kpi-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.kpi-trend {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+.kpi-trend.up   { color: var(--acc-lime); }
+.kpi-trend.down { color: var(--acc-red); }
+.kpi-trend.flat { color: var(--fg-3); }
+
+/* Auto-fit columns (variable item count) */
+.kpi-strip--auto {
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+}
+
+/* Compact modifier — tighter padding + smaller value font */
+.kpi-strip--compact .kpi-card {
+  padding: 12px 14px;
+}
+.kpi-strip--compact .kpi-label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  letter-spacing: 0.07em;
+}
+.kpi-strip--compact .kpi-value {
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+/* Cards modifier — individual separated cards (live stat displays) */
+.kpi-strip--cards {
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  overflow: visible;
+}
+.kpi-strip--cards .kpi-card {
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-left: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  text-align: center;
+  gap: 4px;
+}
+.kpi-strip--cards .kpi-value {
+  font-size: 1.5rem;
+  font-weight: 600;
+  line-height: 1.2;
+  margin-bottom: 4px;
+}
+.kpi-strip--cards .kpi-label {
+  font-size: 0.75rem;
+  letter-spacing: 0.05em;
+  color: var(--fg-2);
+}
+
+@media (max-width: 480px) {
+  .kpi-strip--cards {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* ── Card primitive ──────────────────────────────────────────────────────────
+   The shared "list card" surface: greyish panel, hairline border that lifts on
+   hover, clipped corners. `.seg-card` (segments-index.css), `.race-card`
+   (races.css) and `.activity-card` (dashboard.css) are folded onto it here by
+   selector-grouping — they still carry their own layout (grid/flex),
+   content-visibility and intrinsic-size in the page files.
+   `.activity-card` (the app's most-seen card) was normalised into the group by
+   the CSS-system cleanup: its 12px radius → --radius-lg (10px) and its extra
+   hover box-shadow ring dropped, so it matches segments/races.
+   It keeps its 12px re-skin only where a wrapper embeds it (.trash-card /
+   .rec-review-card, higher-specificity overrides that stay).
+   NOT folded (they diverge on purpose): .trash-card / .rec-review-card
+   (bg-1 + dim/amber states), .det-seg-card (bg-3 + cyan hover), .tour-card. */
+.card-cockpit,
+.seg-card,
+.race-card,
+.activity-card {
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  transition: border-color 0.15s;
+}
+.card-cockpit:hover,
+.seg-card:hover,
+.race-card:hover,
+.activity-card:hover { border-color: var(--line-2); }
+
+/* ── Deleted card (in-place grey-out) ─────────────────────────────────────────
+   Shared by the dashboard feed (.activity-card) and segments list (.seg-card):
+   after a successful delete, mark-card-deleted.ts adds .is-card-deleted so the
+   card dims in place instead of the page reloading. It lingers until the next
+   real page load (the server stops returning it). The JS also applies these as
+   inline styles (belt-and-braces against a stale cache); this rule is the
+   canonical, greppable hook and supplies the fade transition. Moved here from the
+   deleted site.css by the CSS-system cleanup so it actually loads on the card pages. */
+.is-card-deleted {
+  opacity: 0.5;
+  filter: grayscale(0.7);
+  pointer-events: none;
+  cursor: default;
+  transition: opacity 0.15s, filter 0.15s;
+}
+.is-card-deleted .activity-delete-btn,
+.is-card-deleted .seg-delete-btn {
+  display: none;
+}
+
+/* ── Map toolbar primitive ───────────────────────────────────────────────────
+   The bordered toolbar strip above a map hero: Activities (.act-map-toolbar),
+   Activity Details (.det-map-toolbar) and Segment Statistics (.seg-map-toolbar)
+   were three byte-identical copies. Folded here by selector-grouping; each page
+   keeps only its phone padding/gap overrides. position/z-index lift the bar over
+   the Leaflet/OSM map panes (which reach z-index ~1000) so open dropdowns overlay
+   the map. NOT folded: .grid-toolbar (a bottom-border strip, different shape). */
+.toolbar-cockpit,
+.act-map-toolbar,
+.det-map-toolbar,
+.seg-map-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: 8px 14px;
+  position: relative;
+  z-index: 1100;
+}
+
+/* ── Cockpit-style buttons ───────────────────────────────────────────────────── */
+.btn-cockpit {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: var(--radius-md);
+  font-family: var(--font-ui);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  text-decoration: none;
+  border: 1px solid transparent;
+  white-space: nowrap;
+  transition: background 0.12s, border-color 0.12s, color 0.12s;
+}
+
+.btn-cockpit:disabled,
+.btn-cockpit[disabled] {
+  opacity: 0.45;
+  cursor: default;
+  pointer-events: none;
+}
+
+.btn-cockpit-sm { padding: 3px 9px;  font-size: 11px; }
+.btn-cockpit-xs { padding: 2px 7px;  font-size: 11px; }
+
+.btn-cockpit-primary {
+  background: var(--acc-cyan);
+  color: oklch(0.14 0.008 240);
+  border-color: var(--acc-cyan);
+  font-weight: 600;
+}
+.btn-cockpit-primary:hover { background: oklch(0.85 0.13 210); color: oklch(0.14 0.008 240); }
+
+.btn-cockpit-ghost {
+  background: var(--bg-1);
+  color: var(--fg-1);
+  border-color: var(--line);
+}
+.btn-cockpit-ghost:hover { background: var(--bg-2); border-color: var(--line-2); color: var(--fg-0); }
+
+.btn-cockpit-danger {
+  background: transparent;
+  color: var(--acc-red);
+  border-color: var(--acc-red);
+}
+.btn-cockpit-danger:hover { background: oklch(0.72 0.18 25 / 0.12); }
+
+/* Amber variant — active drawing state on the segment-create map. Lives with the
+   family (not in segment-create.css) so the guard keeping .btn-cockpit-* here holds. */
+.btn-cockpit-amber {
+  background: transparent;
+  color: var(--acc-amber);
+  border-color: var(--acc-amber);
+}
+.btn-cockpit-amber:hover { background: oklch(0.80 0.15 75 / 0.12); color: var(--acc-amber); }
+
+/* ── Chip ──────────────────────────────────────────────────────────────────────
+   The small pill label: mono, uppercase, greyish, hairline-bordered. Moved here
+   from cockpit-tokens.css by the CSS-system cleanup — it is a component, not a token.
+   `.act-type-chip` (activities grid) and `.det-type-chip` (activity / segment detail
+   header) are folded on by selector-grouping; each keeps only its genuine deltas in
+   its own file (activities.css / activity-details.css, both loaded after this).
+   Living in cockpit-components (loaded on every page) also styles the segment-stats
+   header's .det-type-chip, which previously loaded no rule for it.
+   NOT folded: .seg-filter-pill (a cyan UI-font status pill — different shape, weight
+   and role), .chip-toggle (an interactive control), .cum-chip-dot
+   (a legend dot). (.nav-pills was listed here too; Bootstrap is retired and the class
+   now appears nowhere — dropped 2026-08-02 so it isn't read as a live constraint.) */
+.chip,
+.act-type-chip,
+.det-type-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: var(--bg-3);
+  border: 1px solid var(--line);
+  font-size: 11px;
+  color: var(--fg-1);
+  font-family: var(--font-mono);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+/* ── Page header ─────────────────────────────────────────────────────────────── */
+.page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+.page-header-left {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.page-header-right {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+
+.page-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--fg-2);
+}
+.page-breadcrumb a { color: var(--fg-2); text-decoration: none; }
+.page-breadcrumb a:hover { color: var(--fg-0); }
+.page-breadcrumb-sep { color: var(--fg-3); }
+.page-breadcrumb-current { color: var(--fg-1); }
+
+.page-meta-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.page-title {
+  font-size: 28px;
+  font-weight: 600;
+  color: var(--fg-0);
+  margin: 0;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+}
+
+.page-subtitle {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--fg-2);
+  margin: 0;
+  letter-spacing: 0.04em;
+}
+
+/* ── Inline validation message ────────────────────────────────────────────────
+   The non-blocking replacement for alert() on a form (core/inline-error.ts): it sits with the
+   control it is about, clears itself when the user fixes the input, and never has to be dismissed. */
+.inline-error {
+  margin-top: 6px;
+  font-family: var(--font-ui);
+  font-size: 12px;
+  line-height: 1.35;
+  color: oklch(0.72 0.17 25);
+}
+.inline-error[hidden] { display: none; }
+
+/* The field the message is about, while it shows (class, not [aria-invalid], so it can't collide
+   with grid/table cells that carry the attribute for their own reasons). */
+.is-invalid { border-color: oklch(0.72 0.17 25); }
+
+/* ── Empty / info states ─────────────────────────────────────────────────────── */
+.empty-state {
+  padding: 16px 18px;
+  border-radius: var(--radius-md);
+  background: oklch(0.50 0.08 220 / 0.12);
+  border: 1px solid oklch(0.50 0.08 220 / 0.25);
+  color: var(--fg-2);
+  font-size: 13px;
+}
+.empty-state a { color: var(--acc-cyan); text-decoration: none; }
+.empty-state a:hover { text-decoration: underline; }
+
+.empty-state--warn {
+  background: oklch(0.60 0.12 75 / 0.10);
+  border-color: oklch(0.60 0.12 75 / 0.25);
+  color: var(--fg-1);
+}
+
+/* ── Component responsive overrides ─────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .kpi-strip { margin: 0 16px; grid-template-columns: repeat(2, 1fr); }
+  .kpi-panel { margin: 0 16px; }
+  .kpi-panel .kpi-strip { margin: 0; }
+  .kpi-card:nth-child(2n+1) { border-left: none; }
+  .kpi-card:nth-child(n+3)  { border-top: 1px solid var(--line); }
+  .kpi-value { font-size: 24px; }
+
+  .page-title  { font-size: 22px; }
+  .page-header { gap: 16px; }
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+   Floating chart readout box (shared) — a tight value box that floats above a
+   chart's vertical crosshair line. Appended into a position:relative chart
+   container by ChartReadoutBox (core/chart-readout-box.ts). Used by the
+   Statistics, Activity Details and Segment Statistics charts.
+   ────────────────────────────────────────────────────────────────────────── */
+.chart-readout {
+  position: absolute;
+  top: 0;
+  left: 0;
+  /* Passive by default (Activity Details). Pages that wire row hover/click set
+     .is-interactive (see ChartReadoutBox.setInteractive) to capture the pointer. */
+  pointer-events: none;
+  background: var(--bg-3);
+  border: 1px solid var(--line-2);
+  border-radius: 6px;
+  padding: 5px 7px;
+  min-width: 0;
+  box-shadow: var(--shadow-2);
+  /* Above every page's map chrome, below a fullscreen map (9999, cockpit-shell.css).
+     1200 until 2026-08-12, and that number was stale: it was chosen against Leaflet's
+     ~700–1000 panes and a "fullscreen map at 1500" that no longer exists. The race
+     replay's dock ladder starts at 9001 (#raceChartsDrawer) / 9002 (follow sidebar) /
+     9003 (exit) / 9100 (map dropdowns), and the box LOST to all of them — its host
+     (.race-speed-wrap) and the dock's (.race-map-wrap) are both position:relative with
+     z-index:auto, so neither opens a stacking context and 1200 competed with 9001
+     directly. The race speed chart floats its readout up over the map card, so it was
+     being painted over by the dock. */
+  z-index: 9500;
+  display: none;
+}
+/* When rows are interactive, the box must capture the pointer so it stays open
+   while hovered and rows receive hover/click. */
+.chart-readout.is-interactive {
+  pointer-events: auto;
+}
+/* Touch dismiss ✕ — only rendered on coarse-pointer devices (chart-readout-box.ts).
+   pointer-events re-enabled explicitly so it is tappable even on a passive box. */
+.chart-readout-close {
+  position: absolute;
+  top: -9px;
+  right: -9px;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border-radius: 50%;
+  border: 1px solid var(--line-2);
+  background: var(--bg-3);
+  color: var(--fg-1);
+  font-size: 15px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: auto;
+  cursor: pointer;
+  box-shadow: var(--shadow-2);
+}
+.chart-readout.is-interactive .chart-readout-row {
+  cursor: pointer;
+  border-radius: 3px;
+  /* Negative inline margin + matching padding gives the hover background a little
+     bleeway without widening the box. */
+  margin-left: -3px;
+  margin-right: -3px;
+  padding: 0 3px;
+}
+.chart-readout.is-interactive .chart-readout-row:hover {
+  background: var(--bg-2);
+}
+.chart-readout-title {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--fg-1);
+  margin-bottom: 2px;
+}
+/* One row per series/metric; each value is a fixed-width column so nothing reflows on hover.
+   nowrap keeps a row on a single line even when the box is squeezed near the chart's right edge. */
+.chart-readout-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-top: 3px;
+  white-space: nowrap;
+}
+.chart-readout-row .swatch {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  flex: none;
+  align-self: center;
+  /* Pull the label tight to the colour swatch (the row gap governs the wider value columns). */
+  margin-right: -4px;
+}
+.chart-readout-row .name {
+  color: var(--fg-2);
+  font-size: 11px;
+  white-space: nowrap;
+}
+/* The selected/emphasised row. */
+.chart-readout-row.is-sel .name {
+  color: var(--fg-0);
+  font-weight: 700;
+}
+/* A value column: number (right-aligned) + unit (left-aligned), tabular so columns line up across
+   rows. The number column's width is set inline (sized to its largest value) so the box stays as
+   narrow as the data allows yet never reflows as values change while hovering. */
+.chart-readout-row .cell {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 3px;
+}
+.chart-readout-row .num {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--fg-0);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  min-width: 1ch;
+}
+.chart-readout-row .unit {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--fg-2);
+  text-align: left;
+}
+
+/* Cockpit-themed MapLibre popup — pass `className: "cockpit-popup"` to the Popup ctor. MapLibre's
+   default is a white box; without this, dark-theme page text renders unreadable on it (the whole
+   reason this exists). Gives the greyish card surface used everywhere else. */
+.cockpit-popup .maplibregl-popup-content {
+  background: var(--bg-2);
+  color: var(--fg-0);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-2);
+}
+.cockpit-popup .maplibregl-popup-content strong { color: var(--fg-0); }
+.cockpit-popup .maplibregl-popup-content small  { color: var(--fg-1); }
+.cockpit-popup .maplibregl-popup-close-button {
+  color: var(--fg-2);
+  padding-right: 4px;
+}
+.cockpit-popup .maplibregl-popup-close-button:hover {
+  color: var(--fg-0);
+  background: transparent;
+}
+/* Tip triangle: MapLibre colours the one border side facing the anchor — match it to the surface. */
+.cockpit-popup.maplibregl-popup-anchor-top .maplibregl-popup-tip,
+.cockpit-popup.maplibregl-popup-anchor-top-left .maplibregl-popup-tip,
+.cockpit-popup.maplibregl-popup-anchor-top-right .maplibregl-popup-tip {
+  border-bottom-color: var(--bg-2);
+}
+.cockpit-popup.maplibregl-popup-anchor-bottom .maplibregl-popup-tip,
+.cockpit-popup.maplibregl-popup-anchor-bottom-left .maplibregl-popup-tip,
+.cockpit-popup.maplibregl-popup-anchor-bottom-right .maplibregl-popup-tip {
+  border-top-color: var(--bg-2);
+}
+.cockpit-popup.maplibregl-popup-anchor-left .maplibregl-popup-tip {
+  border-right-color: var(--bg-2);
+}
+.cockpit-popup.maplibregl-popup-anchor-right .maplibregl-popup-tip {
+  border-left-color: var(--bg-2);
+}
+
+/* ── Share badge ───────────────────────────────────────────────────────────
+   The "this is published" marker on a dashboard / segment / race card (_ShareBadge.cshtml): the share
+   glyph plus how often the link behind it has been opened.
+
+   Only layout lives here. Colour and size stay on each list's own modifier (.activity-card-share /
+   .seg-card-share / .race-card-share), which already carried them when the badge was a bare <i> — the
+   three card lists space their meta rows differently and that was already true before the count. */
+.share-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+/* The number reads as a companion to the glyph, not as a second icon: same hue, dimmed, and tabular so a
+   grid of cards does not jitter between 9 and 10. */
+.share-badge-count {
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  opacity: 0.85;
+  letter-spacing: 0.02em;
+}
+
+/* Sharing has ended, the views remain. Dimmed as a whole (glyph AND count) so it reads as history rather
+   than as a live link — the one visual difference between "is published" and "was published". Opacity, not
+   a colour: each card list owns the badge's hue on its own modifier, and this must not fight that. */
+.share-badge--past {
+  opacity: 0.45;
+}
+
+/* ── Series-mode toggle (Recorded / Smoothed) ────────────────────────────────
+   Layout only. Each page dresses the button in its OWN control class — .det-chart-tab
+   on activity details, .chip-toggle on segment stats — so it matches the buttons beside
+   it instead of introducing a third look. What is shared is the icon+label arrangement
+   and dropping the label on narrow screens, where the icon carries the meaning (which is
+   why the title attribute stays a full sentence). */
+.chart-mode-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+@media (max-width: 600px) {
+  .chart-mode-toggle .chart-mode-label { display: none; }
+  .chart-mode-toggle { gap: 0; }
+}
+
+/* The race speed panel has no control row of its own, so this one button brings its own
+   chrome — sized to sit on the panel head's baseline row without stretching it. */
+.race-panel-head .chart-mode-toggle {
+  margin-left: auto;
+  align-self: center;
+  height: 28px;
+  padding: 0 10px;
+  border: 1px solid var(--cockpit-border, rgba(255, 255, 255, 0.12));
+  border-radius: var(--radius-md, 8px);
+  background: transparent;
+  color: var(--txt-1, #c8ccd6);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.12s ease, color 0.12s ease, border-color 0.12s ease;
+}
+.race-panel-head .chart-mode-toggle:hover {
+  border-color: var(--acc-cyan);
+  color: var(--acc-cyan);
+}
+.race-panel-head .chart-mode-toggle.is-active {
+  color: var(--bg-0);
+  background: var(--acc-cyan);
+  border-color: var(--acc-cyan);
+}

@@ -1,0 +1,104 @@
+@page
+@model ErrorsModel
+@{
+    Layout = "_DashboardLayout";
+    ViewData["Title"] = "Errors";
+}
+
+<div class="cockpit-scroll">
+
+    <partial name="_PageHeader" model="@(new PageHeaderModel(
+        Title: "Error Log",
+        Subtitle: $"Captured server errors (Error/Critical) — {(int)RouteBaseWeb.Services.ErrorLog.ErrorLogRetention.MaxAge.TotalDays} day / {RouteBaseWeb.Services.ErrorLog.ErrorLogRetention.MaxRows:N0} row retention",
+        Breadcrumbs: new (string Href, string Label)[] { ("/", "Dashboard"), ("/Admin/Errors", "Errors") }
+    ))" />
+
+    <form method="get" asp-page="./Errors">
+        <input type="hidden" name="P" value="1" />
+        <label for="Level">Level</label>
+        <select id="Level" name="Level">
+            <option value="all" selected="@(Model.Level == "all")">All</option>
+            <option value="Error" selected="@(Model.Level == "Error")">Error</option>
+            <option value="Critical" selected="@(Model.Level == "Critical")">Critical</option>
+        </select>
+
+        <label for="Source">Source</label>
+        <select id="Source" name="Source">
+            <option value="all" selected="@(Model.Source == "all")">All</option>
+            <option value="api" selected="@(Model.Source == "api")">api</option>
+            <option value="background" selected="@(Model.Source == "background")">background</option>
+        </select>
+
+        <button type="submit" class="btn-cockpit btn-cockpit-primary">Apply</button>
+    </form>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Time (UTC)</th>
+                <th>Level</th>
+                <th>Source</th>
+                <th>Category</th>
+                <th>Message</th>
+                <th>Path</th>
+                <th>User</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (Model.Rows.Count == 0)
+            {
+                <tr>
+                    <td colspan="7">No errors logged.</td>
+                </tr>
+            }
+            else
+            {
+                @foreach (var row in Model.Rows)
+                {
+                    <tr>
+                        <td>@row.TimestampUtc</td>
+                        <td>@row.Level</td>
+                        <td>@row.Source</td>
+                        <td title="@row.Category">@ErrorsModel.ShortCategory(row.Category)</td>
+                        <td>
+                            @if (!string.IsNullOrEmpty(row.StackTrace))
+                            {
+                                <details>
+                                    <summary>@row.Message</summary>
+                                    <pre>@row.StackTrace</pre>
+                                </details>
+                            }
+                            else
+                            {
+                                @row.Message
+                            }
+                        </td>
+                        <td>@row.Path</td>
+                        <td>@row.UserId</td>
+                    </tr>
+                }
+            }
+        </tbody>
+    </table>
+
+    <p>
+        Page @Model.P of @Model.TotalPages — @Model.TotalCount errors
+        @if (Model.P > 1)
+        {
+            <a asp-page="./Errors" asp-route-Level="@Model.Level" asp-route-Source="@Model.Source" asp-route-P="@(Model.P - 1)">Prev</a>
+        }
+        @if (Model.P < Model.TotalPages)
+        {
+            <a asp-page="./Errors" asp-route-Level="@Model.Level" asp-route-Source="@Model.Source" asp-route-P="@(Model.P + 1)">Next</a>
+        }
+    </p>
+
+    <form method="post" asp-page-handler="Prune">
+        <button type="submit" class="btn-cockpit btn-cockpit-danger">Prune now (@((int)RouteBaseWeb.Services.ErrorLog.ErrorLogRetention.MaxAge.TotalDays)d / @RouteBaseWeb.Services.ErrorLog.ErrorLogRetention.MaxRows.ToString("N0") rows)</button>
+    </form>
+
+    <form method="post" asp-page-handler="Clear">
+        <button type="submit" class="btn-cockpit btn-cockpit-danger">Clear all</button>
+    </form>
+
+</div>

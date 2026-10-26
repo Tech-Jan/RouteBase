@@ -1,0 +1,42 @@
+@model RouteBaseWeb.Models.PageHeaderModel
+<header class="page-header">
+    <div class="page-header-left">
+        @if (Model.Breadcrumbs is { Count: > 0 })
+        {
+            <nav class="page-breadcrumb" aria-label="Breadcrumb">
+                @for (int i = 0; i < Model.Breadcrumbs.Count; i++)
+                {
+                    var crumb = Model.Breadcrumbs[i];
+                    if (i > 0) { <span class="page-breadcrumb-sep">›</span> }
+                    if (i < Model.Breadcrumbs.Count - 1)
+                    {
+                        <a href="@crumb.Href">@crumb.Label</a>
+                    }
+                    else
+                    {
+                        <span class="page-breadcrumb-current">@crumb.Label</span>
+                    }
+                }
+            </nav>
+        }
+        @if (Model.MetaChips is { Count: > 0 })
+        {
+            <div class="page-meta-chips">
+                @foreach (var chip in Model.MetaChips)
+                {
+                    <span class="chip">@chip</span>
+                }
+            </div>
+        }
+        <h1 class="page-title">@Model.Title</h1>
+        @if (!string.IsNullOrEmpty(Model.Subtitle))
+        {
+            <p class="page-subtitle">@Model.Subtitle</p>
+        }
+    </div>
+    @if (Model.RightActionsHtml != null)
+    {
+        @* IHtmlContent renders unencoded by design — the model property is the constant-only sink (PI-08). *@
+        <div class="page-header-right">@Model.RightActionsHtml</div>
+    }
+</header>

@@ -1,0 +1,1145 @@
+/* Races — the field on the map, the board beside it, the import below. */
+
+/* Single column: the leaderboard moved into the in-map follow sidebar, so the map spans full width. */
+.race-layout {
+    margin-bottom: 1rem;
+}
+
+/* ── Colour inputs ─────────────────────────────────────────────────────── */
+
+/* The three `<input type="color">` in this feature — the rider pill, the leg colour and the group paint —
+   are drawn as plain swatches, and that needs BOTH halves of the reset. `appearance: none` drops the UA
+   bezel so the size and radius each control sets below are authoritative; the swatch pseudos drop the
+   inner padding and border so the colour FILLS the box instead of floating inside it. Shape and size stay
+   with each control, in its own section. */
+.race-rider-color,
+.race-cp-color,
+.race-color-input {
+    -webkit-appearance: none;
+    appearance: none;
+    padding: 0;
+    background: none;
+    cursor: pointer;
+}
+
+.race-rider-color::-webkit-color-swatch-wrapper,
+.race-cp-color::-webkit-color-swatch-wrapper,
+.race-color-input::-webkit-color-swatch-wrapper {
+    padding: 0;
+}
+
+/* ── Map ──────────────────────────────────────────────────────────────── */
+
+.race-stage {
+    min-width: 0;   /* lets the grid column actually shrink; without it the map overflows */
+}
+
+.race-map-wrap {
+    position: relative;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid var(--cockpit-border, rgba(255, 255, 255, 0.08));
+}
+
+.race-map {
+    width: 100%;
+    height: 62vh;
+    min-height: 420px;
+}
+
+/* Desktop opens one size step (100 px — the grow/shrink step in core/map-utils-shared) taller; the
+   phone default is unchanged. Reset restores the same height, see race-replay-view's defaultHeight. */
+@media (min-width: 901px) {
+    .race-map {
+        height: calc(62vh + 100px);
+        min-height: 520px;
+    }
+}
+
+.race-map-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin-bottom: 0.6rem;
+}
+
+/* An open Style/Size dropdown overlaps the map's top-left, where the follow sidebar (z-index 9002) lives.
+   Both share the root stacking context, so the sidebar would paint over the menu — lift the open dropdown
+   above it. .map-dd is already position:relative, so the z-index makes it its own stacking context. */
+.race-map-toolbar .map-dd[open] {
+    z-index: 9100;
+}
+
+/* The "Editing" (who-can-edit) control is a permission, not a view control — push it to the far right so
+   it reads apart from Style/Size. */
+.race-map-toolbar .race-editpolicy {
+    margin-left: auto;
+}
+
+/* Feedback stays inside the dropdown menu (no separate panel). Muted by default; red on failure. */
+.race-editpolicy-msg {
+    margin: 0.35rem 0.55rem 0.15rem;
+    font-size: 0.75rem;
+    color: var(--fg-3);
+}
+.race-editpolicy-msg.is-error {
+    color: #ff6b6b;
+}
+
+/* Only fullscreen lives on the map, as on the segments page. */
+.race-map-expand {
+    position: absolute;
+    top: 0.75rem;
+    right: 0.75rem;
+    z-index: 2;
+    padding: 0.35rem 0.5rem;
+    border-radius: 8px;
+    border: 1px solid var(--line-2, rgba(255, 255, 255, 0.15));
+    background: var(--bg-3, rgba(20, 22, 26, 0.82));
+    color: var(--fg-1, #e6e9ee);
+    cursor: pointer;
+    backdrop-filter: blur(4px);
+}
+
+.race-map-expand:hover {
+    background: var(--bg-4, rgba(40, 44, 52, 0.92));
+}
+
+.race-loading {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    background: rgba(0, 0, 0, 0.35);
+    color: #fff;
+    font-weight: 600;
+    z-index: 3;
+    /* Never trap the map's gestures. Even while it is up, the user must be able to zoom and pan —
+       and if it ever fails to hide, a dead map is a far worse failure than a stale badge. */
+    pointer-events: none;
+}
+
+/* Load-bearing: `.race-loading` is a CLASS, and a class beats the UA sheet's `[hidden] {display:none}`,
+   so display:grid wins and the overlay never goes away when JS sets .hidden = true. Found in smoke. */
+.race-loading[hidden] {
+    display: none;
+}
+
+/* Separates the two jobs of the Real riders panel: who is IN the race, and which real effort the
+   simulated field copies its physics from. */
+.race-panel-rule {
+    border: 0;
+    border-top: 1px solid var(--border-1, rgba(255, 255, 255, 0.08));
+    margin: 1.25rem 0 1rem;
+}
+
+/* A replay that cannot load says so HERE — it used to sit on "Loading the field…" forever, which is what
+   made the last two payload bugs a hand-debug in the browser. Centred over the map, like the loader. */
+.race-error {
+    position: absolute;
+    inset: auto 1rem 1rem 1rem;
+    display: block;
+    z-index: 4;
+    margin: 0;
+}
+
+/* Same class-vs-[hidden] specificity trap as .race-loading above — it bites every one of these. */
+.race-error[hidden] {
+    display: none;
+}
+
+/* The transport (play / clock / scrub / speed stepper) moved into the in-map control bar —
+   see _RaceReplayOverlay.cshtml + race-replay.css (shared replay-controls.css styling). */
+
+/* ── Panels ───────────────────────────────────────────────────────────── */
+
+.race-panel {
+    border-radius: 12px;
+    background: var(--cockpit-surface, rgba(255, 255, 255, 0.03));
+    border: 1px solid var(--cockpit-border, rgba(255, 255, 255, 0.08));
+    overflow: hidden;
+    margin-bottom: 1rem;
+}
+
+/* The flex row was added later, in the Results-table section, but it was never scoped to that panel —
+   it applies to EVERY panel head, so it belongs here with the rest of the base style. Behaviour is
+   unchanged by moving it up: the two blocks set disjoint properties and nothing between touches them. */
+.race-panel-head {
+    padding: 0.75rem 1rem;
+    font-weight: 700;
+    border-bottom: 1px solid var(--cockpit-border, rgba(255, 255, 255, 0.08));
+    display: flex;
+    align-items: baseline;
+    gap: 0.6rem;
+}
+
+.race-panel-body {
+    padding: 1rem;
+}
+
+.race-hint {
+    color: var(--fg-3);
+    font-size: 0.875rem;
+    margin-bottom: 0.75rem;
+}
+
+/* ── Leaderboard ──────────────────────────────────────────────────────────
+   The board moved into the in-map follow sidebar — its rows are .race-sb-* in race-replay.css. */
+
+.race-empty {
+    color: var(--fg-3);
+    text-align: center;
+    padding: 1rem;
+}
+
+/* ── Forms (create + import) ──────────────────────────────────────────── */
+
+.race-create,
+.race-mapping-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    align-items: end;
+}
+
+.race-create label,
+.race-mapping-grid label {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    font-size: 0.8rem;
+    color: var(--fg-3);
+    min-width: 9rem;
+}
+
+.race-create label:first-child {
+    flex: 1 1 18rem;
+}
+
+.race-select,
+.race-input,
+.race-file {
+    padding: 0.4rem 0.6rem;
+    border-radius: 8px;
+    border: 1px solid var(--cockpit-border, rgba(255, 255, 255, 0.12));
+    background: var(--cockpit-input, rgba(0, 0, 0, 0.2));
+    color: inherit;
+    font-size: 0.9rem;
+    max-width: 100%;
+}
+
+/* Search box above the ride dropdown — the list holds every ride, so it needs one. */
+.race-filter {
+    font-size: 0.8rem;
+    padding: 0.3rem 0.5rem;
+}
+
+.race-mapping {
+    margin-top: 0.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    align-items: flex-start;
+}
+
+/* Same [hidden]-vs-class trap as .race-loading: without this the column pickers show before a file
+   has been chosen, with nothing in them. */
+.race-mapping[hidden] {
+    display: none;
+}
+
+.race-import-status {
+    margin: 0.75rem 0 0;
+    font-size: 0.875rem;
+    color: var(--fg-3);
+}
+
+.race-import-status.is-error {
+    color: #ff6b6b;
+}
+
+/* A request is in flight. Pulses rather than spins: there is no progress to report (the server answers
+   in ~20 ms even for the 1,387-rider file), so the honest signal is "alive", not "37% done". */
+.race-import-status.is-busy {
+    color: var(--fg-2);
+}
+
+.race-import-status.is-busy::after {
+    content: "";
+    display: inline-block;
+    width: 0.5rem;
+    height: 0.5rem;
+    margin-left: 0.4rem;
+    border-radius: 50%;
+    background: currentcolor;
+    animation: race-import-pulse 1s ease-in-out infinite;
+}
+
+@keyframes race-import-pulse {
+    0%, 100% { opacity: 0.25; }
+    50% { opacity: 1; }
+}
+
+/* Respect a user who has asked for less motion: the dot stays, it just stops pulsing. */
+@media (prefers-reduced-motion: reduce) {
+    .race-import-status.is-busy::after {
+        animation: none;
+        opacity: 0.6;
+    }
+}
+
+/* Start-block rows: a label, a count and one offset field each. */
+.race-wave-rows {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+}
+
+.race-wave-row {
+    display: flex;
+    gap: 0.75rem;
+    align-items: baseline;
+}
+
+.race-wave-name {
+    min-width: 16rem;
+}
+
+.race-wave-offset {
+    max-width: 9rem;
+}
+
+/* The gun/net toggle, in the results head next to the clock it reinterprets. */
+.race-gun-toggle {
+    display: inline-flex;
+    gap: 0.35rem;
+    align-items: center;
+    font-size: 0.8125rem;
+    color: var(--fg-3);
+    cursor: pointer;
+}
+
+.race-gun-toggle[hidden] {
+    display: none;
+}
+
+/* Saved mappings. Wraps rather than scrolls — it is four controls, not a table. */
+.race-profile-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.race-template-link {
+    color: var(--fg-2);
+    text-decoration: underline;
+}
+
+/* The import preview: the first few rows as they would be IMPORTED. Scrolls sideways rather than
+   squeezing — a race with eight checkpoints has eight split columns and the two finish clocks, and the
+   pair of finish numbers is the whole point of the table. */
+.race-import-preview {
+    margin-top: 0.75rem;
+    overflow-x: auto;
+}
+
+.race-preview-table {
+    border-collapse: collapse;
+    font-size: 0.75rem;
+    white-space: nowrap;
+}
+
+.race-preview-table th,
+.race-preview-table td {
+    padding: 0.25rem 0.5rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    text-align: left;
+}
+
+.race-preview-table th {
+    color: var(--fg-3);
+    font-weight: 600;
+}
+
+/* The computed finish disagreeing with the published one. This is the cell that catches a cumulative
+   file imported as per-section — 10:27:26 against a published 2:43:18 — so it is loud on purpose. */
+.race-preview-mismatch {
+    background: rgba(255, 107, 107, 0.18);
+    color: #ff9a9a;
+    font-weight: 700;
+}
+
+/* What the server noticed about this mapping. Warnings, not errors: every one of them describes a file
+   that will import, just possibly not the way the user meant. */
+.race-import-warnings {
+    margin: 0 0 0.5rem;
+    padding-left: 1.25rem;
+    font-size: 0.8125rem;
+    color: #ffd43b;
+}
+
+/* Skipped-row reasons. Collapsed by default and scroll-bounded: a mis-mapped column skips every row,
+   and an 864-item list would push the whole import panel off the page. */
+.race-import-skipped {
+    margin-top: 0.5rem;
+    font-size: 0.8125rem;
+    color: var(--fg-3);
+}
+
+.race-import-skipped summary {
+    cursor: pointer;
+}
+
+.race-import-skipped ul {
+    max-height: 14rem;
+    overflow-y: auto;
+    margin: 0.5rem 0 0;
+    padding-left: 1.25rem;
+}
+
+/* ── Race list (course-minimap card grid + controls strip) ──────────────────
+   Mirrors the Segments list (segments-index.css): a controls-only client grid (races-grid.ts) drives
+   server-rendered `.race-card` minimaps. Kept here rather than shared so the Races slice owns its chrome. */
+
+/* Filter/sort controls strip — its columns keep min widths and scroll sideways instead of squeezing. */
+.race-controls-grid {
+    overflow-x: auto;
+    background: var(--bg-3, rgba(20, 22, 26, 0.6));
+}
+
+.race-card-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+    padding: 16px;
+}
+
+/* Cards filtered out by the controls grid (toggled via the shared card binding's `is-hidden`). */
+.race-card-grid .race-card.is-hidden {
+    display: none;
+}
+
+/* Surface + hover come from .card-cockpit (cockpit-components.css); this file keeps
+   the flex layout, off-screen virtualisation, and click/focus affordance. */
+.race-card {
+    display: flex;
+    align-items: stretch;
+    /* Skip layout/paint of off-screen cards; 'auto' remembers the real height after first render. */
+    content-visibility: auto;
+    contain-intrinsic-size: auto 200px;
+    /* Whole card opens the replay (races.ts) — read as clickable, focusable by keyboard. */
+    cursor: pointer;
+}
+.race-card:focus-visible {
+    outline: 2px solid var(--acc-cyan);
+    outline-offset: 2px;
+}
+
+/* ── Minimap column (left) ──────────────────────────────────────────────── */
+.race-card-map {
+    flex: 0 0 220px;
+    width: 220px;
+    height: 180px;
+    border-right: 1px solid var(--line, rgba(255, 255, 255, 0.08));
+    background: var(--bg-3, rgba(20, 22, 26, 0.6));
+    overflow: hidden;
+    position: relative;
+}
+.race-card-map .minimap {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+/* Select checkbox overlay (top-left) — pairs with the delete button top-right. */
+.race-card-select {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    z-index: 3;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0;
+    padding: 5px;
+    border-radius: 6px;
+    background: oklch(0.18 0.01 240 / 0.8);
+    backdrop-filter: blur(6px);
+    cursor: pointer;
+}
+.race-card-select input { cursor: pointer; margin: 0; }
+
+/* Delete button overlay (top-right) — mirrors the segment card's delete affordance. */
+.race-card-delete {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    z-index: 3;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--acc-red, #e5484d);
+    padding: 6px;
+    border: none;
+    border-radius: 6px;
+    background: oklch(0.18 0.01 240 / 0.8);
+    backdrop-filter: blur(6px);
+    cursor: pointer;
+    transition: background 0.15s;
+}
+.race-card-delete:hover { background: oklch(0.72 0.18 25 / 0.22); }
+
+/* ── Info column (right) ────────────────────────────────────────────────── */
+.race-card-info {
+    flex: 1;
+    min-width: 0;
+    padding: 12px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.race-card-meta {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    color: var(--fg-3, #9aa3ad);
+}
+.race-card-vis { color: var(--fg-3, #9aa3ad); }
+/* Active-share marker — same amber as the dashboard and segment cards, so one symbol reads the same
+   everywhere. The visibility icon beside it stays neutral here, unlike those two lists. */
+.race-card-share { color: var(--acc-amber, #e2b341); }
+.race-card-date { letter-spacing: 0.03em; }
+
+.race-card-name {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--fg-0, #f4f6f8);
+    margin: 0;
+    letter-spacing: -0.01em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.race-card-kpis {
+    display: flex;
+    gap: 18px;
+    flex-wrap: wrap;
+    padding-top: 6px;
+    border-top: 1px solid var(--line, rgba(255, 255, 255, 0.06));
+    margin-top: 2px;
+}
+.race-card-kpi { display: flex; flex-direction: column; gap: 2px; }
+.race-card-kpi-value {
+    font-size: 15px;
+    font-weight: 600;
+    line-height: 1.2;
+    color: var(--fg-0, #f4f6f8);
+}
+.race-card-kpi-value--cyan { color: var(--acc-cyan); }
+.race-card-kpi-value--lime { color: var(--acc-lime, #a3e635); }
+.race-card-kpi-unit { font-size: 11px; font-weight: 400; color: var(--fg-3, #9aa3ad); }
+.race-card-kpi-label {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--fg-3, #9aa3ad);
+}
+
+.race-card-actions {
+    display: flex;
+    gap: 0.4rem;
+    margin-top: auto;
+    padding-top: 4px;
+}
+
+/* Filtered to empty — the controls grid un-hides this via bindCardsToGrid's emptyState. */
+.race-empty-filtered {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    color: var(--fg-2, #c7ccd2);
+    padding: 24px 4px;
+    text-align: center;
+}
+
+@media (max-width: 900px) {
+    .race-card-grid { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 480px) {
+    /* Stack: map on top, info below — matches the segments card's phone layout. */
+    .race-card { flex-direction: column; }
+    .race-card-map {
+        flex: none;
+        width: 100%;
+        height: 200px;
+        border-right: none;
+        border-bottom: 1px solid var(--line, rgba(255, 255, 255, 0.08));
+    }
+}
+
+.race-list-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.6rem 1rem;
+    border-bottom: 1px solid var(--cockpit-border, rgba(255, 255, 255, 0.08));
+}
+
+.race-list-selectall {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0;
+    font-size: 0.875rem;
+    color: var(--fg-3);
+    cursor: pointer;
+}
+
+/* ── Real riders ──────────────────────────────────────────────────────── */
+
+.race-riders {
+    list-style: none;
+    margin: 0 0 0.75rem;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.race-riders li {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.25rem 0.4rem 0.25rem 0.5rem;
+    border-radius: 999px;
+    /* The pill wears the RIDER's colour, not a constant gold: riders are handed distinct colours as they
+       are added, and a pill that stayed gold would disagree with his dot, his swatch and his chart line.
+       --rider-color is set inline by Replay.cshtml from the server-validated #rrggbb. */
+    border: 1px solid color-mix(in oklch, var(--rider-color, #ffd43b) 40%, transparent);
+    background: color-mix(in oklch, var(--rider-color, #ffd43b) 8%, transparent);
+}
+
+/* Call-out hidden: no name on the map, no speed-chart line. The pill recedes to say so — without it the
+   only trace of the switch is the button's own pressed state. */
+.race-riders li.is-callout-off {
+    opacity: 0.6;
+}
+
+/* The native colour input as a round swatch — the "bubble" that opens the picker. The appearance and
+   padding half of the reset is shared, at the top of this file; only the shape lives here. */
+.race-rider-color {
+    width: 1.15rem;
+    height: 1.15rem;
+    flex: none;
+    border: none;
+    border-radius: 50%;
+}
+
+/* Blink and Gecko get SEPARATE rules on purpose. A selector list is all-or-nothing at parse time, so one
+   unparseable pseudo-element drops the WHOLE rule: the single combined `::-webkit-…, ::-moz-…` block this
+   replaces was dead in both engines, and the bubble has never actually had this border. */
+.race-rider-color::-webkit-color-swatch {
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    border-radius: 50%;
+}
+
+.race-rider-color::-moz-color-swatch {
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    border-radius: 50%;
+}
+
+.race-rider-rename {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+/* The rider's name is EDITABLE in place, so it has to read as text inside the gold pill and only look
+   like a field once you touch it — a permanently boxed input inside a pill is visual noise on a panel
+   that already carries two forms. Overrides .race-input's border/background/padding for that reason. */
+input.race-rider-name {
+    font-weight: 600;
+    font-size: 0.875rem;
+    width: 14ch;
+    padding: 0.1rem 0.25rem;
+    border-color: transparent;
+    background: transparent;
+}
+
+input.race-rider-name:hover,
+input.race-rider-name:focus {
+    border-color: var(--cockpit-border, rgba(255, 255, 255, 0.12));
+    background: var(--cockpit-input, rgba(0, 0, 0, 0.2));
+}
+
+/* The speed stepper moved into the in-map control bar — it now uses the shared .replay-speed-*
+   classes from replay-controls.css. */
+
+/* ── Elevation profile ────────────────────────────────────────────────────────
+   The strip under the transport. Checkpoints are PLACED here (its x-axis is chainage, so a click is
+   unambiguous — the map is not, see race-profile.ts), and the field rides it alongside the map. The
+   field-speed aggregate is traced over the terrain here too — it was a second stacked canvas until the
+   two became one picture. */
+
+/* No padding at all: the wrap lives in the dock strip (.replay-dock-strip), whose height IS the drawer's
+   height — so the wrap passes that height straight through to the canvas. It used to hold a 0.5rem bottom
+   gap, which read as a dead band under the profile. */
+.race-profile-wrap {
+    height: 100%;
+    padding: 0;
+}
+
+.race-profile {
+    display: block;
+    width: 100%;
+    /* Fills the drawer, exactly as the shared .replay-dock-canvas does. It was a fixed 150px, which meant
+       dragging the drawer taller only added empty background under the profile and dragging it shorter
+       clipped it. The bitmap still sizes itself to this box (core/canvas-strip resize) — the box is
+       definite here because the drawer's height is, so there is no size-feedback loop. */
+    height: 100%;
+    /* Square, like the shared dock canvas: the strip is edge-to-edge with the transport bar above it, and
+       a radius here showed the map through the corners. */
+    border-radius: 0;
+    background: var(--bg-2, rgba(255, 255, 255, 0.03));
+    touch-action: none;   /* the drag-a-checkpoint gesture must not also scroll the page */
+    cursor: crosshair;
+}
+
+/* ── Speed panel ──────────────────────────────────────────────────────────────
+   THE race chart: per-rider speed against completion, over the course itself — terrain tinted per
+   section, a rule per boundary, the field's spread, the playhead. It sits in the page flow directly
+   under the map card, where the dock strip used to be read; the strip is fullscreen-only now
+   (race-replay.css). Chart.js and not core/canvas-strip because it ZOOMS, and because a boundary is
+   placed on it by clicking.
+
+   Sizing mirrors the segment page's .chart-container: a definite height on a positioned box is what
+   Chart.js's responsive mode measures, and what core/chart-empty-state anchors its overlay to. */
+
+/* The readout box floats ABOVE the plot's top edge (ChartReadoutBox: top = plotTop - gap - boxH), so
+   it deliberately overhangs this panel. Every other .race-panel clips to its rounded corners; this one
+   must not, or the box is cut off exactly when it has the most rows to show. */
+.race-panel-speed {
+    overflow: visible;
+    /* Under the map card, not against it — the card has no bottom margin of its own inside .race-stage. */
+    margin-top: 1rem;
+}
+
+/* "Nothing highlighted yet", beside the title instead of over the canvas: the canvas is the COURSE, and
+   an owner laying out sections has no highlighted riders by definition. Muted, and it wraps rather than
+   pushing the mode toggle off the row. */
+.race-speed-note {
+    flex: 1 1 auto;
+    min-width: 0;
+    font-weight: 400;
+    color: var(--fg-3, #94a3b8);
+}
+
+.race-speed-wrap {
+    position: relative;
+    height: 280px;
+    padding: 0.75rem 1rem 1rem;
+}
+
+.race-speed-chart {
+    display: block;
+    width: 100%;
+    height: 100%;
+    /* NOTE: touch-action is NOT set here. chart-zoom-pan.ts sets `pan-y` on the canvas itself so a
+       one-finger vertical page scroll still works over the chart while pinch/horizontal-pan reach our
+       handlers. A `none` here would take the page scroll away on mobile. One owner, in JS. */
+}
+
+/* ── Checkpoint editor ──────────────────────────────────────────────────────── */
+
+.race-cp-editor {
+    padding: 0 0.75rem 0.75rem;
+}
+
+.race-cp-head {
+    display: flex;
+    align-items: baseline;
+    gap: 0.6rem;
+    margin-bottom: 0.4rem;
+    font-weight: 600;
+}
+
+.race-cp-head small {
+    font-weight: 400;
+    opacity: 0.6;
+}
+
+/* Staged editing: Add checkpoint (arms placement) · Cancel/Apply the draft · an unsaved-changes hint. */
+.race-cp-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.race-cp-toolbar-spacer {
+    flex: 1 1 auto;
+}
+
+/* Armed: the next click on the profile places a checkpoint. */
+.race-cp-add.is-armed {
+    background: var(--acc-cyan);
+    color: #0b1220;
+    border-color: var(--acc-cyan);
+}
+
+.race-cp-dirty {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #fcc419;
+    opacity: 0;
+    transition: opacity 0.15s;
+}
+
+.race-cp-dirty.is-visible {
+    opacity: 1;
+}
+
+.race-cp-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+}
+
+/* One row per SECTION, read as a sentence: "1  xcski  ■  ends at  5.103 km  ✕" */
+.race-cp-row {
+    display: grid;
+    grid-template-columns: 1.5rem minmax(6rem, 1fr) 2.2rem auto 7.5rem 2rem;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.25rem 0.4rem;
+    border-radius: 8px;
+    border: 1px solid transparent;
+}
+
+.race-cp-index {
+    opacity: 0.45;
+    font-size: 0.8rem;
+    text-align: right;
+}
+
+.race-cp-endsat {
+    opacity: 0.55;
+    font-size: 0.8rem;
+    white-space: nowrap;
+}
+
+.race-cp-km-fixed {
+    font-size: 0.85rem;
+    opacity: 0.6;
+    white-space: nowrap;
+}
+
+.race-cp-finish-tag {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    opacity: 0.5;
+    white-space: nowrap;
+}
+
+/* The Start heads the list rather than ending a section — but it is placed, so it carries an input too. */
+.race-cp-endpoint {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.2rem 0.4rem;
+    font-size: 0.8rem;
+    border-bottom: 1px dashed var(--line-2, rgba(255, 255, 255, 0.12));
+    margin-bottom: 0.15rem;
+}
+
+.race-cp-endpoint-label,
+.race-cp-endpoint-km {
+    opacity: 0.55;
+}
+
+/* The Start's km input is narrower than a section's — it sits alone at the end of a two-item flex row. */
+.race-cp-endpoint .race-cp-km {
+    flex: 0 0 8rem;
+}
+
+.race-cp-row.is-selected {
+    border-color: var(--line-2, rgba(255, 255, 255, 0.25));
+    background: var(--bg-3, rgba(255, 255, 255, 0.05));
+}
+
+.race-cp-row input[type="text"],
+.race-cp-row input:not([type]),
+.race-cp-row input[type="number"],
+.race-cp-endpoint input[type="number"] {
+    width: 100%;
+    padding: 0.2rem 0.4rem;
+    border-radius: 6px;
+    border: 1px solid var(--line-2, rgba(255, 255, 255, 0.15));
+    background: var(--bg-2, rgba(255, 255, 255, 0.04));
+    color: var(--fg-1, inherit);
+}
+
+.race-cp-row input:disabled {
+    opacity: 0.5;
+}
+
+.race-cp-km {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.race-cp-km span {
+    opacity: 0.6;
+    font-size: 0.8rem;
+}
+
+.race-cp-color {
+    width: 2.2rem;
+    height: 1.7rem;
+    border: 1px solid var(--line-2, rgba(255, 255, 255, 0.15));
+    border-radius: 6px;
+}
+
+/* 5px = the 6px box minus its own 1px border. Split by engine — see .race-rider-color. */
+.race-cp-color::-webkit-color-swatch {
+    border: none;
+    border-radius: 5px;
+}
+
+.race-cp-color::-moz-color-swatch {
+    border: none;
+    border-radius: 5px;
+}
+
+/* Race distance vs ride distance — different numbers whenever a line sits off an end of the ride. */
+.race-cp-distance {
+    margin: 0.4rem 0 0;
+    font-size: 0.8rem;
+    opacity: 0.55;
+}
+
+.race-cp-status {
+    margin: 0.4rem 0 0;
+    font-size: 0.85rem;
+    opacity: 0.7;
+    min-height: 1.2em;
+}
+
+.race-cp-status.is-error {
+    color: var(--acc-red);
+    opacity: 1;
+}
+
+/* ── Results table ──────────────────────────────────────────────────────────── */
+
+.race-results {
+    margin-top: 1rem;
+}
+
+/* Only the results head carries a <small>; the flex row it needs lives with the base style above. */
+.race-panel-head small {
+    font-weight: 400;
+    opacity: 0.6;
+}
+
+/* Destructive, so it sits at the far end of the head rather than next to the reading text. */
+.race-clear-field {
+    margin-left: auto;
+}
+
+/* The mode picker, the colour, the clear icon and the emphasis toggle, at the right end of the grid's
+   own toolbar. Every control in it is 30px tall — .map-dd-summary, .map-dd-toggle and .grid-toolbar-btn
+   agree on that — so the row reads as one strip rather than three borrowed looks.
+   It WRAPS: it shares the toolbar with the grid's count and Columns picker, and a phone has no room for
+   both on one line. Without this it was a single unwrappable flex item that ran off the panel edge. */
+.race-table-controls {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin-left: auto;
+}
+
+.race-color-input {
+    width: 2.4rem;
+    height: 1.9rem;
+    border: 1px solid var(--line-2, rgba(255, 255, 255, 0.15));
+    border-radius: 6px;
+}
+
+/* 5px = the 6px box minus its own 1px border. Split by engine — see .race-rider-color. */
+.race-color-input::-webkit-color-swatch {
+    border: none;
+    border-radius: 5px;
+}
+
+.race-color-input::-moz-color-swatch {
+    border: none;
+    border-radius: 5px;
+}
+
+/* Save. The owner's paint lives in the browser until this is pressed, so the button is the only thing
+   on screen that knows the difference — it is lit ONLY while there is something to lose. A permanently
+   accented Save stops meaning anything, which is exactly the signal this needs to carry. */
+.race-save--dirty,
+.race-save--dirty:hover {
+    background: var(--acc-cyan);
+    border-color: var(--acc-cyan);
+    color: oklch(0.14 0.008 240);
+    font-weight: 600;
+}
+
+.race-save:disabled {
+    opacity: 0.55;
+    cursor: default;
+}
+
+.race-table-status {
+    font-size: 0.85rem;
+    opacity: 0.7;
+}
+
+/* Phone: .grid-toolbar itself wraps here (grid-filter.css), so keeping margin-left:auto would strand
+   this cluster right-aligned on its own line. Let it start where the eye already is. */
+@media (max-width: 600px) {
+    .race-table-controls {
+        margin-left: 0;
+    }
+
+    /* The icon carries it, same breakpoint and same reason as .map-dd-toggle-text (map-toolbar.css) —
+       the row sheds all of its text at once rather than half of it. The lit background is what says
+       "unsaved" once the word is gone. */
+    .race-save-text {
+        display: none;
+    }
+}
+
+.race-swatch-cell {
+    text-align: center;
+}
+
+.race-swatch {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    vertical-align: middle;
+}
+
+/* A painted rider is ringed, so "blue because nobody painted it" and "blue because you chose blue" are
+   not the same dot. */
+.race-swatch-painted {
+    box-shadow: 0 0 0 2px var(--fg-1, #fff);
+}
+
+/* Emphasis is a SIZE on the map, so it is a size here too — the table's swatch is the only place a
+   viewer can tell which rows the three fat dots belong to. */
+.race-swatch-emphasised {
+    width: 16px;
+    height: 16px;
+}
+
+/* The opposite switch: his call-out is hidden, so the dot is HOLLOWED — punched out with the card colour
+   so what remains is a ring in his own colour. A ring, not a dim: dimming already means "the filter
+   excluded him", and the two states are independent. The painted ring is kept in the second rule, or a
+   hushed rider would silently lose it. */
+.race-swatch-hushed {
+    box-shadow: inset 0 0 0 3px var(--bg-2, #1b1e24);
+}
+
+.race-swatch-painted.race-swatch-hushed {
+    box-shadow: inset 0 0 0 3px var(--bg-2, #1b1e24), 0 0 0 2px var(--fg-1, #fff);
+}
+
+.race-badge-real {
+    margin-left: 0.35rem;
+    padding: 0 0.3rem;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    background: rgba(255, 212, 59, 0.2);
+    color: #ffd43b;
+}
+
+/* Result badges. One base, three severities — the modifier class comes from race-finish-status.ts's
+   table, so the cell and the sidebar row cannot end up styling the same rider differently. */
+.race-badge {
+    padding: 0 0.3rem;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    background: rgba(255, 255, 255, 0.12);
+    color: rgba(255, 255, 255, 0.75);
+}
+
+/* Did not reach the line (DNF, mispunch, over the limit). */
+.race-badge.is-dnf {
+    background: rgba(255, 107, 107, 0.16);
+    color: #ff9a9a;
+}
+
+/* Reached it and does not count (DSQ). Louder than a DNF: it is a ruling, not an outcome. */
+.race-badge.is-dsq {
+    background: rgba(255, 107, 107, 0.28);
+    color: #ffc9c9;
+}
+
+/* Never started. */
+.race-badge.is-dns {
+    background: rgba(255, 255, 255, 0.08);
+    color: rgba(255, 255, 255, 0.55);
+}
+
+/* Counts, but with a caveat (provisional, moved up, not competing, an unreadable token). */
+.race-badge.is-muted {
+    background: rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.race-dim {
+    opacity: 0.35;
+}
+
+/* The two clocks. Red: the legs sum PAST the published finish (a forced start overlapped two legs, so
+   the published clock is compressed). Yellow: they sum SHORT of it (untimed dead time between legs). */
+.race-delta-over {
+    color: #ff6b6b;
+}
+
+.race-delta-under {
+    color: #fcc419;
+}
+
+/* ── Import: per-leg toggle + split pickers ─────────────────────────────────── */
+
+.race-perleg {
+    display: flex;
+    gap: 0.5rem;
+    align-items: flex-start;
+    margin: 0.6rem 0;
+    padding: 0.5rem 0.6rem;
+    border-radius: 8px;
+    background: var(--bg-2, rgba(255, 255, 255, 0.03));
+}
+
+.race-perleg small {
+    display: block;
+    opacity: 0.65;
+}
+
+.race-splits:empty {
+    display: none;
+}
+
+.race-csv-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+}

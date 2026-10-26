@@ -1,0 +1,58 @@
+/* share-view.css — the anonymous share shell (_ShareLayout.cshtml).
+   Only the delta from the cockpit shell: a topbar in place of the sidebar, and the tabbar allowance
+   removed. Everything else the shared detail body needs comes from cockpit-tokens/shell/components. */
+
+/* No sidebar child here, so the shell is a single column rather than the usual sidebar + main row. */
+.cockpit-shell--share {
+  flex-direction: column;
+}
+
+.share-topbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 0 0 auto;
+  padding: 10px 20px;
+  background: var(--bg-1);
+  border-bottom: 1px solid var(--line);
+}
+
+.share-topbar-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--fg-0);
+  font-weight: 600;
+}
+
+.share-topbar-note {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--fg-2);
+  font-size: 0.82rem;
+}
+
+/* Pushed to the far edge; the note keeps its place next to the brand. */
+.share-topbar-signin {
+  margin-left: auto;
+}
+
+@media (max-width: 900px) {
+  /* The shared scroll container reserves 80px at the bottom for the mobile tabbar, which this layout
+     does not render — without this the share view ends in a band of dead space. */
+  .cockpit-shell--share .cockpit-scroll {
+    padding-bottom: 24px;
+  }
+}
+
+@media (max-width: 600px) {
+  .cockpit-shell--share .cockpit-scroll {
+    padding-bottom: 16px;
+  }
+
+  /* Keep the brand and the sign-in affordance; the explanatory note is the first thing to go. */
+  .share-topbar-note {
+    display: none;
+  }
+}

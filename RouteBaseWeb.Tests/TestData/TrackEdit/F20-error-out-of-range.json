@@ -1,0 +1,17 @@
+{
+  "fixtureVersion": 1,
+  "name": "error-out-of-range",
+  "description": "E2: cropTo to==5 on a 3-point track -> rangeOutOfBounds at opIndex 1 (no clamping, D2)",
+  "sources": {
+    "101": {
+      "time": [1000, 1010, 1020],
+      "lat": [47000000, 47000100, 47000200],
+      "lng": [8000000, 8000100, 8000200]
+    }
+  },
+  "script": { "schemaVersion": 1, "ops": [
+    { "op": "loadActivity", "activityId": 101 },
+    { "op": "cropTo", "slot": 0, "from": 0, "to": 5 }
+  ] },
+  "expectError": { "opIndex": 1, "code": "rangeOutOfBounds" }
+}

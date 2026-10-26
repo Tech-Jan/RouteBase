@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">GPS Recorder</string>
+
+    <!-- Setup -->
+    <string name="setup_heading">Server Setup</string>
+    <string name="hint_setup_code">Paste setup code copied from web</string>
+    <string name="enter_manually">Enter server URL and key manually instead</string>
+    <string name="hint_server_url">Server URL (e.g. https://example.com)</string>
+    <string name="hint_api_key">Mobile API Key</string>
+    <string name="save">Save &amp; Connect</string>
+    <string name="error_fields_required">Server URL and API key are required.</string>
+    <string name="error_invalid_setup_code">Invalid setup code. Make sure you copied the full setup code from the web app.</string>
+    <string name="error_connection_failed">Could not connect. Check URL and API key.</string>
+    <string name="error_invalid_api_key">Invalid API key. Please check your setup code.</string>
+    <string name="error_https_required">Server URL must start with https:// (secure connection required).</string>
+    <string name="save_anyway_title">Server not reachable</string>
+    <string name="save_anyway_message">The server could not be reached, so the URL and API key were not verified. Save them anyway for offline setup? If they are wrong, uploads will fail until setup is corrected.</string>
+    <string name="save_anyway">Save anyway (offline)</string>
+
+    <!-- Recording -->
+    <string name="label_activity_type">Activity Type</string>
+    <string name="label_visibility">Visibility</string>
+    <string name="start">Start Recording</string>
+    <string name="pause">Pause</string>
+    <string name="resume">Resume</string>
+    <string name="stop">Stop</string>
+    <string name="status_paused">Paused</string>
+    <string name="status_paused_auto">Auto-paused — resumes on movement, saves in a few minutes</string>
+    <string name="notification_title_paused">GPS Recording Paused</string>
+    <string name="copy">Copy</string>
+    <string name="waiting_for_connection">Waiting for server connection…</string>
+    <!-- Live share (AND-24): the phone mints a secret /s/{token} map link (24h TTL) for the current ride. -->
+    <string name="label_share_live">Share live map</string>
+    <string name="share_live_hint">Creates a secret link you can share for 24 hours — no sign-in needed.</string>
+    <string name="waiting_for_link">Preparing share link…</string>
+    <string name="share_caption_public">Shared link — only people you share it with can watch</string>
+    <string name="share_caption_private">Only you can open this — sign-in required</string>
+    <!-- Confirm dialog when enabling Share-live mid-recording (publishes the link immediately, no phone revoke). -->
+    <string name="share_live_confirm_title">Share this ride live?</string>
+    <string name="share_live_confirm_body">Creates a secret, shareable link to a live map of this ride — it auto-expires in 24 hours.</string>
+    <string name="share_live_confirm_yes">Share live</string>
+    <!-- Upload queue: finished recordings whose points/stop have not reached the server yet. -->
+    <string name="queue_status_fmt">%1$d recording(s) waiting to upload — %2$d points</string>
+    <string name="queue_hint">They upload by themselves once you have a connection. Recording still works meanwhile.</string>
+    <string name="queue_upload_now">Upload now</string>
+    <string name="queue_discard">Discard</string>
+    <string name="queue_discard_title">Discard pending recordings?</string>
+    <string name="queue_discard_message">%1$d recording(s) and %2$d captured points have not reached the server. Discarding deletes them from this phone for good.</string>
+    <string name="queue_discard_confirm">Discard them</string>
+    <string name="queue_uploading">Uploading…</string>
+    <string name="queue_upload_failed">Still no connection — they stay queued.</string>
+    <string name="cancel">Cancel</string>
+    <string name="reset_config">Reset Configuration</string>
+    <string name="stop_recording_first">Stop the current recording first</string>
+    <string name="reset_pending_first">Pending data not yet uploaded — open the app once online to finish, or Discard via Start</string>
+    <string name="version_fmt">v%1$s</string>
+
+    <!-- Auto-detect -->
+    <string name="auto_detect_label">Auto-detect workouts</string>
+    <string name="auto_detect_desc">Automatically record cycling, running and walking. Low-power motion sensing — minimal battery while idle. Detected activities go to the web review queue.</string>
+    <string name="auto_detect_enabled_toast">Auto-detect on — workouts will record automatically</string>
+
+    <!-- Spinners. AU-09: item text = server wire value (activity type verbatim; visibility lowercased
+         at the send site). Do NOT localize or reorder — the app sends the label, not the position. -->
+    <string-array name="activity_types">
+        <item>Run</item>
+        <item>Ride</item>
+        <item>Walk</item>
+        <item>Hike</item>
+        <item>AlpineSki</item>
+        <item>NordicSki</item>
+        <item>Other</item>
+    </string-array>
+    <string-array name="visibility_options">
+        <item>Private</item>
+        <item>Friends</item>
+        <item>Public</item>
+    </string-array>
+
+    <!-- Notification -->
+    <string name="notification_title">GPS Recording Active</string>
+    <string name="notification_channel_name">GPS Recording</string>
+    <string name="notification_channel_desc">Shown while GPS recording is in progress</string>
+    <string name="gps_lost_fmt">⚠ No GPS %1$ds</string>
+    <!-- AND-05: the server no longer recognizes this session (repeated 404 on append) — uploads have
+         stopped so the client doesn't hammer a dead session forever; the user must Stop and start fresh. -->
+    <string name="session_expired_notice">⚠ Upload stopped — session expired. Stop and start a new recording.</string>
+
+    <!-- Diagnostics (long-press the version label) -->
+    <string name="event_log_title">Event Log</string>
+    <string name="log_empty">No events logged yet.</string>
+    <string name="share">Share</string>
+    <string name="clear_log">Clear</string>
+
+    <!-- Precise location -->
+    <string name="precise_location_title">Precise Location Needed</string>
+    <string name="precise_location_message">GPS tracking needs Precise location, but only Approximate was granted. Open settings and turn on \"Use precise location\" for this app.</string>
+
+    <!-- Permissions -->
+    <string name="bg_location_title">Background Location</string>
+    <string name="bg_location_message">To record GPS while the screen is off, please allow "Allow all the time" in the next prompt.</string>
+    <string name="grant">Grant</string>
+    <string name="permission_denied_title">Permission Needed</string>
+    <string name="permission_denied_message">%1$s permission is required to record GPS.</string>
+
+    <!-- Battery -->
+    <string name="battery_opt_title">Disable Battery Optimization</string>
+    <string name="battery_opt_message">For reliable background recording, disable battery optimization for this app.</string>
+    <string name="open_settings">Open Settings</string>
+</resources>

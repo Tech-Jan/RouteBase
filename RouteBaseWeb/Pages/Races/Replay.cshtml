@@ -1,0 +1,414 @@
+@page
+@using RouteBaseWeb.Services.Races
+@model RouteBaseWeb.Pages.Races.ReplayModel
+@{
+    Layout = "_DashboardLayout";
+    ViewData["Title"] = Model.Race?.RaceName ?? "Race";
+}
+
+@section Styles {
+    @* Without these the map container renders as an empty box — MapLibre is not in the layout. *@
+    <partial name="_CdnLibs" model="@("maplibre-css")" />
+    <link rel="stylesheet" href="~/css/map-toolbar.css" asp-append-version="true" />
+    @* The results table is a core/grid GridView — it applies these classes itself. *@
+    <link rel="stylesheet" href="~/css/grid-filter.css" asp-append-version="true" />
+    @* Shared in-map replay control bar (also used by activity + segment replays). *@
+    <link rel="stylesheet" href="~/css/replay-controls.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/races.css" asp-append-version="true" />
+    @* Race-owned replay chrome: fullscreen, follow sidebar, close button, chart strip. *@
+    <link rel="stylesheet" href="~/css/race-replay.css" asp-append-version="true" />
+    @* The owner-only share-link dialog (_ShareLinkDialog.cshtml). *@
+    <link rel="stylesheet" href="~/css/share-dialog.css" asp-append-version="true" />
+}
+
+<div class="cockpit-scroll" id="raceReplay" data-race-id="@Model.RaceId"
+     data-can-edit="@(Model.CanEdit ? "true" : "false")"
+     data-can-share="@(Model.IsOwner ? "true" : "false")">
+
+    <partial name="_PageHeader" model="@(new PageHeaderModel(
+        Title: Model.Race?.RaceName ?? "Race",
+        Subtitle: Model.Race?.RaceDate?.ToString("dddd, MMMM dd, yyyy"),
+        Breadcrumbs: new[] { ("/", "Dashboard"), ("/Races", "Races"), ($"/Races/Replay?raceId={Model.RaceId}", "Replay") },
+        MetaChips: new[] { $"{Model.SimulatedCount} simulated", $"{Model.RealRiders.Count} real" }
+    ))" />
+
+    <div class="race-layout">
+
+        <!-- Map + replay chrome ──────────────────────────────────────────── -->
+        <section class="race-stage" id="raceMapCard">
+
+            @* The same toolbar as the segment replay — .map-dd dropdowns above the map (core/map-toolbar
+               drives the shell, MapShell fills the Style menu with one button per basemap). *@
+            <div class="race-map-toolbar">
+                <details class="map-dd" data-picker="true">
+                    <summary class="map-dd-summary">
+                        <span class="map-dd-label">Style</span>
+                        <span class="map-dd-value">Map</span>
+                        <svg class="map-dd-chevron" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+                    </summary>
+                    <div class="map-dd-menu" id="raceStyleSwitcher" role="group" aria-label="Map style"></div>
+                </details>
+
+                @* Names on/off. A plain toggle rather than a dropdown — it has two states, and a menu to
+                   pick between "on" and "off" is chrome pretending to be a choice. On a phone the label
+                   drops and the tag icon carries it (map-toolbar.css). *@
+                <button id="raceNameToggle" type="button" class="map-dd-toggle is-active" aria-pressed="true"
+                        title="Hide rider names">
+                    <svg class="map-dd-toggle-icon" width="13" height="13" viewBox="0 0 24 24" fill="none"
+                         stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/>
+                        <line x1="7" y1="7" x2="7.01" y2="7"/>
+                    </svg>
+                    <span class="map-dd-toggle-text">Names</span>
+                </button>
+
+                <details class="map-dd map-dd-end">
+                    <summary class="map-dd-summary">
+                        <span class="map-dd-label">Size</span>
+                        <svg class="map-dd-chevron" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+                    </summary>
+                    <div class="map-dd-menu" role="group" aria-label="Map size">
+                        <button id="raceMapGrow" type="button" class="map-dd-item" title="Make map taller">Taller</button>
+                        <button id="raceMapShrink" type="button" class="map-dd-item" title="Make map smaller">Smaller</button>
+                        <button id="raceMapReset" type="button" class="map-dd-item" title="Reset map size">Reset size</button>
+                    </div>
+                </details>
+
+                @* Who may edit this race — owner-only, and deliberately compact: a permission, not a panel.
+                   Reuses the map-toolbar dropdown so it matches Style/Size instead of inventing chrome. *@
+                @if (Model.IsOwner)
+                {
+                    <details class="map-dd map-dd-end race-editpolicy" id="raceEditPolicy" data-race-id="@Model.RaceId">
+                        <summary class="map-dd-summary" title="Choose who can edit this race">
+                            <span class="map-dd-label">Editing</span>
+                            <span class="map-dd-value" id="raceEditPolicyValue">@(Model.Race?.EditPolicy switch {
+                                RaceEditPolicy.Friends => "Friends", RaceEditPolicy.Public => "Anyone", _ => "Only me" })</span>
+                            <svg class="map-dd-chevron" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+                        </summary>
+                        <div class="map-dd-menu" role="group" aria-label="Who can edit this race">
+                            <button type="button" class="map-dd-item@(Model.Race?.EditPolicy == "owner" ? " active" : "")"
+                                    data-policy="owner" data-short="Only me">Only me</button>
+                            <button type="button" class="map-dd-item@(Model.Race?.EditPolicy == RaceEditPolicy.Friends ? " active" : "")"
+                                    data-policy="@RaceEditPolicy.Friends" data-short="Friends">My friends</button>
+                            <button type="button" class="map-dd-item@(Model.Race?.EditPolicy == RaceEditPolicy.Public ? " active" : "")"
+                                    data-policy="@RaceEditPolicy.Public" data-short="Anyone">Anyone who can view</button>
+                            <p class="race-editpolicy-msg" id="raceEditPolicyMsg" role="alert" hidden></p>
+                        </div>
+                    </details>
+
+                    @* Mint a public /s/{token} link for this race. OWNER-only, not CanEdit: a collaborator
+                       may change the field, but publishing is the owner's call (ShareLinkService mints on
+                       ownership alone). Ids match core/share-links.ts. *@
+                    <button type="button" class="btn-cockpit btn-cockpit-ghost btn-cockpit-xs race-share-btn"
+                            id="shareActivityBtn"
+                            title="Create a public link to this replay — works without signing in">
+                        <i class="bi bi-share"></i> Share
+                    </button>
+                }
+            </div>
+
+            @if (Model.IsOwner)
+            {
+                <partial name="/Pages/Shared/_ShareLinkDialog.cshtml"
+                         model="RouteBaseWeb.Models.Sharing.ShareLinkDialogModel.ForRace" />
+            }
+
+            @* The replay stage — map + chrome + chart drawer. Shared with the /s/{token} fork, which
+               renders the SAME partial: the stage is one thing, maintained once. *@
+            <partial name="_RaceHero" model="Model.CanEdit" />
+
+            @* Directly under the map, where the dock's elevation strip used to be read — that strip is
+               fullscreen-only now. This chart carries the course (terrain tinted per section, a rule per
+               boundary) as well as the riders, which is also what makes it the surface you place a
+               section boundary on. *@
+            <partial name="_RaceSpeedPanel" model="Model.CanEdit" />
+
+            @if (Model.CanEdit)
+            {
+                <div class="race-cp-editor">
+                    <div class="race-cp-head">
+                        <span>Sections</span>
+                        <small>Click the speed chart to split a section · drag a boundary to move it · the Finish is fixed</small>
+                    </div>
+                    <div id="raceCheckpoints"></div>
+                </div>
+            }
+        </section>
+    </div>
+
+    <!-- Real riders ─────────────────────────────────────────────────────────
+         Moved above the imported results: you set up who is racing (your own ride) and the pacing
+         reference BEFORE you look at the field that inherits their physics. -->
+    @if (Model.CanEdit)
+    {
+        <section class="race-panel" id="raceRiders" data-race-id="@Model.RaceId">
+            <div class="race-panel-head">Real riders</div>
+            <div class="race-panel-body">
+                <p class="race-hint">
+                    Add your own ride, or a friend's, to race against the field. A real rider is drawn from
+                    <strong>his own GPS</strong> — so if he took a wider line or a wrong turn, you will see his
+                    marker leave the course.
+                </p>
+
+                @* The name is EDITABLE here: a rider is called after the person, not after the ride file
+                   he came from. Whatever is typed is what the map label, the sidebar, the results board
+                   and the speed legend all show — and what an anonymous viewer of a shared race sees.
+                   Clear the box and the ride's own name comes back (the server owns that fallback). *@
+                @* The colour is EDITABLE from the pill for the same reason the name is: the results
+                   table's paint is a SET control (filter, then paint the filtered set), which is the
+                   right tool for a 508-team division and the wrong one for "make Lutz orange". Riders
+                   are handed distinct colours as they are added (RaceColors.NextRealColor) — this is
+                   how you disagree with that choice. *@
+                @if (Model.RealRiders.Count > 0)
+                {
+                    <ul class="race-riders">
+                        @foreach (var rider in Model.RealRiders)
+                        {
+                            var riderColor = rider.Color ?? RaceColors.DefaultRealColor;
+                            var calloutOff = rider.CalloutOff == true;
+                            <li style="--rider-color: @riderColor" class="@(calloutOff ? "is-callout-off" : null)">
+                                <input class="race-rider-color" type="color" value="@riderColor"
+                                       data-participant-id="@rider.ParticipantId"
+                                       aria-label="Rider colour" title="This rider's colour on the map and in the charts" />
+                                <form class="race-rider-rename" data-participant-id="@rider.ParticipantId">
+                                    <input class="race-input race-rider-name" type="text" maxlength="255"
+                                           value="@rider.DisplayName" aria-label="Rider name"
+                                           placeholder="The ride's own name" />
+                                    <button type="submit" class="btn-cockpit btn-cockpit-ghost btn-cockpit-sm"
+                                            title="Save this name">
+                                        <i class="bi bi-check-lg"></i>
+                                    </button>
+                                </form>
+                                @* Pressed = hidden. A real rider is called out by virtue of being real, so
+                                   this is the only switch that can quiet one without deleting him. *@
+                                <button type="button" class="btn-cockpit btn-cockpit-ghost btn-cockpit-sm race-rider-callout"
+                                        data-participant-id="@rider.ParticipantId"
+                                        aria-pressed="@(calloutOff ? "true" : "false")"
+                                        title="Hide this rider's highlight — no name on the map, no line in the speed chart">
+                                    <i class="bi @(calloutOff ? "bi-eye-slash" : "bi-eye")"></i>
+                                </button>
+                                <button type="button" class="btn-cockpit btn-cockpit-ghost btn-cockpit-sm race-rider-remove"
+                                        data-participant-id="@rider.ParticipantId" title="Remove from the race">
+                                    <i class="bi bi-x-lg"></i>
+                                </button>
+                            </li>
+                        }
+                    </ul>
+                }
+
+                <form id="raceRiderForm" class="race-create">
+                    <label>
+                        Ride
+                        <input class="race-input race-filter" id="raceRiderFilter" type="search"
+                               placeholder="Filter rides…" autocomplete="off" />
+                        @* The wrapping <label> binds to the filter input above — name the select directly. *@
+                        <select class="race-select" id="raceRiderActivity" required aria-label="Rider ride">
+                            <option value="">Choose a ride…</option>
+                            @foreach (var activity in Model.RiderCandidates)
+                            {
+                                var km = ((activity.TotalDistance ?? 0) / 1000).ToString("0.0");
+                                <option value="@activity.TrackId">@activity.TrackName — @km km</option>
+                            }
+                        </select>
+                    </label>
+                    <button class="btn-cockpit btn-cockpit-primary" type="submit">
+                        <i class="bi bi-person-plus"></i> Add rider
+                    </button>
+                </form>
+
+                @* The pacing reference. Without this the whole feature behind Race.ReferenceTrackId was
+                   unreachable: a MERGED course (which is what /Races tells you to build for a multi-day
+                   route) carries no usable timestamps, so nothing could be fitted and the field silently
+                   fell back to a default mountain-bike curve — pacing a relay's ski, canoe and kayak legs
+                   with bike physics. *@
+                <hr class="race-panel-rule" />
+
+                <p class="race-hint">
+                    <strong>Pacing reference.</strong> The simulated field copies its terrain response —
+                    how much a climb costs it, how fast it runs a descent — from one <em>real</em> effort
+                    over this course. By default that is the course ride itself, which only works if the
+                    course was actually ridden: a <strong>drawn or merged</strong> route has no timestamps
+                    to learn from, and the field falls back to a generic curve. Point it at a real ride
+                    (a rider you have added is ideal) and the whole field inherits <em>his</em> physics.
+                </p>
+
+                <form id="raceReferenceForm" class="race-create">
+                    <label>
+                        Reference effort
+                        <input class="race-input race-filter" id="raceReferenceFilter" type="search"
+                               placeholder="Filter rides…" autocomplete="off" />
+                        <select class="race-select" id="raceReferenceActivity" aria-label="Reference effort ride">
+                            <option value="">The course ride itself (default)</option>
+                            @foreach (var activity in Model.ReferenceCandidates)
+                            {
+                                var km = ((activity.TotalDistance ?? 0) / 1000).ToString("0.0");
+                                <option value="@activity.TrackId"
+                                        selected="@(activity.TrackId == Model.Race?.ReferenceTrackId?.Value)">
+                                    @activity.TrackName — @km km
+                                </option>
+                            }
+                        </select>
+                    </label>
+                    <button class="btn-cockpit btn-cockpit-ghost" type="submit">
+                        <i class="bi bi-speedometer2"></i> Set reference
+                    </button>
+                </form>
+
+                <p id="raceRiderStatus" class="race-import-status"></p>
+            </div>
+        </section>
+    }
+
+    <!-- Results ─────────────────────────────────────────────────────────────
+         The table is also the race's COLOUR UI: filter it (division, gender, club — the filters compose)
+         and paint the filtered set. That is why there is no "colour by category" dropdown anywhere — a
+         dropdown keys on one field and would need a 16-colour palette for this race's divisions. -->
+    <section class="race-panel race-results">
+        <div class="race-panel-head">
+            <span>Results</span>
+            <small>Filter, then paint · click a row to follow that rider</small>
+            @* Hidden unless the field actually has start offsets — on a mass start the two bases are the
+               same picture, and a control that changes nothing is worse than no control. *@
+            <label class="race-gun-toggle" id="raceGunTimeControl" hidden>
+                <input id="raceGunTime" type="checkbox" />
+                <span title="Place every rider on the road at his real start time. The results table stays on net times — that is what the classification is decided on.">Gun time</span>
+            </label>
+            @if (Model.CanEdit)
+            {
+                <button type="button" id="raceClearField"
+                        class="btn-cockpit btn-cockpit-danger btn-cockpit-xs race-clear-field"
+                        title="Remove every rider — simulated and real — so a results CSV can be re-imported">
+                    <i class="bi bi-trash"></i> Clear field
+                </button>
+            }
+        </div>
+        <div id="raceResultsToolbar" class="grid-toolbar"></div>
+        @* The horizontal scroll container. `.grid-table-wrapper` (grid-filter.css) is the shared one —
+           `.table-responsive` used to be here, but that class is defined in segment-statistics.css, which
+           this page never loads, so the wide results table was clipped by .race-panel with no way to scroll. *@
+        <div class="grid-table-wrapper"><div id="raceResultsGrid"></div></div>
+    </section>
+
+    @* Start blocks. Hidden unless the imported field actually HAS waves — most files publish only a
+       LABEL ("Startblock 1: 10 Uhr bis 11 Uhr"), which carries the start time in prose, so the user
+       assigns each block a number once. A file that publishes an offset column, or gun and net, needs
+       none of this: the importer reads it. *@
+    @if (Model.CanEdit)
+    {
+    <section class="race-panel" id="raceWaves" hidden>
+        <div class="race-panel-head">
+            <span>Start blocks</span>
+            <small>One start time per block, as h:mm:ss after the gun · blank means "with the gun"</small>
+        </div>
+        <div class="race-panel-body">
+            <div id="raceWaveRows" class="race-wave-rows"></div>
+            <button type="button" id="raceWaveSave" class="btn-cockpit btn-cockpit-primary">Save start times</button>
+            <p id="raceWaveStatus" class="race-import-status"></p>
+        </div>
+    </section>
+    }
+
+    <!-- Results import ──────────────────────────────────────────────────── -->
+    @if (Model.CanEdit)
+    {
+    <section class="race-panel race-import" id="raceImport" data-race-id="@Model.RaceId">
+        <div class="race-panel-head">Import results</div>
+        <div class="race-panel-body">
+            <p class="race-hint">
+                A results CSV: one row per entrant. Only a name and a finish time are required —
+                intermediate splits are optional, a DNF row keeps whatever splits it has, and a row with
+                a status and no time at all still counts as a starter.
+            </p>
+
+            @* Built from THIS race's own checkpoints, with example rows showing the time format, a DNF
+               and a DNS. A plain <a download>, like every other download here — the app has no
+               browser-side file generation, and this way the headers come from the same vocabulary the
+               importer guesses with. *@
+            <p class="race-hint">
+                <a class="race-template-link"
+                   href="/api/RacesApi/@Model.RaceId/import/template.csv"
+                   download="race-@(Model.RaceId)-results-template.csv">
+                    <i class="bi bi-download"></i> Download a template for this race
+                </a>
+            </p>
+
+            <form id="raceImportForm">
+                <input id="raceCsvFile" class="race-file" type="file" accept=".csv,text/csv" aria-label="Results CSV file" />
+
+                <div id="raceCsvMapping" class="race-mapping" hidden>
+                    @* Saved mappings are per USER, not per race: next year's file from the same timing
+                       platform is then a one-click import. *@
+                    <div class="race-profile-row">
+                        <label>Saved mapping <select id="csvProfile" class="race-select"></select></label>
+                        <input id="csvProfileName" class="race-select" type="text" maxlength="60"
+                               placeholder="Name this mapping…" aria-label="Name this mapping" />
+                        <button id="csvProfileSave" type="button" class="btn-cockpit">Save mapping</button>
+                        <button id="csvProfileDelete" type="button" class="btn-cockpit">Remove</button>
+                    </div>
+
+                    <div class="race-mapping-grid">
+                        <label>Name <select id="csvName" class="race-select"></select></label>
+                        <label><span id="csvFinishLabel">Finish time</span> <select id="csvFinish" class="race-select"></select></label>
+                        <label>Bib <select id="csvBib" class="race-select"></select></label>
+                        <label>Category <select id="csvCategory" class="race-select"></select></label>
+                        <label>Gender <select id="csvGender" class="race-select"></select></label>
+                        <label>Club <select id="csvClub" class="race-select"></select></label>
+                        @* Optional, and the one worth mapping: it keeps rows that have a status and no
+                           time, and lets a published DNF outrank a finish-mat time. *@
+                        <label>Status <select id="csvStatus" class="race-select"></select></label>
+                        @* Staggered starts. Mapping Gun AND Net derives each rider's start offset with no
+                           extra input; a wave label is imported as text and given a number below. *@
+                        <label>Gun (clock) time <select id="csvGun" class="race-select"></select></label>
+                        <label>Net (chip) time <select id="csvNet" class="race-select"></select></label>
+                        <label>Start offset <select id="csvStartOffset" class="race-select"></select></label>
+                        <label>Start block <select id="csvWave" class="race-select"></select></label>
+                        @* An event running several races off one start list — eleven in the Schauinsland file. *@
+                        <label>Discipline <select id="csvDiscipline" class="race-select"></select></label>
+                    </div>
+
+                    @* A relay/stage file publishes LEG DURATIONS, not elapsed times. They get chained, and
+                       the leg sum becomes the finish — the published total is then only a cross-check. *@
+                    <label class="race-perleg">
+                        @* Default OFF. It shipped on, and nothing downstream checks the numbers: Black
+                           Forest publishes CUMULATIVE split columns, so chaining them turned a 2:43:18
+                           race into 10:27:26 with no warning. Elapsed-from-start is the safer reading of
+                           an unknown file — a wrong guess there under-counts one column instead of
+                           multiplying the finish. *@
+                        <input id="csvPerLeg" type="checkbox" />
+                        <span>
+                            Each column is the time for <strong>that section only</strong> — tick this only
+                            if the columns are section durations, not times from the start
+                            <small>The section times will be added up; their sum becomes each rider's
+                                   finish time. If the last column already equals the finish time, the file
+                                   is cumulative — leave this unticked.</small>
+                        </span>
+                    </label>
+
+                    <div id="raceCsvSplits" class="race-mapping-grid race-splits"></div>
+
+                    @* The first few rows as they would be IMPORTED — computed finish next to published.
+                       No heuristic can tell a cumulative split column from a per-section one; two numbers
+                       side by side can. *@
+                    <div id="raceImportPreview" class="race-import-preview"></div>
+
+                    <button type="submit" class="btn-cockpit btn-cockpit-primary">
+                        <i class="bi bi-upload"></i> Import field
+                    </button>
+                </div>
+            </form>
+
+            <p id="raceImportStatus" class="race-import-status"></p>
+            @* The per-row skip reasons, collapsed. Line-numbered by the importer and already on the wire;
+               the panel used to read only their count. *@
+            <div id="raceImportSkipped"></div>
+        </div>
+    </section>
+    }
+</div>
+
+@section Scripts {
+    @* chartjs + zoom are for the speed panel only — the dock strip is hand-drawn canvas and needs
+       neither. Same pair the segment and activity pages load. *@
+    <partial name="_CdnLibs" model="@("maplibre-js,chartjs,chartjs-zoom")" />
+    <script type="module" src="~/js/race-sim/race-replay.js" asp-append-version="true"></script>
+}

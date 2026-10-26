@@ -1,0 +1,169 @@
+@using RouteBaseWeb.Services.TrackEdit
+@using RouteBaseWeb.Models.Sharing
+@model ActivityDetailView
+@* The activity detail header: breadcrumb, name, type/visibility chips (view + edit-mode inputs), and the
+   owner's action buttons. Two slice seams land here — the track editor's badge/enter-button and the race
+   link — which is why it is its own partial rather than 118 lines of the page.
+
+   The visibility switches live HERE, not on the page: a partial does not inherit the page's @@{} locals, and
+   these three are read by nothing but this header.
+
+   Gating: owner ACTIONS key off Surfaces.CanEdit, while in-app CHROME (breadcrumbs, the "Friend's activity"
+   chip, the visibility badge) keys off Surfaces.ShowAppNav. They are separate because a share view must
+   drop the chrome even though the underlying activity still has an owner and a visibility — rendering
+   "Private" on a deliberately shared private ride would be actively misleading.
+
+   Element ids are DOM contracts (activity-details.ts). *@
+@{
+    var activity = Model.Activity;
+    // The resume hint is what makes the edit button stateful — a checked-out ride offers Resume + Discard here
+    // rather than a banner elsewhere (EditorSurfaces).
+    var chrome = new TrackEditChrome(
+        TrackEditChromePart.EnterButton, Model.Surfaces.CanEdit, Model.GpsData.Count, Model.ResumeHint);
+    var visBadgeClass = activity.Visibility switch {
+        Visibilities.Private => "det-badge--danger",
+        Visibilities.Public  => "det-badge--success",
+        _         => "det-badge--info"
+    };
+    var visIconClass = activity.Visibility switch {
+        Visibilities.Private => "bi-lock",
+        Visibilities.Public  => "bi-globe",
+        _         => "bi-people"
+    };
+    var visDisplayLabel = activity.Visibility switch {
+        Visibilities.Private => "Private",
+        Visibilities.Public  => "Public",
+        _         => "Friends"
+    };
+}
+
+<header class="page-header">
+    <div class="page-header-left">
+        @if (Model.Surfaces.ShowAppNav)
+        {
+            <nav class="page-breadcrumb" aria-label="Breadcrumb">
+                <a href="/">Dashboard</a>
+                <span class="page-breadcrumb-sep">›</span>
+                <a href="/Activities">Activities</a>
+                <span class="page-breadcrumb-sep">›</span>
+                <span class="page-breadcrumb-current">@activity.TrackName</span>
+            </nav>
+        }
+        <h1 class="page-title">
+            <!-- View mode: name -->
+            <span id="activityName">@activity.TrackName</span>
+            @* The three edit-mode inputs (here, type, visibility) are CanEdit-gated rather than merely
+               CSS-hidden. They are driven solely by activity-edit.js, which now loads only for the owner,
+               so for anyone else they were dead DOM — and on a share view, owner-edit machinery sitting in
+               an anonymous page's markup. *@
+            @if (Model.Surfaces.CanEdit)
+            {
+                <!-- Edit mode: name input -->
+                <input type="text" id="editNameInput" class="det-input det-input--name"
+                       data-current="@activity.TrackName" aria-label="Activity name"
+                       style="display:none !important;" />
+            }
+        </h1>
+        @* The race seam. A course IS an activity, so there is no geometry to hand over — a ride the
+           editor merged out of several days arrives here exactly like any other, and this link works
+           for it unchanged. *@
+        @if (Model.Surfaces.CanEdit && activity is { TotalDistance: > 0 })
+        {
+            <a class="btn-cockpit btn-cockpit-ghost btn-cockpit-sm"
+               href="/Races?courseTrackId=@activity.TrackId"
+               title="Use this ride as a race course">
+                <i class="bi bi-trophy"></i> Race this ride
+            </a>
+        }
+        <p class="page-subtitle">@activity.StartDateTimeLocal?.ToString("dddd, MMMM dd, yyyy HH:mm")</p>
+        <div class="page-meta-chips">
+            <!-- View mode: type chip -->
+            <span class="det-type-chip" id="activityTypeBadge">@activity.ActivityType</span>
+            @if (Model.Surfaces.CanEdit)
+            {
+                <!-- Edit mode: type select -->
+                <select id="activityTypeSelect" class="det-select det-select--type"
+                        data-current="@activity.ActivityType" aria-label="Activity type"
+                        style="display:none !important;">
+                    @{
+                        var activityTypeOptions = ActivityTypeVocabulary.EditableKnown;
+                    }
+                    @* DC-06: keep an imported type outside the whitelist selectable so name-only edits still save. *@
+                    @if (!string.IsNullOrEmpty(activity.ActivityType) && !activityTypeOptions.Contains(activity.ActivityType))
+                    {
+                        <option value="@activity.ActivityType" selected="selected">@activity.ActivityType</option>
+                    }
+                    @foreach (var t in activityTypeOptions)
+                    {
+                        <option value="@t" selected="@(activity.ActivityType == t ? "selected" : null)">@t</option>
+                    }
+                </select>
+            }
+
+            @if (Model.Surfaces.ShowAppNav && !Model.IsOwner)
+            {
+                <span class="det-badge det-badge--info"><i class="bi bi-person"></i> Friend's activity</span>
+            }
+
+            @* Badge is display chrome (ShowAppNav); the select is an edit control (CanEdit). Splitting them
+               matters: a share view must show neither, but the two are gated for different reasons. *@
+            @if (Model.Surfaces.ShowAppNav)
+            {
+                <!-- Visibility badge -->
+                <span class="det-badge @visBadgeClass" id="visibilityBadge">
+                    <i class="bi @visIconClass"></i> @visDisplayLabel
+                </span>
+            }
+            @if (Model.Surfaces.CanEdit)
+            {
+                <!-- Edit mode: visibility select -->
+                <select class="det-select det-select--vis" id="visibilitySelect"
+                        data-current="@activity.Visibility" aria-label="Activity visibility"
+                        style="display:none !important;">
+                    <option value="@Visibilities.Private">Private</option>
+                    <option value="@Visibilities.Friends">Friends</option>
+                    <option value="@Visibilities.Public">Public</option>
+                </select>
+            }
+        </div>
+    </div>
+    @if (Model.Surfaces.CanEdit)
+    {
+        <div class="page-header-right">
+            <button class="btn-cockpit btn-cockpit-ghost btn-cockpit-sm" id="editActivityBtn">
+                <i class="bi bi-pencil-square"></i> Edit
+            </button>
+            <button class="btn-cockpit btn-cockpit-primary btn-cockpit-sm" id="saveActivityBtn" style="display:none;">
+                <i class="bi bi-check-lg"></i> Save
+            </button>
+            <button class="btn-cockpit btn-cockpit-ghost btn-cockpit-sm" id="cancelActivityBtn" style="display:none;">
+                <i class="bi bi-x-lg"></i> Cancel
+            </button>
+            <partial name="/Pages/Activities/_TrackEditChrome.cshtml" model="chrome" />
+            <button class="btn-cockpit btn-cockpit-ghost btn-cockpit-sm" id="shareActivityBtn"
+                    title="Create a link that works without signing in">
+                <i class="bi bi-share"></i> Share
+            </button>
+            <a href="/api/activities/export/@activity.TrackId"
+               class="btn-cockpit btn-cockpit-ghost btn-cockpit-sm"
+               download>
+                <i class="bi bi-download"></i> Export GPX
+            </a>
+            <button class="btn-cockpit btn-cockpit-ghost btn-cockpit-sm"
+                    id="refreshElevationBtn"
+                    data-track-id="@activity.TrackId">
+                <i class="bi bi-arrow-repeat"></i> Refresh Elevation
+            </button>
+            <button class="btn-cockpit btn-cockpit-danger btn-cockpit-sm"
+                    id="deleteActivityBtn"
+                    data-track-id="@activity.TrackId"
+                    data-track-name="@(activity.TrackName ?? "")">
+                <i class="bi bi-trash"></i> Delete
+            </button>
+        </div>
+
+        @* Share-link dialog — shared with the segment page (Pages/Shared/_ShareLinkDialog.cshtml).
+           Owner-only, like the buttons above; core/share-links.ts no-ops when this markup is absent. *@
+        <partial name="/Pages/Shared/_ShareLinkDialog.cshtml" model="RouteBaseWeb.Models.Sharing.ShareLinkDialogModel.ForActivity" />
+    }
+</header>

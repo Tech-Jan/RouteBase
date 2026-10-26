@@ -1,0 +1,103 @@
+@model RouteBaseWeb.Models.Recording.ShareLiveSeedDto
+@{
+    // Same seed pattern as the authenticated LiveView: the client owns every dynamic cell (elapsed,
+    // status, the track) — it only needs this static seed. Serialized camelCase to match the TS mirror.
+    var seedJson = System.Text.Json.JsonSerializer.Serialize(
+        Model, System.Text.Json.JsonSerializerOptions.Web);
+}
+@*
+    Map-only PUBLIC live-recording view. No riders panel, no charts, no SignalR — the client polls
+    Model.ApiBase for status + new points and drives the shared MapLibre live-map engine.
+
+    "Map + minimal stats" (confirmed): a LIVE badge, the owner's display name, an elapsed clock and the
+    activity type. Nothing else about the owner or anyone else is shown.
+*@
+<div class="cockpit-scroll">
+    <div id="share-live-app" class="lv-layout">
+
+        @* Parsed, never eval'd, and no window global (same as LiveView's lv-sessions-data). *@
+        <script type="application/json" id="lv-share-data">@Html.Raw(seedJson)</script>
+
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+            @* role="status" (polite live region): the client rewrites this across CONNECTING→LIVE→
+               WAITING→ENDED→UNAVAILABLE, and it is the only status channel on this map-only page — a
+               screen-reader viewer must hear those transitions. paintBadge only mutates on a real state
+               change (share-live-view.ts) so it is not re-announced every clock tick. *@
+            <span id="lv-status-badge" class="lv-status-badge lv-status-badge--live" role="status">
+                <span class="lv-live-dot" aria-hidden="true"></span> LIVE
+            </span>
+            <span class="mono" style="font-weight:600;">@Model.DisplayName</span>
+        </div>
+
+        @* Plain-language ramp-up note — the client shows it only while CONNECTING and hides it at LIVE. *@
+        <div id="lv-live-hint" class="lv-live-hint" hidden>Getting live updates going — this can take up to 60 seconds.</div>
+
+        @* FUX-06: a run of failed polls (a 5xx or a network drop, distinct from the 404 give-up) used to
+           retry in total silence. Shown after a few consecutive failures and cleared on the next good
+           poll — recoverable, so a brief blip never latches it. *@
+        <div id="lv-conn-problem" class="lv-live-hint" role="status" hidden>Connection problem — retrying…</div>
+
+        <div class="kpi-strip kpi-strip--cards" style="margin-bottom:20px;">
+            <div class="kpi-card">
+                <div class="kpi-value mono tnum" id="lv-elapsed">--:--</div>
+                <div class="kpi-label"><i class="bi bi-clock" aria-hidden="true"></i> Elapsed</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-value mono" id="lv-type">—</div>
+                <div class="kpi-label"><i class="bi bi-activity" aria-hidden="true"></i> Type</div>
+            </div>
+        </div>
+
+        @* Full-width map — NOT wrapped in .lv-main (that is the LiveView's two-column riders+map grid;
+           with no riders panel the map would land in its narrow 320px first column). *@
+        <div id="lv-map-card" class="lv-map-panel">
+            @* Same .map-dd toolbar and same option-button IDs as the owner LiveView — the two map panels
+               are read side by side, so keep them in step. *@
+            <div class="lv-map-controls">
+                <details class="map-dd" data-picker="true">
+                    <summary class="map-dd-summary">
+                        <span class="map-dd-label">Style</span>
+                        <span class="map-dd-value">Map</span>
+                        <svg class="map-dd-chevron" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+                    </summary>
+                    <div class="map-dd-menu" id="lv-style-switcher" role="group" aria-label="Map style"></div>
+                </details>
+                <details class="map-dd map-dd-end">
+                    <summary class="map-dd-summary">
+                        <span class="map-dd-label">Size</span>
+                        <svg class="map-dd-chevron" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+                    </summary>
+                    <div class="map-dd-menu" role="group" aria-label="Map size">
+                        <button id="lv-map-grow-btn"   type="button" class="map-dd-item" title="Make map taller">Taller</button>
+                        <button id="lv-map-shrink-btn" type="button" class="map-dd-item" title="Make map smaller">Smaller</button>
+                        <button id="lv-map-reset-btn"  type="button" class="map-dd-item" title="Reset map size">Reset size</button>
+                    </div>
+                </details>
+            </div>
+            <div class="lv-map-body">
+                <div id="liveview-map"></div>
+                @* Fullscreen rides the map, top-right — same idiom as the segment and race pages. *@
+                <button id="lv-map-fullscreen-btn" type="button" class="lv-map-expand" title="Fullscreen map" aria-label="Fullscreen map">
+                    <i class="bi bi-arrows-fullscreen" aria-hidden="true"></i>
+                </button>
+                @* Camera follow toggle rides the map, top-left above the nav control stack — same idiom as the replay overlays. *@
+                <button type="button" id="lv-share-follow-toggle"
+                        class="lv-follow-toggle lv-follow-toggle--map is-following"
+                        title="Free camera — stop following">(unfollow)</button>
+                @* FE-07: the map IS the page, so a stalled engine must not fail to a blank pane. The client
+                   reveals this over the empty map after a generous wait; Retry re-inits the engine. *@
+                <div id="lv-map-error" class="lv-map-error" role="alert" hidden>
+                    <i class="bi bi-exclamation-triangle" aria-hidden="true"></i>
+                    <p>The map couldn't load. Check your connection and try again.</p>
+                    <button type="button" id="lv-map-retry-btn" class="btn-cockpit btn-cockpit-primary btn-cockpit-sm">Retry</button>
+                </div>
+            </div>
+        </div>
+
+        @* Shown by the client once the recording stops/finalizes — the frozen final map stays visible. *@
+        <div id="lv-share-finished" class="lv-stopped-banner" style="display:none">
+            <i class="bi bi-check-circle" aria-hidden="true"></i> Recording finished
+        </div>
+
+    </div>
+</div>

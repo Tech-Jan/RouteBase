@@ -1,0 +1,198 @@
+/* Photos gallery — grid with ThumbHash blur-up, filters, grouping, and lightbox. Cockpit tokens
+   carry light/dark theming. */
+
+.photos-layout {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-4, 16px);
+    padding-bottom: 40px;
+}
+
+/* ── Filters row ────────────────────────────────────────────────── */
+.photos-filters {
+    display: flex;
+    align-items: flex-end;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+.photos-filter { display: flex; flex-direction: column; gap: 4px; font-size: 0.75rem; color: var(--fg-2); }
+.photos-input {
+    background: var(--bg-3);
+    color: var(--fg-0);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    padding: 6px 10px;
+    font-size: 0.85rem;
+}
+.photos-toggle { display: flex; align-items: center; gap: 6px; font-size: 0.8rem; color: var(--fg-1); cursor: pointer; }
+.photos-toggle input { accent-color: var(--acc-cyan); }
+.photos-count { color: var(--fg-2); font-size: 0.85rem; }
+.photos-import-link { margin-left: auto; text-decoration: none; }
+
+/* ── Group header ──────────────────────────────────────────────── */
+.photos-group-header {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    margin-top: 8px;
+    padding-bottom: 4px;
+    border-bottom: 1px solid var(--line);
+}
+.photos-group-title { font-size: 0.95rem; font-weight: 600; color: var(--fg-0); text-decoration: none; }
+.photos-group-title:hover { color: var(--acc-cyan); }
+.photos-group-date { font-size: 0.75rem; color: var(--fg-2); }
+
+/* ── Grid ──────────────────────────────────────────────────────── */
+.photos-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 8px;
+}
+.photos-cell-wrap {
+    position: relative;
+    aspect-ratio: 1;
+}
+.photos-cell {
+    display: block;
+    width: 100%;
+    height: 100%;
+    border: none;
+    padding: 0;
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    cursor: pointer;
+    background-color: var(--bg-3);
+    background-size: cover;
+    background-position: center;
+}
+.photos-cell-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    opacity: 0;
+    transition: opacity 0.35s ease;
+}
+.photos-cell-img.is-loaded { opacity: 1; }
+.photos-cell:focus-visible { outline: 2px solid var(--acc-cyan); outline-offset: 2px; }
+
+/* Corner trash toggle + marked state */
+.photos-cell-del {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: 24px;
+    height: 24px;
+    border: none;
+    padding: 0;
+    border-radius: var(--radius-sm);
+    background: oklch(0 0 0 / 0.55);
+    color: #fff;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    cursor: pointer;
+    z-index: 2;
+}
+/* Reveal on hover (mouse), focus-within (keyboard tab into the cell), or when marked; always on a touch
+   device (no hover) — so the destructive control is reachable by keyboard and on a phone, not mouse-only. */
+.photos-cell-wrap:hover .photos-cell-del,
+.photos-cell-wrap:focus-within .photos-cell-del,
+.photos-cell-wrap.is-marked .photos-cell-del { display: flex; }
+@media (hover: none) {
+    .photos-cell-del { display: flex; }
+}
+.photos-cell-wrap.is-marked .photos-cell { outline: 2px solid var(--acc-red); outline-offset: -2px; }
+.photos-cell-wrap.is-marked .photos-cell-img { opacity: 0.35; }
+.photos-cell-wrap.is-marked .photos-cell-del { background: var(--acc-red); }
+
+.photos-selectbar {
+    position: sticky;
+    bottom: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 10px 16px;
+    margin-top: 8px;
+    background: var(--bg-2);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-md);
+    box-shadow: 0 2px 12px oklch(0 0 0 / 0.35);
+}
+.photos-selectbar-count { color: var(--fg-1); font-size: 0.85rem; }
+
+.photos-empty {
+    text-align: center;
+    color: var(--fg-2);
+    padding: 48px 0;
+}
+.photos-empty i { font-size: 2rem; display: block; margin-bottom: 8px; }
+
+.photos-pager {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    margin-top: 8px;
+}
+.photos-page-label { font-size: 0.85rem; color: var(--fg-2); }
+
+/* ── Lightbox ──────────────────────────────────────────────────── */
+.photos-lightbox {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    background: oklch(0 0 0 / 0.85);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+}
+/* Close / ‹ › / counter come from css/photo-viewer.css (built by photos/photo-viewer-chrome.ts) —
+   the same controls as the map viewer, pinned to the visual viewport so a pinch can't hide them. */
+.photos-lightbox-body {
+    display: flex;
+    gap: 16px;
+    max-width: 1200px;
+    max-height: 90vh;
+    width: 100%;
+}
+.photos-lightbox-imgwrap {
+    flex: 1 1 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 0;
+}
+.photos-lightbox-img {
+    max-width: 100%;
+    max-height: 90vh;
+    object-fit: contain;
+    border-radius: var(--radius-md);
+}
+.photos-lightbox-side {
+    flex: 0 0 260px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    color: var(--fg-1);
+}
+.photos-lightbox-meta { display: flex; flex-direction: column; gap: 6px; font-size: 0.85rem; }
+.photos-meta-row { display: flex; align-items: center; gap: 8px; }
+.photos-meta-file { color: var(--fg-2); font-size: 0.75rem; word-break: break-all; }
+.photos-meta-caption { color: var(--fg-0); font-size: 0.95rem; font-weight: 500; white-space: pre-wrap; }
+.photos-lightbox-map {
+    height: 200px;
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    background: var(--bg-3);
+}
+.photos-delete { align-self: flex-start; }
+
+@media (max-width: 768px) {
+    .photos-lightbox-body { flex-direction: column; overflow-y: auto; }
+    .photos-lightbox-side { flex-basis: auto; }
+}

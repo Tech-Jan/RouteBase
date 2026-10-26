@@ -1,0 +1,18 @@
+@model bool
+@*
+    The race dock's strip: the course elevation profile, with the field's speed traced over it — the
+    median inside a p10–p90 band, on the profile's own chainage axis. Those were two stacked canvases
+    until the pair became one picture ("where the course climbs, the field slows"), which is not
+    readable across two charts you have to line up by eye.
+
+    Section boundaries are placed HERE and never on the map: this course passes the Mt Baker ski area seven
+    times, so one map pixel is seven different chainages. The field rides the profile too — same positions,
+    same colours, same filter as the map.
+
+    The model is one bool: whether the viewer may edit. It only changes the profile's aria-label —
+    click-to-place is gated in race-replay-view (editable:false on the share fork).
+*@
+<div class="race-profile-wrap">
+    <canvas id="raceProfile" class="race-profile"
+            aria-label="@(Model ? "Course elevation profile with field speed — click to split a section" : "Course elevation profile with field speed")"></canvas>
+</div>

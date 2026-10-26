@@ -1,0 +1,210 @@
+/* Activity Details — Photos grid + map markers/popups (§4). The Photos tab/body chrome lives in the
+   shared "det-actions" bar (activity-details.css); this owns the grid, thumbnails, markers, popups. */
+
+.det-photos-actions { margin-bottom: 12px; }
+.det-photos-actions a { text-decoration: none; }
+
+.det-photos-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 8px;
+}
+.det-photo-thumb {
+    position: relative;
+    aspect-ratio: 1;
+    border: none;
+    padding: 0;
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    cursor: pointer;
+    background-color: var(--bg-3);
+    background-size: cover;
+    background-position: center;
+}
+.det-photo-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+.det-photo-img.is-loaded { opacity: 1; }
+.det-photo-thumb:focus-visible { outline: 2px solid var(--acc-cyan); outline-offset: 2px; }
+.det-photos-empty { color: var(--fg-2); font-size: 0.85rem; }
+.det-photos-truncated { color: var(--fg-2); font-size: 0.8rem; margin-top: 4px; }
+
+/* Never-placed photo (owner only) — no location yet; pink-red ring flags it as needing one. */
+.det-photo-thumb--unplaced {
+    border: 2px solid #ff4d7d;
+    box-shadow: 0 0 0 2px oklch(0.65 0.22 5 / 0.22);
+}
+/* Hidden-but-remembered (owner) — intentionally off the map; neutral ring, not a warning. */
+.det-photo-thumb--offmap {
+    border: 2px dashed var(--fg-3);
+    box-shadow: none;
+}
+
+/* Owner-only corner controls — ↩ restore a hidden photo, pin = place/move, × = remove from map. Always
+   visible (touch has no hover); the map-tap that drops the pin is a normal single tap. */
+.det-photo-actions {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    display: flex;
+    gap: 4px;
+    z-index: 2;
+}
+.det-photo-place-btn,
+.det-photo-unpin-btn,
+.det-photo-restore-btn {
+    width: 22px;
+    height: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: oklch(0.2 0.02 250 / 0.72);
+    font-size: 0.72rem;
+    cursor: pointer;
+    transition: background 0.12s, transform 0.12s;
+}
+.det-photo-place-btn { color: #ff4d7d; }
+.det-photo-unpin-btn { color: #fff; }
+.det-photo-restore-btn { color: var(--acc-cyan); }
+.det-photo-place-btn:hover,
+.det-photo-unpin-btn:hover,
+.det-photo-restore-btn:hover { background: oklch(0.2 0.02 250 / 0.94); transform: scale(1.08); }
+
+/* ── Popup (MapLibre) ───────────────────────────────────────────── */
+.det-photo-popup img {
+    display: block;
+    max-width: 300px;
+    max-height: 300px;
+    width: 100%;
+    height: auto;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+}
+.det-photo-popup-caption {
+    padding: 6px 4px 2px;
+    font-size: 0.8rem;
+    color: var(--fg-1);
+    max-width: 300px;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+/* Thin popup frame + small close button — scoped to photo popups via the wrapper class. */
+.det-photo-popup-wrap .maplibregl-popup-content {
+    padding: 3px;
+    border-radius: var(--radius-md);
+}
+/* A disc, not a bare glyph on the image: this popup frames a photo edge-to-edge, and a plain dark ×
+   disappears over a dark one. Same reasoning as .photo-viewer-close. */
+.det-photo-popup-wrap .maplibregl-popup-close-button {
+    top: 4px;
+    right: 4px;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: oklch(0 0 0 / 0.55);
+    font-size: 20px;
+    line-height: 26px;
+    color: #fff;
+}
+.det-photo-popup-wrap .maplibregl-popup-close-button:hover { background: oklch(0 0 0 / 0.8); }
+/* Finger-sized on touch: under a replay camera the popup rides along at 60 Hz, so its × is a MOVING
+   target. Any map gesture also dismisses it now (core/map-user-gesture) — this is the aimed-for exit. */
+@media (pointer: coarse) {
+    .det-photo-popup-wrap .maplibregl-popup-close-button {
+        width: 38px;
+        height: 38px;
+        font-size: 24px;
+        line-height: 36px;
+    }
+}
+
+/* ── Full-size overlay — mobile-safe: image contained in the viewport ──
+   A <dialog> opened with showModal(): it renders in the browser's TOP LAYER, so it needs no z-index
+   and cannot be buried by the replay chrome (which runs at 10001-10002). Do NOT reintroduce one.
+   Its close/‹ ›/counter live in css/photo-viewer.css — pinned to the visual viewport, so they stay
+   reachable under a pinch-zoom. */
+.det-photo-fs {
+    position: fixed;
+    inset: 0;
+    width: 100vw;
+    height: 100vh;
+    max-width: 100vw;
+    max-height: 100vh;
+    margin: 0;
+    border: 0;
+    padding: 16px;
+    background: transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.det-photo-fs::backdrop { background: oklch(0 0 0 / 0.9); }
+.det-photo-fs img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    border-radius: var(--radius-sm);
+}
+/* ── Placement hint — banner over the map while "click to place this photo" is armed ── */
+.det-photo-place-hint {
+    position: absolute;
+    top: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 5;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    max-width: calc(100% - 24px);
+    padding: 8px 12px;
+    border-radius: var(--radius-md);
+    background: oklch(0.2 0.02 250 / 0.92);
+    color: #fff;
+    border: 1px solid #ff4d7d;
+    box-shadow: 0 4px 16px oklch(0 0 0 / 0.4);
+    font-size: 0.82rem;
+}
+.det-photo-place-hint i { color: #ff4d7d; }
+.det-photo-place-cancel {
+    background: var(--bg-4);
+    color: var(--fg-0);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    padding: 2px 10px;
+    font-size: 0.78rem;
+    cursor: pointer;
+    white-space: nowrap;
+}
+.det-photo-place-cancel:hover { background: var(--bg-3); }
+
+/* ═══ Activities overview — photo overlay (overview/activities-photos-overlay.ts) ═══════════════════
+   Shared with Details via the .det-photo-* popup/fullscreen rules above (this file is now linked on the
+   Activities page too). Below is the one overview-only addition left: the toolbar toggle. */
+
+/* Toolbar toggle — off by default, .active while photos are shown (matches the map-mode buttons). */
+.act-photos-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 10px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    background: var(--bg-3);
+    color: var(--fg-1);
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: background 0.12s, color 0.12s, border-color 0.12s;
+}
+.act-photos-toggle:hover { background: var(--bg-4); color: var(--fg-0); }
+.act-photos-toggle.active { background: var(--acc-cyan); border-color: var(--acc-cyan); color: #08131a; }
+
+/* On-map thumbnails are no longer DOM elements — they are registered images drawn by the
+   `photo-overlay-points` symbol layer (see photos/photo-icon-registry.ts), so their size, corner
+   radius and border live in drawPhotoIcon(), not here. */

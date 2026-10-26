@@ -1,0 +1,861 @@
+/* dashboard.css — Dashboard page-specific styles */
+/* Design tokens, shell, sidebar, utilities, KPI strip, and buttons live in cockpit-tokens/shell/components.css */
+
+/* ── Map placeholder backgrounds ────────────────────────────────────────────── */
+.map-placeholder {
+  position: relative;
+  background:
+    repeating-linear-gradient(
+      135deg,
+      oklch(0.26 0.012 210) 0 1px,
+      transparent 1px 10px
+    ),
+    radial-gradient(ellipse at 60% 40%, oklch(0.28 0.015 170) 0%, oklch(0.20 0.010 220) 60%, oklch(0.17 0.008 240) 100%);
+  overflow: hidden;
+  isolation: isolate;
+}
+/* Skeleton stripes show until the canvas thumbnail paints; then flatten behind the shape. */
+.map-placeholder.minimap--rendered {
+  background: var(--bg-3);
+}
+.map-placeholder.terrain {
+  background:
+    repeating-linear-gradient(
+      45deg,
+      oklch(0.32 0.025 90) 0 1px,
+      transparent 1px 14px
+    ),
+    radial-gradient(ellipse at 30% 60%, oklch(0.36 0.04 65) 0%, oklch(0.22 0.02 55) 70%, oklch(0.16 0.01 40) 100%);
+}
+.map-placeholder.satellite {
+  background:
+    repeating-linear-gradient(
+      90deg,
+      oklch(0.19 0.006 240) 0 1px,
+      transparent 1px 18px
+    ),
+    radial-gradient(ellipse at 50% 50%, oklch(0.24 0.015 155) 0%, oklch(0.14 0.006 240) 100%);
+}
+.map-placeholder .map-label {
+  position: absolute;
+  bottom: 8px;
+  left: 10px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--fg-3);
+  z-index: 2;
+  pointer-events: none;
+}
+
+/* ── Greeting row ────────────────────────────────────────────────────────────── */
+.cockpit-greeting {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.greeting-date {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--fg-3);
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  margin-bottom: 4px;
+}
+
+.greeting-text {
+  font-size: 22px;
+  font-weight: 500;
+  letter-spacing: -0.015em;
+}
+
+/* ── Main body grid (feed + right rail) ──────────────────────────────────────── */
+.cockpit-body {
+  display: grid;
+  grid-template-columns: 1fr var(--right-rail-w);
+  gap: 20px;
+  align-items: flex-start;
+}
+
+/* ── Activity feed ───────────────────────────────────────────────────────────── */
+.feed-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.feed-title {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--fg-3);
+}
+
+/* Old .feed-filters / .filter-btn / .filter-select / .filter-sep removed — the feed's
+   filtering moved to the reusable controls grid (.dash-feed-panel, pages/dashboard-grid.ts). */
+
+.feed-list {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+}
+/* Cards filtered out by the controls grid (shared card binding toggles `is-hidden`;
+   ordering uses the CSS `order` property, which works because .feed-list is a grid). */
+.feed-list .activity-card.is-hidden {
+  display: none;
+}
+
+/* ── Feed sort/filter controls strip (reusable grid, controls-only mode) ─────── */
+.dash-feed-panel {
+  margin-bottom: 14px;
+}
+.dash-controls-grid {
+  overflow-x: auto; /* columns keep their min widths and scroll sideways instead of squeezing */
+}
+.dash-feed-empty {
+  padding: 32px;
+  text-align: center;
+  color: var(--fg-3);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* ── Activity card ───────────────────────────────────────────────────────────── */
+/* Surface (bg / border / radius / overflow / hover) is folded onto .card-cockpit in
+   cockpit-components.css. Only the feed card's own layout + virtualization live here. */
+.activity-card {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+  /* Feed is unpaginated (~1000+ cards): skip layout/paint of off-screen cards natively.
+     The intrinsic-size estimate (~map height) only holds until a card first renders —
+     'auto' then remembers the real height, so the scrollbar stays stable. */
+  content-visibility: auto;
+  contain-intrinsic-size: auto 202px;
+}
+
+.activity-delete-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--acc-red);
+  padding: 6px;
+  border-radius: 6px;
+  background: oklch(0.18 0.01 240 / 0.8);
+  backdrop-filter: blur(6px);
+  transition: background 0.15s;
+}
+.activity-delete-btn:hover { background: oklch(0.72 0.18 25 / 0.22); }
+
+.activity-card-map {
+  position: relative;
+  height: 200px;
+}
+
+.activity-card-map .minimap,
+.activity-card-map .map-placeholder {
+  width: 100%;
+  height: 100%;
+  border-radius: 0;
+}
+
+.activity-card-map-badge {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  display: flex;
+  gap: 6px;
+  z-index: 3;
+}
+
+.activity-card-map-badge .chip {
+  background: oklch(0.18 0.01 240 / 0.8);
+  backdrop-filter: blur(6px);
+}
+
+.activity-card-body {
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.activity-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+/* Left side of the header (date + title); shrinks so the photo strip keeps its size. */
+.activity-card-heading { min-width: 0; }
+
+/* ── Cover photos: lazy strip in the header's top-right (dashboard-card-photos.ts) ──── */
+.activity-card-photos {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.activity-card-photo {
+  width: 56px;
+  height: 56px;
+  flex-shrink: 0;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  background-size: cover;      /* ThumbHash blur-up placeholder until the JPEG loads */
+  background-position: center;
+}
+.activity-card-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  opacity: 0;
+  transition: opacity 0.25s;
+}
+.activity-card-photo img.is-loaded { opacity: 1; }
+
+/* Common desktop (1-up feed, wide cards): bigger thumbs. Still ≤128px so the 256px thumb
+   rendition stays crisp even at 2× — no new fetch or work. Ultrawide (>1600px) stays 2-up
+   with narrower cards, so it keeps the smaller base size to avoid overflowing the header. */
+/* Desktop (anything above the ≤600px mobile layout): taller top row so the cover thumb can
+   expand; the minimap grows to match so the card stays the height-driver — no gap, no shift
+   when the photo lazy-loads (body still ≤ map). */
+@media (min-width: 601px) {
+  .activity-card-map { height: 224px; }
+  .activity-card-photo { width: 108px; height: 108px; border-radius: 12px; }
+}
+
+.activity-card-when {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--fg-1);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  margin-bottom: 4px;
+}
+
+/* Visibility marker before the date (public / friends / private) */
+.activity-card-vis {
+  margin-right: 6px;
+  font-size: 11px;
+  vertical-align: -1px;
+}
+.activity-card-vis.vis--private { color: var(--acc-red); }
+.activity-card-vis.vis--public  { color: var(--acc-lime); }
+.activity-card-vis.vis--friends { color: var(--acc-cyan); }
+
+/* Active share-link marker, beside the visibility marker. Same metrics so they sit on one baseline. */
+.activity-card-share {
+  margin-right: 6px;
+  font-size: 11px;
+  vertical-align: -1px;
+  color: var(--acc-amber);
+}
+
+.activity-card-title {
+  font-size: 18px;
+  font-weight: 500;
+  letter-spacing: -0.015em;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.activity-title-duration {
+  display: none;
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--fg-2);
+  letter-spacing: 0;
+}
+
+.activity-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 0;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  padding: 12px 0;
+}
+
+.activity-stat {
+  padding: 0 12px;
+  border-left: 1px solid var(--line);
+}
+.activity-stat:first-child { border-left: none; padding-left: 0; }
+
+.activity-stat-value {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 18px;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+
+.activity-stat-unit {
+  font-size: 10px;
+  color: var(--fg-3);
+  margin-left: 2px;
+  font-weight: 400;
+}
+
+.activity-stat-label {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  margin-top: 5px;
+  color: var(--fg-3);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+/* ── Right rail ──────────────────────────────────────────────────────────────── */
+.cockpit-rail {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  position: sticky;
+  top: 0;
+}
+
+/* ── Widget card ─────────────────────────────────────────────────────────────── */
+.widget-card {
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 18px;
+}
+
+#weekly-volume-widget svg {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 0 auto;
+}
+
+.widget-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.widget-title {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--fg-3);
+}
+
+.widget-meta {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--fg-3);
+  letter-spacing: 0.08em;
+}
+
+.widget-link {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--acc-cyan);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-decoration: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+}
+.widget-link:hover { opacity: 0.8; }
+
+.widget-skeleton {
+  border-radius: 4px;
+  background: var(--bg-3);
+  animation: skeleton-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes skeleton-pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.4; }
+}
+
+/* ── Mini stat block ─────────────────────────────────────────────────────────── */
+.mini-stat { text-align: left; }
+
+.mini-stat-value {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 18px;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  line-height: 1;
+  color: var(--fg-0);
+}
+
+.mini-stat-unit {
+  font-size: 9px;
+  color: var(--fg-3);
+  margin-left: 2px;
+  font-weight: 400;
+}
+
+.mini-stat-label {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  margin-top: 5px;
+  color: var(--fg-3);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.widget-big-num {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 32px;
+  font-weight: 500;
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+
+/* ── Heatmap widget two-row header ───────────────────────────────────────────── */
+.heatmap-widget-header {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 4px;
+}
+
+.heatmap-header-row {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.heatmap-today-row {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.link-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--acc-cyan);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  opacity: 0.65;
+  transition: opacity 0.15s;
+}
+.link-btn:hover { opacity: 1; }
+
+/* ── Activity Calendar ───────────────────────────────────────────────────────── */
+.cal-month-nav {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Nav arrows read as clickable controls: accent colour + a pill that lights up on hover */
+.cal-nav-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1;
+  padding: 4px 8px;
+  border-radius: 6px;
+  color: var(--acc-cyan);
+  transition: color 0.15s, background 0.15s;
+}
+.cal-nav-btn:not(:disabled):hover { background: var(--bg-3); color: var(--fg-0); }
+.cal-nav-year { font-size: 13px; opacity: 0.7; }
+.cal-nav-year:not(:disabled):hover { opacity: 1; }
+
+@media (max-width: 600px) {
+  .cal-nav-btn {
+    font-size: 18px;
+    padding: 6px 12px;
+    min-width: 36px;
+    min-height: 36px;
+  }
+  .cal-nav-year { font-size: 15px; }
+}
+
+.cal-month-label {
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  color: var(--fg-2);
+  width: 96px;        /* fits "September 2026" — widest possible label */
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.cal-day-headers {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  margin-bottom: 4px;
+}
+
+.cal-day-header {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--fg-3);
+  text-align: center;
+  padding: 2px 0;
+  letter-spacing: 0.04em;
+}
+
+.cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 3px;
+}
+
+.cal-cell {
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: var(--bg-3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--fg-3);
+  position: relative;
+}
+
+.cal-cell--empty   { background: transparent; }
+.cal-cell--future  { background: var(--bg-3); opacity: 0.3; }
+/* Merged up from a second `.cal-cell--active` block that used to sit below `.cal-cell--other`.
+   It has to stay ABOVE `.cal-cell--today`: both are single-class (equal specificity), so moving the
+   `color` down would let it beat `--today`'s colour on a cell that is both. */
+.cal-cell--active  { color: transparent; cursor: pointer; }
+.cal-cell--today   { box-shadow: 0 0 0 1.5px var(--line-2); color: var(--fg-1); }
+.cal-cell--active.cal-cell--today { box-shadow: 0 0 0 2px var(--bg-2), 0 0 0 3.5px rgba(255,255,255,0.35); }
+
+.cal-cell--run   { background: var(--acc-amber); }
+.cal-cell--bike  { background: var(--acc-cyan);  }
+.cal-cell--walk  { background: var(--acc-lime);  }
+.cal-cell--multi { background: var(--fg-1);      }
+.cal-cell--other { background: var(--fg-2);      }
+
+/* ── Heatmap day popup (desktop) ─────────────────────────────────────────────── */
+.hmp-popup {
+  position: fixed;
+  z-index: 1000;
+  min-width: 190px;
+  max-width: 260px;
+  background: var(--bg-1);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px 12px;
+  box-shadow: 0 6px 24px rgba(0,0,0,0.45);
+  opacity: 0;
+  transform: translateY(5px);
+  transition: opacity 0.14s ease, transform 0.14s ease;
+  pointer-events: none;
+}
+.hmp-popup--in {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+.hmp-popup__arrow {
+  position: absolute;
+  width: 0;
+  height: 0;
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  left: 50%;
+  transform: translateX(-50%);
+}
+.hmp-popup--arrow-bottom .hmp-popup__arrow {
+  bottom: -6px;
+  border-top: 6px solid var(--bg-1);
+}
+.hmp-popup--arrow-top .hmp-popup__arrow {
+  top: -6px;
+  border-bottom: 6px solid var(--bg-1);
+}
+
+/* ── Shared popup content ────────────────────────────────────────────────────── */
+.hmp__date {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  color: var(--fg-3);
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+.hmp__row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 0;
+  text-decoration: none;
+  color: var(--fg-1);
+  border-radius: 4px;
+  min-height: 32px;
+}
+.hmp__row + .hmp__row { border-top: 1px solid var(--line); }
+.hmp__row:hover { background: var(--bg-3); }
+.hmp__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.hmp__dot--run   { background: var(--acc-amber); }
+.hmp__dot--bike  { background: var(--acc-cyan);  }
+.hmp__dot--walk  { background: var(--acc-lime);  }
+.hmp__dot--multi { background: var(--fg-1);      }
+.hmp__dot--other { background: var(--fg-2);      }
+.hmp__name {
+  font-size: 12px;
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.hmp__metrics {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--fg-2);
+  white-space: nowrap;
+}
+.hmp__totals {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--fg-3);
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
+}
+
+/* ── Heatmap bottom sheet (mobile) ───────────────────────────────────────────── */
+.hmp-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0);
+  z-index: 999;
+  transition: background 0.2s ease;
+}
+.hmp-overlay--in { background: rgba(0,0,0,0.5); }
+
+.hmp-sheet {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  background: var(--bg-1);
+  border-top: 1px solid var(--line);
+  border-radius: 12px 12px 0 0;
+  padding: 12px 20px 32px;
+  transform: translateY(100%);
+  transition: transform 0.2s ease;
+}
+.hmp-sheet--in { transform: translateY(0); }
+.hmp-sheet__handle {
+  width: 36px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--line-2);
+  margin: 0 auto 14px;
+}
+.hmp-sheet .hmp__row { min-height: 44px; }
+
+.widget-empty {
+  font-size: 11px;
+  color: var(--fg-3);
+  padding: 8px 0;
+}
+.widget-empty a { color: var(--acc-cyan); }
+
+/* ── Segment widget row ───────────────────────────────────────────────────────── */
+.segment-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.segment-icon-wrap {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background: var(--bg-3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.segment-info { flex: 1; min-width: 0; }
+
+.segment-name {
+  font-size: 13px;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.segment-meta {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--fg-3);
+  letter-spacing: 0.06em;
+  margin-top: 2px;
+}
+
+.segment-trend {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+.segment-trend.up   { color: var(--acc-lime); }
+.segment-trend.down { color: var(--acc-red); }
+.segment-trend.flat { color: var(--fg-3); }
+
+/* ── Friend widget row ───────────────────────────────────────────────────────── */
+.friend-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.friend-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  flex-shrink: 0;
+  color: var(--fg-0);
+}
+
+.friend-info { flex: 1; min-width: 0; }
+.friend-name { font-size: 12px; font-weight: 500; }
+.friend-last { font-family: var(--font-mono); font-size: 10px; color: var(--fg-3); }
+
+/* ── Responsive breakpoints ──────────────────────────────────────────────────── */
+
+/* Mobile layout: rail above, single-column feed; cards stay horizontal */
+@media (max-width: 1600px) {
+  .cockpit-body {
+    grid-template-columns: 1fr;
+    min-width: 0;
+  }
+
+  /* Let the feed column and the rail shrink to the viewport instead of being forced
+     wide by their content's min-content size — otherwise the widgets/calendar and the
+     feed's controls table overflow and get clipped by the shell's `overflow-x: hidden`
+     (so they can't be scrolled to). */
+  .cockpit-body > * { min-width: 0; }
+
+  .cockpit-rail {
+    order: -1;
+    position: static;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    min-width: 0;
+  }
+  .cockpit-rail > * { min-width: 0; }
+
+  .feed-list {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .feed-filters {
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+
+  #segments-widget,
+  #friends-widget { display: none; }
+
+  #weekly-volume-widget,
+  #heatmap-widget { padding: 14px; }
+}
+
+/* Phone: stack cards, compress stats */
+@media (max-width: 600px) {
+  .cockpit-greeting,
+  .feed-header { padding: 0 16px; }
+
+  /* Stats strip goes full-bleed like the activity cards below it — drop the side
+     gutters/border/radius so it spans the whole screen width. */
+  .kpi-panel {
+    margin-left: 0;
+    margin-right: 0;
+    border-left: none;
+    border-right: none;
+    border-radius: 0;
+  }
+
+  .feed-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .feed-list { gap: 0; }
+
+  .activity-card {
+    grid-template-columns: 1fr;
+    border-radius: 0;
+    border: none;
+    border-bottom: 1px solid var(--line);
+  }
+  .feed-list .activity-card:first-child {
+    border-top: 1px solid var(--line);
+  }
+  .activity-card:hover {
+    border-color: var(--line);
+    box-shadow: none;
+  }
+
+  .activity-card-map { height: 200px; }
+  .activity-card-body { padding: 14px; }
+
+  /* Smaller thumbs, show at most 3 so the strip fits the narrower card */
+  .activity-card-photo { width: 44px; height: 44px; border-radius: 6px; }
+  .activity-card-photos .activity-card-photo:nth-child(n+4) { display: none; }
+
+  .activity-title-duration { display: inline; }
+  .activity-stat--time { display: none; }
+
+  .activity-stats-grid { grid-template-columns: repeat(4, 1fr); }
+  .activity-stat { padding: 0 8px; }
+  .activity-stat-value { font-size: 14px; }
+
+  .cockpit-rail { grid-template-columns: 1fr; }
+}

@@ -1,0 +1,71 @@
+@{
+    Layout = null;
+}
+@* Layout for anonymous share views.
+
+   It is NOT _Layout (the auth/error shell): that renders the centered auth-shell brand header (auth.css)
+   and loads only the minimal cockpit trio, not the dashboard/detail stylesheets the detail body needs —
+   cockpit-scroll, kpi-card and det-* all live there. Worse, .cockpit-scroll is `flex:1; overflow-y:auto`
+   designed to sit inside .cockpit-main; dropped into a plain container its scroll box never bounds and
+   collapses. So the cockpit shell structure is reused here.
+
+   It is NOT _DashboardLayout either: that renders the sidebar, mobile tabbar and a Logout form, injects
+   IAdminGate, and loads dashboard-nav.js — all of which assume a real signed-in identity and would offer
+   an anonymous visitor links they cannot follow.
+
+   Head is deliberately kept in step with _DashboardLayout's (fonts + the three cockpit stylesheets +
+   bootstrap icons); if that head gains a stylesheet the body markup depends on, add it here too. *@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@(ViewData["Title"] != null ? ViewData["Title"] + " – " : "")RouteBase</title>
+    @* Belt and braces with the X-Robots-Tag header from ShareResponseHeaders: the header is the control
+       that binds, but a meta tag also covers a page saved and re-served elsewhere. *@
+    <meta name="robots" content="noindex, nofollow, noarchive, nosnippet" />
+    @* Must MATCH ShareResponseHeaders' Referrer-Policy: a document-level referrer meta OVERRIDES the
+       response header, so changing only one of the two changes nothing. See that file for why the value
+       is origin-only rather than none. *@
+    <meta name="referrer" content="strict-origin" />
+    <!-- Google Fonts: Geist + Geist Mono -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="~/css/cockpit-tokens.css" asp-append-version="true">
+    <link rel="stylesheet" href="~/css/cockpit-shell.css" asp-append-version="true">
+    <link rel="stylesheet" href="~/css/cockpit-components.css" asp-append-version="true">
+    <link rel="stylesheet" href="~/css/share-view.css" asp-append-version="true">
+    <partial name="_CdnLibs" model="@("bootstrap-icons-css")" />
+    @await RenderSectionAsync("Styles", required: false)
+</head>
+<body class="cockpit-active">
+
+<div class="cockpit-shell cockpit-shell--share">
+    <div class="cockpit-main">
+
+        <header class="share-topbar">
+            <span class="share-topbar-brand">
+                <span class="sidebar-logo-emoji" aria-hidden="true">🏃</span>
+                <span class="sidebar-logo-text mono">RouteBase</span>
+            </span>
+            <span class="share-topbar-note">
+                <i class="bi bi-eye" aria-hidden="true"></i> Shared view — read only
+            </span>
+            <a href="/" class="btn-cockpit btn-cockpit-ghost btn-cockpit-sm share-topbar-signin">Sign in</a>
+        </header>
+
+        @RenderBody()
+    </div>
+</div>
+
+@* core.js only. No dashboard-nav.js (there is no nav) and no op-toast.js (there are no operations). *@
+@* Settings island. DEFAULTS, unconditionally — /s/{token} is served to anyone with the URL, so this
+   surface never reads ambient identity. Handing the viewer's own settings to a share page would also
+   defeat the redaction the share readers do by passing SettingsUserId: null. *@
+<partial name="_AppSettingsBootstrap" model="RouteBaseWeb.Models.Settings.SettingsPayload.Defaults" />
+
+<script type="module" src="~/js/core/core.js" asp-append-version="true"></script>
+@await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

@@ -1,0 +1,133 @@
+@page
+@model CreateModel
+@{
+    Layout = "_DashboardLayout";
+    ViewData["Title"] = "Create Segment";
+}
+
+@section Styles {
+    <partial name="_CdnLibs" model="@("maplibre-css")" />
+    <link rel="stylesheet" href="~/css/segment-create.css" asp-append-version="true" />
+}
+
+<div class="cockpit-scroll">
+
+    <!-- Page header ──────────────────────────────────────────────────────── -->
+    <partial name="_PageHeader" model="@(new PageHeaderModel(
+        Title: "Create Segment",
+        Breadcrumbs: new[] { ("/", "Dashboard"), ("/Segments", "Segments"), ("/Segments/Create", "Create") }
+    ))" />
+
+    <!-- Instructions ─────────────────────────────────────────────────────── -->
+    <div class="seg-create-instructions">
+        <p class="seg-create-instructions-title"><i class="bi bi-info-circle"></i> How to draw a segment</p>
+        <ol>
+            <li>Optionally select an activity to see its route on the map</li>
+            <li>Click <strong>Draw Segment</strong> to start drawing</li>
+            <li>Click waypoints on the map to set the route</li>
+            <li>Watch the orange preview show where the route will go</li>
+            <li>Click <strong>Finish Drawing</strong> when done</li>
+            <li>Enter a name and save</li>
+        </ol>
+    </div>
+
+    <!-- Two-column layout ────────────────────────────────────────────────── -->
+    <div class="seg-create-layout">
+
+        <!-- Map column ───────────────────────────────────────────────────── -->
+        <div class="seg-create-panel">
+
+            <!-- Activity selector -->
+            <div class="seg-create-field">
+                <label class="seg-create-label" for="activitySelect">Load Activity Route (optional)</label>
+                <select id="activitySelect" class="seg-create-select">
+                    <option value="">— Select an activity to trace —</option>
+                    @foreach (var activity in Model.Activities)
+                    {
+                        <option value="@activity.TrackId">
+                            @activity.TrackName — @activity.StartDateTimeLocal?.ToString("dd.MM.yyyy")
+                        </option>
+                    }
+                </select>
+            </div>
+
+            <!-- Draw controls -->
+            <div class="seg-create-draw-row">
+                <button type="button" id="btnDraw" class="btn-cockpit btn-cockpit-primary">
+                    <i class="bi bi-pencil"></i> Draw Segment
+                </button>
+                <button type="button" id="btnClear" class="btn-cockpit btn-cockpit-ghost">
+                    <i class="bi bi-trash"></i> Clear
+                </button>
+            </div>
+
+            <!-- Snap toggle -->
+            <div class="seg-create-toggle-row">
+                <label class="seg-create-toggle-label" for="snapToRoads">
+                    <input type="checkbox" id="snapToRoads" class="seg-create-toggle-input" checked>
+                    <i class="bi bi-bezier2"></i> Snap to paths
+                </label>
+                <p class="seg-create-hint">Routes along roads, trails, and forest paths. Uncheck for straight lines.</p>
+            </div>
+
+            <!-- Map -->
+            @* Map style — MapShell renders one button per available basemap into #segCreateStyleSwitcher *@
+            <div class="seg-create-style-row" id="segCreateStyleSwitcher" role="group" aria-label="Map style"></div>
+            <div id="map"></div>
+        </div>
+
+        <!-- Form column ──────────────────────────────────────────────────── -->
+        <div class="seg-create-panel">
+            <h2 class="seg-create-panel-title">Segment Details</h2>
+
+            <form id="segmentForm" style="display:flex;flex-direction:column;gap:14px;">
+
+                <div class="seg-create-field">
+                    <label class="seg-create-label" for="segmentName">Segment Name *</label>
+                    <input type="text" class="seg-create-input" id="segmentName" placeholder="e.g. Col du Galibier climb" required>
+                </div>
+
+                <div class="seg-create-field">
+                    <label class="seg-create-label" for="activityType">Activity Type</label>
+                    @* CR-01: shared source ActivityTypeVocabulary.SegmentFilter (matches Details.cshtml /
+                       _RecentSessionsTable.cshtml) so a segment's type can actually equal an activity's. *@
+                    <select class="seg-create-select" id="activityType">
+                        <option value="">All Types</option>
+                        @foreach (var t in ActivityTypeVocabulary.SegmentFilter)
+                        {
+                            <option value="@t">@t</option>
+                        }
+                    </select>
+                </div>
+
+                <div class="seg-create-stats">
+                    <div class="seg-create-stat">
+                        <span class="seg-create-stat-label">Distance</span>
+                        <span class="seg-create-stat-value"><span id="distanceDisplay">--</span> km</span>
+                    </div>
+                    <div class="seg-create-stat">
+                        <span class="seg-create-stat-label">Points</span>
+                        <span class="seg-create-stat-value" id="pointsDisplay">0</span>
+                    </div>
+                </div>
+
+                @* SG2-05: shown by segment-create.ts when the drawn route exceeds the 5000-point server cap. *@
+                <div id="pointsCapHint" class="seg-create-status seg-create-status--error" hidden>
+                    This segment has too many points (max 5000). Use fewer waypoints or turn off snap-to-roads.
+                </div>
+
+                <button type="submit" class="btn-cockpit btn-cockpit-primary seg-create-save" id="btnSave" disabled>
+                    <i class="bi bi-save"></i> Save Segment
+                </button>
+            </form>
+
+            <div id="saveStatus" style="display:none;"></div>
+        </div>
+
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_CdnLibs" model="@("maplibre-js")" />
+    <script type="module" src="~/js/segment-create/segment-create.js" asp-append-version="true"></script>
+}

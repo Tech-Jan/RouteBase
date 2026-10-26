@@ -1,0 +1,45 @@
+{
+  "fixtureVersion": 1,
+  "name": "deleteRange-sparse-time",
+  "description": "E13: close shift skips a NullQ time sample in the shifted tail (index4 stays null); anchor/next present",
+  "sources": {
+    "110": {
+      "time": [1000, 1010, 1020, 1030, null, 1050],
+      "lat": [47000000, 47000100, 47000200, 47000300, 47000400, 47000500],
+      "lng": [8000000, 8000100, 8000200, 8000300, 8000400, 8000500],
+      "altitude": [1000, 1010, 1020, 1030, 1040, 1050],
+      "distance": [0, 100, 200, 300, 400, 500],
+      "speed": [500, 510, 520, 530, 540, 550],
+      "heartRate": [120, 121, 122, 123, 124, 125],
+      "gradeSmooth": [10, 11, 12, 13, 14, 15],
+      "cadence": [80, 81, 82, 83, 84, 85],
+      "power": [200, 201, 202, 203, 204, 205],
+      "pressure": [101300, 101310, 101320, 101330, 101340, 101350]
+    }
+  },
+  "script": { "schemaVersion": 1, "ops": [
+    { "op": "loadActivity", "activityId": 110 },
+    { "op": "deleteRange", "slot": 0, "from": 2, "to": 2, "timeMode": "close", "gapSeconds": 10 }
+  ] },
+  "expect": {
+    "slots": [
+      {
+        "slotId": 0,
+        "origin": { "activityId": 110 },
+        "channels": {
+          "time": [1000, 1010, 1020, null, 1040],
+          "lat": [47000000, 47000100, 47000300, 47000400, 47000500],
+          "lng": [8000000, 8000100, 8000300, 8000400, 8000500],
+          "altitude": [1000, 1010, 1030, 1040, 1050],
+          "distance": [0, 100, 100, 200, 300],
+          "speed": [500, 510, 530, 540, 550],
+          "heartRate": [120, 121, 123, 124, 125],
+          "gradeSmooth": [10, 11, 13, 14, 15],
+          "cadence": [80, 81, 83, 84, 85],
+          "power": [200, 201, 203, 204, 205],
+          "pressure": [101300, 101310, 101330, 101340, 101350]
+        }
+      }
+    ]
+  }
+}

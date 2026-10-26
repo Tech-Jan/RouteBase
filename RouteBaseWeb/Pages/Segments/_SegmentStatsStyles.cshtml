@@ -1,0 +1,12 @@
+@* Stylesheets the segment detail body depends on. Extracted so the canonical page and the share
+   view reference ONE list — share rule 4 (a stylesheet added to one layout but not the other)
+   is otherwise an uncovered hazard. *@
+<partial name="_CdnLibs" model="@("maplibre-css")" />
+<link rel="stylesheet" href="~/css/replay-controls.css" asp-append-version="true" />
+<link rel="stylesheet" href="~/css/grid-filter.css" asp-append-version="true" />
+<link rel="stylesheet" href="~/css/map-toolbar.css" asp-append-version="true" />
+<link rel="stylesheet" href="~/css/segment-statistics.css" asp-append-version="true" />
+<link rel="stylesheet" href="~/css/segment-statistics-charts.css" asp-append-version="true" />
+<link rel="stylesheet" href="~/css/segment-replay.css" asp-append-version="true" />
+@* Shared share-link dialog styling — the dialog markup is in Pages/Shared/_ShareLinkDialog.cshtml. *@
+<link rel="stylesheet" href="~/css/share-dialog.css" asp-append-version="true" />

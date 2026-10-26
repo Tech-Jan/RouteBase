@@ -1,0 +1,343 @@
+/* profile-settings.css — Profile Settings page */
+
+/* ── Flash notice (TempData success / error) ────────────────────────────── */
+.settings-notice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+  font-size: 13px;
+}
+
+.settings-notice--success {
+  background: oklch(0.85 0.18 130 / 0.10);
+  border-color: oklch(0.85 0.18 130 / 0.30);
+  color: var(--acc-lime);
+}
+
+.settings-notice--error {
+  background: oklch(0.72 0.18 25 / 0.10);
+  border-color: oklch(0.72 0.18 25 / 0.30);
+  color: var(--acc-red);
+}
+
+.settings-notice-close {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  font-size: 16px;
+  line-height: 1;
+  color: inherit;
+  opacity: 0.7;
+  transition: opacity 0.12s;
+}
+.settings-notice-close:hover { opacity: 1; }
+
+/* ── Main settings panel (the form card) ────────────────────────────────── */
+.settings-panel {
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+}
+
+/* ── Individual section within the panel ────────────────────────────────── */
+.settings-section {
+  padding: 24px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Section heading */
+.settings-section-title {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--fg-1);
+  text-transform: uppercase;
+  letter-spacing: 0.10em;
+  margin: 0;
+}
+
+/* Sub-section label (e.g. "General Settings" inside Map) */
+.settings-sub-title {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--fg-3);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin: 4px 0 -12px;
+}
+
+/* ── Form layout grids ───────────────────────────────────────────────────── */
+.settings-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px 24px;
+  align-items: start;
+}
+
+.settings-grid-2 {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+/* ── Individual field ────────────────────────────────────────────────────── */
+.settings-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* Field label */
+.settings-label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--fg-2);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+/* Hint / description text */
+.settings-hint {
+  font-size: 11px;
+  color: var(--fg-3);
+  margin: 0;
+  line-height: 1.4;
+}
+
+/* asp-validation-for output. Renders empty (and so invisible) unless the POST added a ModelState
+   error for that field — the save path reports out-of-range input instead of silently clamping it. */
+.settings-error {
+  font-size: 11px;
+  color: var(--acc-red);
+  line-height: 1.4;
+}
+
+.settings-error:empty {
+  display: none;
+}
+
+/* ── Text / number inputs ────────────────────────────────────────────────── */
+.settings-input {
+  width: 100%;
+  background: var(--bg-3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  color: var(--fg-0);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  padding: 7px 10px;
+  outline: none;
+  transition: border-color 0.12s;
+}
+.settings-input:focus { border-color: var(--acc-cyan); }
+
+/* ── Select ──────────────────────────────────────────────────────────────── */
+.settings-select {
+  width: 100%;
+  background: var(--bg-3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  color: var(--fg-0);
+  font-family: var(--font-ui);
+  font-size: 13px;
+  padding: 7px 30px 7px 10px;
+  outline: none;
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2' stroke-linecap='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  transition: border-color 0.12s;
+}
+.settings-select:focus { border-color: var(--acc-cyan); }
+.settings-select option { background: var(--bg-3); }
+
+/* ── Range slider ────────────────────────────────────────────────────────── */
+.settings-range-wrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.settings-range {
+  flex: 1;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 4px;
+  background: var(--bg-4);
+  border-radius: 2px;
+  outline: none;
+  cursor: pointer;
+  border: none;
+}
+.settings-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--acc-cyan);
+  cursor: pointer;
+  border: 2px solid var(--bg-2);
+  transition: transform 0.12s;
+}
+.settings-range::-webkit-slider-thumb:hover { transform: scale(1.2); }
+.settings-range::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--acc-cyan);
+  cursor: pointer;
+  border: 2px solid var(--bg-2);
+}
+
+.settings-range-value {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  color: var(--fg-0);
+  min-width: 56px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+/* ── CSS-only toggle switch ──────────────────────────────────────────────── */
+.settings-toggle-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.settings-toggle {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 34px;
+  height: 20px;
+  background: var(--bg-4);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  cursor: pointer;
+  position: relative;
+  flex-shrink: 0;
+  transition: background 0.15s, border-color 0.15s;
+}
+.settings-toggle::after {
+  content: '';
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  background: var(--fg-2);
+  border-radius: 50%;
+  top: 2px;
+  left: 2px;
+  transition: transform 0.15s, background 0.15s;
+}
+.settings-toggle:checked {
+  background: var(--acc-cyan);
+  border-color: var(--acc-cyan);
+}
+.settings-toggle:checked::after {
+  transform: translateX(14px);
+  background: oklch(0.14 0.008 240);
+}
+
+.settings-toggle-label {
+  font-size: 13px;
+  color: var(--fg-1);
+  cursor: pointer;
+}
+
+/* ── Footer action row ───────────────────────────────────────────────────── */
+.settings-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding-top: 4px;
+}
+
+.settings-footer-left {
+  display: flex;
+  gap: 8px;
+}
+
+/* ── Info card ───────────────────────────────────────────────────────────── */
+.settings-info {
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-xl);
+  padding: 24px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.settings-info-title {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.10em;
+  color: var(--fg-1);
+  margin: 0;
+}
+
+.settings-info-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px 32px;
+}
+
+.settings-info-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.settings-info-section-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--fg-0);
+  margin: 0;
+}
+
+.settings-info-section p {
+  font-size: 13px;
+  color: var(--fg-2);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.settings-info-section ul {
+  font-size: 13px;
+  color: var(--fg-2);
+  margin: 0;
+  padding-left: 16px;
+  line-height: 1.7;
+}
+
+.settings-info-section strong { color: var(--fg-1); }
+
+/* ── Responsive ──────────────────────────────────────────────────────────── */
+@media (max-width: 1024px) {
+  .settings-grid   { grid-template-columns: repeat(2, 1fr); }
+  .settings-grid-2 { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 768px) {
+  .settings-section     { padding: 20px 16px; gap: 16px; }
+  .settings-grid,
+  .settings-grid-2      { grid-template-columns: 1fr; }
+  .settings-footer      { flex-direction: column; align-items: stretch; }
+  .settings-footer-left { flex-direction: column; }
+  .settings-info        { padding: 20px 16px; }
+  .settings-info-grid   { grid-template-columns: 1fr; }
+}

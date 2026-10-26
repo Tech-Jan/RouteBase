@@ -1,0 +1,11 @@
+**/bin/
+**/obj/
+**/.git/
+**/.vs/
+**/node_modules/
+RouteBaseWeb.Tests/
+GpsRecorder/
+plan/
+# Localhost-mode switch (no-auth single-user): must never enter the server image. The container would
+# fail closed anyway (non-loopback ASPNETCORE_URLS refuses to start) — this keeps the file out entirely.
+**/appsettings.Local.json

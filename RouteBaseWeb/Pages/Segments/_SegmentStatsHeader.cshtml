@@ -1,0 +1,136 @@
+@model RouteBaseWeb.Models.Sharing.SegmentDetailView
+@using RouteBaseWeb.Services
+@using RouteBaseWeb.Models
+@*
+    Gates split across two axes, like the activity header:
+      - owner ACTIONS      → Surfaces.CanManageSegment / CanGenerateHeatmap
+      - in-app CHROME      → Surfaces.ShowAppNav (breadcrumbs into the app are dead links for an
+                             anonymous viewer, and the share body must render ZERO hrefs)
+    Never gate on Model.IsOwner here — see _SegmentStatsBody.cshtml.
+
+    Visibility reads as the activity page's does: a det-badge chip in view mode that swaps to the
+    det-select when the owner edits it. Same classes, same icon vocabulary, so the two pages cannot drift
+    apart visually. The badge is CHROME (ShowAppNav) and the select is an EDIT CONTROL
+    (CanManageSegment) — split for the same reason as _DetailsHeader: a share view must show neither,
+    but for different reasons.
+
+    Unlike the activity header there is no Edit/Save/Cancel cycle here: the select PATCHes immediately
+    (segment-statistics.ts) and swaps back, which is the behaviour this page already had.
+*@
+@{
+    var segVis = (Model.Segment.Visibility ?? Visibilities.Default).ToLowerInvariant();
+    var segVisBadgeClass = segVis switch {
+        Visibilities.Private => "det-badge--danger",
+        Visibilities.Public  => "det-badge--success",
+        _         => "det-badge--info"
+    };
+    var segVisIconClass = segVis switch {
+        Visibilities.Private => "bi-lock",
+        Visibilities.Public  => "bi-globe",
+        _         => "bi-people"
+    };
+    var segVisLabel = segVis switch {
+        Visibilities.Private => "Private",
+        Visibilities.Public  => "Public",
+        _         => "Friends"
+    };
+}
+
+<!-- Page header ──────────────────────────────────────────────────────── -->
+<header class="page-header">
+    <div class="page-header-left">
+        @if (Model.Surfaces.ShowAppNav)
+        {
+            <nav class="page-breadcrumb" aria-label="Breadcrumb">
+                <a href="/Segments">Segments</a>
+                <span class="page-breadcrumb-sep">›</span>
+                <span class="page-breadcrumb-current">@Model.Segment.SegmentName</span>
+            </nav>
+        }
+        <div class="seg-title-row">
+            <h1 class="page-title">@Model.Segment.SegmentName</h1>
+            <p class="page-subtitle">@Model.DetailedEfforts.Count attempt@(Model.DetailedEfforts.Count == 1 ? "" : "s")</p>
+        </div>
+        <div class="page-meta-chips">
+            @if (!string.IsNullOrEmpty(Model.Segment.ActivityType))
+            {
+                <span class="det-type-chip">@Model.Segment.ActivityType</span>
+            }
+            @if (Model.Surfaces.ShowAppNav)
+            {
+                @* Click to edit — segment-statistics.ts swaps in the select below. Rendered as a button
+                   only for the owner, since for anyone else there is nothing to swap to. *@
+                <span class="det-badge @segVisBadgeClass" id="segVisibilityBadge"
+                      role="@(Model.Surfaces.CanManageSegment ? "button" : null)"
+                      tabindex="@(Model.Surfaces.CanManageSegment ? "0" : null)"
+                      title="@(Model.Surfaces.CanManageSegment ? "Change who can see this segment" : null)">
+                    <i class="bi @segVisIconClass"></i> @segVisLabel
+                </span>
+            }
+            @if (Model.Surfaces.CanManageSegment)
+            {
+                @* Who can see this segment. Independent of share links: a private segment is still
+                   shareable, exactly as a private activity is — the grant widens past visibility. *@
+                <select id="segVisibilitySelect" class="det-select det-select--vis"
+                        data-segment-id="@Model.Segment.SegmentId"
+                        aria-label="Segment visibility"
+                        style="display:none !important;">
+                    @foreach (var v in new[] { Visibilities.Private, Visibilities.Friends, Visibilities.Public })
+                    {
+                        <option value="@v" selected="@(string.Equals(Model.Segment.Visibility, v, StringComparison.OrdinalIgnoreCase))">@v</option>
+                    }
+                </select>
+            }
+        </div>
+    </div>
+
+    @if (Model.Surfaces.CanManageSegment)
+    {
+        <div class="seg-owner-panel">
+            @* Visibility moved up into the meta chips (activity-page shape) — it is a property of the
+               segment, not one of the owner-panel's analysis controls. *@
+            <span class="seg-threshold-label" id="matchThresholdLabel">Match %</span>
+            <input type="number" id="matchThresholdInput" class="seg-number-input" aria-labelledby="matchThresholdLabel" min="@SegmentAnalysis.MinMatchThresholdPercent" max="@SegmentAnalysis.MaxMatchThresholdPercent" value="@Model.DefaultMatchThreshold" data-default="@Model.DefaultMatchThreshold">
+            <a href="#" id="resetMatchThreshold" class="seg-reset-link">reset</a>
+            @if (Model.Segment.SegmentKind == "shapes")
+            {
+                <a href="/Activities?editSegment=@Model.Segment.SegmentId" class="btn-cockpit btn-cockpit-ghost btn-cockpit-sm">
+                    <i class="bi bi-pencil"></i> Edit
+                </a>
+            }
+            <button type="button" id="segReanalyzeBtn" data-segment-id="@Model.Segment.SegmentId" class="btn-cockpit btn-cockpit-ghost btn-cockpit-sm">
+                <i class="bi bi-arrow-clockwise"></i> Re-analyze
+            </button>
+            @* Heatmap is an optional attachment on a shapes segment — painted from its efforts. *@
+            @if (Model.Segment.SegmentKind == "shapes" && Model.Surfaces.CanGenerateHeatmap)
+            {
+                <button type="button" id="segHeatmapGenBtn" class="btn-cockpit btn-cockpit-ghost btn-cockpit-sm" title="Paint an activity heatmap from this segment's efforts">
+                    <i class="bi bi-fire"></i> @(Model.Heatmap == null ? "Generate heatmap" : "Regenerate heatmap")
+                </button>
+                @if (Model.Heatmap?.Status == "stale")
+                {
+                    <span class="seg-heatmap-stale-hint" title="Segment was re-analyzed after this heatmap was painted — regenerate to refresh the tiles">stale</span>
+                }
+            }
+            @if (Model.Surfaces.CanShare)
+            {
+                @* Same id as the activity page's button: one dialog per page, and core/share-links.ts
+                   keys off these ids. *@
+                <button type="button" class="btn-cockpit btn-cockpit-ghost btn-cockpit-sm" id="shareActivityBtn"
+                        title="Create a link that works without signing in">
+                    <i class="bi bi-share"></i> Share
+                </button>
+            }
+            <button type="button" id="segDeleteBtn" data-segment-id="@Model.Segment.SegmentId" data-segment-name="@Model.Segment.SegmentName" class="btn-cockpit btn-cockpit-danger btn-cockpit-sm">
+                <i class="bi bi-trash"></i> Delete
+            </button>
+        </div>
+    }
+
+    @if (Model.Surfaces.CanShare)
+    {
+        @* Shared with the activity page (Pages/Shared/_ShareLinkDialog.cshtml). Owner-only;
+           core/share-links.ts no-ops when this markup is absent. *@
+        <partial name="/Pages/Shared/_ShareLinkDialog.cshtml" model="RouteBaseWeb.Models.Sharing.ShareLinkDialogModel.ForSegment" />
+    }
+</header>

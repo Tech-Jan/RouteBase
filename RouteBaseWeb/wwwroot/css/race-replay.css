@@ -1,0 +1,379 @@
+/* Race replay chrome — fullscreen, follow sidebar, close button, chart strip.
+   Race-owned: what is genuinely this page's — the stage's fullscreen flip, the rider sidebar, and where
+   the dock sits in the stacking order. The transport bar itself is NOT here: it is rendered by
+   _ReplayDock.cshtml and skinned by replay-controls.css, the same as every other replay. */
+
+/* ── Replay stage layout ─────────────────────────────────────────────────── */
+
+/* One child (the map wrap) — the column exists so fullscreen can hand it the whole viewport. */
+.race-hero {
+    display: flex;
+    flex-direction: column;
+}
+
+.race-hero .race-map-wrap {
+    flex: 0 0 auto;
+}
+
+/* Phone: the stage runs edge to edge. Below 600 px the cockpit scroller already drops its side padding,
+   so the card spans the screen — but its 12 px radius clipped the dock's bottom corners (the wrap is
+   `overflow: hidden`) and the side borders ran a hairline down both edges of the map. The transport sits
+   on that bottom edge and is thumb-operated, so it takes those pixels; the same squaring fullscreen gets
+   at any width. The TOP border stays: it is what separates the map from the toolbar above it, and the
+   bottom one what separates the dock from the results table below. */
+@media (max-width: 600px) {
+    .race-hero .race-map-wrap {
+        border-radius: 0;
+        border-left: 0;
+        border-right: 0;
+    }
+}
+
+/* ── Fullscreen (manual button toggles .race-replay-fullscreen on #raceHero) ── */
+
+.race-hero.race-replay-fullscreen {
+    position: fixed;
+    inset: 0;
+    z-index: 8999;
+    margin: 0;
+    padding: 0;
+    width: 100vw;
+    /* dvh, NOT vh: `vh` is the LARGE viewport (browser UI retracted), and fullscreen sets
+       `overflow: hidden` on the body — so on a phone the page cannot scroll, the URL bar never retracts,
+       and a 100vh stage hangs ~60px below what the screen shows. The dock is `absolute; bottom: 0` inside
+       this box (the activity and segment replays pin theirs `fixed`, which is why only this one drifts),
+       so those pixels come straight off the dock's LAST child — the chart strip under the transport bar.
+       The app shell already sizes with 100dvh (cockpit-shell.css). */
+    height: 100dvh;
+    background: var(--bg-1, #0b0d10);
+}
+
+.race-replay-fullscreen .race-map-wrap {
+    flex: 1 1 auto;
+    min-height: 0;
+    border-radius: 0;
+    border: 0;
+}
+
+.race-replay-fullscreen .race-map {
+    height: 100%;
+}
+
+/* Fullscreen needs no drawer rule: the dock is pinned to the bottom of .race-map-wrap, which fills the
+   viewport here, so the stack lands on the screen's bottom edge by itself. */
+
+/* In fullscreen the red close button is the exit affordance — hide the corner fullscreen button so the
+   two do not stack at top-right. */
+.race-replay-fullscreen .race-map-expand {
+    display: none;
+}
+
+body.race-replay-fullscreen-active {
+    overflow: hidden;
+}
+
+/* The dashboard chrome would poke through the fixed stage — hide it while fullscreen. Raising the stage
+   cannot do this job: it lives inside `.cockpit-main`, which is `isolation: isolate`, so its 8999 is
+   trapped in that context and loses to the sidebar (10) and the mobile tabbar (100) painting outside it.
+   Hiding is what `body.replay-active` already does for the activity and segment replays. */
+body.race-replay-fullscreen-active .cockpit-sidebar,
+body.race-replay-fullscreen-active .cockpit-tabbar {
+    display: none;
+}
+
+/* ── Follow sidebar (overlays the map, top-left) ─────────────────────────── */
+
+.race-replay-sidebar {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    z-index: 9002;
+    /* Drag-resizable: the handle writes --race-sb-width; clamped here so it can never eat the map. */
+    width: var(--race-sb-width, 220px);
+    min-width: 150px;
+    max-width: min(72vw, 400px);
+    max-height: calc(100% - 90px);
+    overflow: hidden;
+    background: rgba(10, 10, 14, 0.93);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 14px;
+    padding: 10px;
+    color: #fff;
+    font-size: 12px;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.55);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    scrollbar-width: thin;
+    transition: border-color 0.25s ease, box-shadow 0.25s ease, background-color 0.25s ease;
+}
+
+/* HELD OPEN — clicked, so it will not settle back until you click away (race-replay-overlay's setHeld).
+   The panel already carries a heavy drop shadow, so the cue is a lit EDGE rather than another glow: it
+   reads at a glance without competing with the map underneath. Both properties transition, so latching
+   and releasing fade rather than snap — the state change is the only thing being animated. */
+.race-replay-sidebar.is-held {
+    border-color: rgba(240, 168, 24, 0.55);
+    background: rgba(14, 12, 8, 0.95);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(240, 168, 24, 0.28);
+}
+
+/* The transition is decoration; the state is not. Someone who asked for less motion still needs to see
+   that the panel is latched. */
+@media (prefers-reduced-motion: reduce) {
+    .race-replay-sidebar { transition: none; }
+}
+
+.race-replay-sidebar-header {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+    margin: 0 0 8px 2px;
+    padding-bottom: 7px;
+    border-bottom: 1px solid rgba(240, 168, 24, 0.25);
+    user-select: none;
+}
+
+.race-replay-sidebar-header > span {
+    font-size: 11px;
+    color: var(--acc-amber, #f0a818);
+}
+
+.race-replay-follow-toggle {
+    margin-right: auto;
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    font: inherit;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    color: rgba(255, 255, 255, 0.55);
+    transition: color 0.15s;
+}
+
+.race-replay-follow-toggle:hover,
+.race-replay-follow-toggle.is-following {
+    color: var(--acc-amber, #f0a818);
+}
+
+.race-replay-sidebar-chevron {
+    font-size: 11px;
+    color: rgba(240, 168, 24, 0.65);
+    transition: transform 0.25s ease;
+    flex-shrink: 0;
+}
+
+.race-replay-sidebar-body {
+    /* Compact by default — 5 rows (ROW_H 28px). Clicking/scrolling grows it (.is-expanded) for a few
+       seconds so you can scroll the field comfortably, then it settles back. */
+    max-height: 140px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    transition: max-height 0.32s cubic-bezier(.4, 0, .2, 1), opacity 0.25s ease;
+    /* Same subtle scrollbar as the segments effort list (segment-replay.css). */
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+}
+
+.race-replay-sidebar-body.is-expanded {
+    max-height: 420px;   /* ~15 rows */
+}
+
+.race-replay-sidebar-body::-webkit-scrollbar {
+    width: 4px;
+}
+.race-replay-sidebar-body::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 2px;
+}
+
+.race-replay-sidebar.rs-collapsed { width: auto; min-width: 0; }
+.race-replay-sidebar.rs-collapsed .race-replay-sidebar-body { max-height: 0; opacity: 0; }
+.race-replay-sidebar.rs-collapsed .race-replay-sidebar-chevron { transform: rotate(180deg); }
+.race-replay-sidebar.rs-collapsed .race-replay-sidebar-header {
+    margin-bottom: 0;
+    padding-bottom: 0;
+    border-bottom: none;
+}
+
+/* Resize handle: a wide invisible grab strip on the right edge with a thin visible grip; touch-friendly. */
+.race-replay-sidebar-resize {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 10px;
+    height: 100%;
+    cursor: ew-resize;
+    touch-action: none;   /* a drag must resize, never scroll the page */
+    z-index: 3;
+}
+.race-replay-sidebar-resize::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    right: 2px;
+    transform: translateY(-50%);
+    width: 3px;
+    height: 34px;
+    border-radius: 2px;
+    background: rgba(255, 255, 255, 0.15);
+    transition: background 0.15s;
+}
+.race-replay-sidebar-resize:hover::after,
+.race-replay-sidebar.is-resizing .race-replay-sidebar-resize::after {
+    background: var(--acc-amber, #f0a818);
+}
+/* Nothing to resize while collapsed. */
+.race-replay-sidebar.rs-collapsed .race-replay-sidebar-resize { display: none; }
+
+/* Virtualized rider list: the sizer holds the scrollbar's full height; rows are absolutely positioned at
+   index * ROW_H (28px, kept in sync with ROW_H in race-replay-overlay.ts). */
+.race-sb-sizer {
+    position: relative;
+}
+
+.race-sb-row {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 28px;
+    box-sizing: border-box;
+    display: grid;
+    grid-template-columns: 1.6rem minmax(3.5rem, 1fr) auto;
+    align-items: center;
+    gap: 6px;
+    padding: 0 6px;
+    border-radius: 8px;
+    cursor: pointer;
+    border: 1px solid transparent;
+}
+.race-sb-row:hover { background: rgba(255, 255, 255, 0.06); }
+.race-sb-row.followed { border-color: var(--acc-amber, #f0a818); background: rgba(240, 168, 24, 0.12); }
+
+.race-sb-pos { color: rgba(255, 255, 255, 0.5); font-variant-numeric: tabular-nums; text-align: right; }
+/* The position an abandoned rider HELD when he stopped, kept rather than left to climb as the field rides
+   past him. Faded, because it is a memory and not a standing — the results table gives him no place at
+   all, and a number at full strength here would read as one. */
+.race-sb-pos.is-frozen { color: rgba(255, 255, 255, 0.26); }
+.race-sb-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.race-sb-gap { color: rgba(255, 255, 255, 0.5); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.race-sb-row.is-real .race-sb-name { font-weight: 700; color: #ffd43b; }
+/* Emphasised — the hand-picked few. Weight only, never a colour: `is-real` owns the gold and a rider can
+   be both. This makes them findable while scrolling the field; the pinned block is what makes them
+   watchable. */
+.race-sb-row.is-emphasised .race-sb-name { font-weight: 700; }
+.race-sb-row.is-finished .race-sb-gap { color: #51cf66; }
+/* Stopped, but the result is not a plain finish. Muted rather than red: a DNF is a fact about the race,
+   not an error, and the results table's Status column is what makes the group findable. The modifier is
+   whatever race-finish-status.ts's table says, so a status added there needs a rule here or it simply
+   inherits the neutral gap colour — degraded, never wrong. */
+.race-sb-row.is-dnf .race-sb-gap,
+.race-sb-row.is-dns .race-sb-gap,
+.race-sb-row.is-muted .race-sb-gap { color: rgba(255, 255, 255, 0.35); }
+.race-sb-row.is-dsq .race-sb-gap { color: #ff9a9a; }
+
+/* Real and emphasised riders, pinned above the field and always visible. Normal flow (not the virtual
+   list's absolute positioning), and a distinct cyan name so the pinned copy reads differently from the
+   gold in-field copy. */
+.race-replay-sidebar-pinned {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    margin: 0 0 5px;
+    padding-bottom: 5px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+.race-sb-row.is-pinned {
+    position: relative;
+    top: auto;
+    left: auto;
+    right: auto;
+}
+.race-sb-row.is-pinned .race-sb-name {
+    color: var(--acc-cyan);
+}
+/* An emphasised rider in the pinned block is not a real one — the edge says which is which without
+   spending a second name colour. Neutral white, not amber: amber already means "followed" two rules up. */
+.race-sb-row.is-pinned.is-emphasised:not(.is-real) {
+    box-shadow: inset 2px 0 0 rgba(255, 255, 255, 0.45);
+}
+.race-replay-sidebar.rs-collapsed .race-replay-sidebar-pinned { display: none; }
+
+/* MapLibre corner controls (compass + 3D terrain) live top-left, where the follow sidebar covers them.
+   Drop them just below the collapsed sidebar header — same treatment as the segment replay
+   (segment-replay.css). The controls carry a 10px built-in margin, so top:46px/left:6px renders at
+   56px/16px: left-aligned with the sidebar, snug below its collapsed bottom edge (~46px). An EXPANDED
+   sidebar (z-index 9002, above the map) still covers them — collapse the list to reach them. */
+#raceMap .maplibregl-ctrl-top-left {
+    top: 46px;
+    left: 6px;
+}
+
+/* ── The bottom dock: [grip][transport bar][chart strip] ──────────────────────
+   The stack itself is the shared .replay-dock (replay-controls.css) — absolute inside .race-map-wrap,
+   which is the positioned box here. Race-owned: only its layer. Above the map, below the follow sidebar
+   (9002) and the fullscreen close button (9003), so an expanded rider list still wins over the charts. */
+
+#raceChartsDrawer { z-index: 9001; }
+
+/* The transport bar carries no race-specific skin: the circular cyan play button (.replay-play), the gold
+   seek slider (.replay-seek) and the speed stepper are styled once in replay-controls.css and rendered
+   once by _ReplayDock.cshtml. This page's copy had already drifted — its thumb had lost the glow, the
+   hover and the focus outline the other two replays have. */
+
+/* ── Fullscreen close button (JS shows it only in fullscreen) ─────────────── */
+
+.race-replay-exit-float {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    z-index: 9003;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border-radius: 50%;
+    border: none;
+    background: rgba(220, 53, 69, 0.85);
+    color: #fff;
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    backdrop-filter: blur(6px);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
+}
+.race-replay-exit-float:hover { background: rgba(167, 29, 42, 0.95); }
+.race-replay-exit-float i { color: #fff !important; }
+
+/* ── Charts strip (the dock's last child — it overlays the map's bottom edge) ── */
+
+.race-charts {
+    display: flex;
+    flex-direction: column;
+    /* No gap: there is ONE child now (the two stacked canvases became one picture), and a gap would come
+       out of the height the profile is trying to fill. */
+    /* A wash behind the canvas, so the strip does not sit straight on satellite imagery. The same one the
+       fullscreen strip used to carry, now that the strip is always over the map. */
+    background: rgba(10, 10, 14, 0.85);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+}
+
+/* ── The strip is FULLSCREEN-ONLY ─────────────────────────────────────────────
+   Inline, the course is read off the speed chart under the map (_RaceSpeedPanel.cshtml): terrain tinted
+   per section, a rule per boundary, and the riders themselves — one picture instead of two you had to
+   line up by eye. What the strip still uniquely gives is 508 dots riding the profile at 30 Hz next to the
+   map, which is a fullscreen thing to watch. So it renders there and nowhere else, and the dock inline is
+   just the transport bar that has always floated over the map.
+
+   `display: none` and not visibility/height: the canvas must not be laid out, so canvas-strip's
+   hidden-container deferral holds it until fullscreen actually reveals it (race-replay-view's onResize
+   forces the first paint). The drawer's stored height is untouched and comes back with it. */
+#raceHero:not(.race-replay-fullscreen) #raceCharts,
+#raceHero:not(.race-replay-fullscreen) #raceChartsHandle {
+    display: none;
+}

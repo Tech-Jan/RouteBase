@@ -1,0 +1,5 @@
+# Share links are capability URLs: the token in the path IS the credential.
+# Advisory only — well-behaved crawlers honour this, but the binding control is the
+# "X-Robots-Tag: noindex, nofollow" header set on every /s/ response (ShareResponseHeaders).
+User-agent: *
+Disallow: /s/

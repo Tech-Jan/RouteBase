@@ -1,0 +1,17 @@
+@page
+@model RouteBaseWeb.Pages.Auth.LoginModel
+@{
+    ViewData["Title"] = "Sign In";
+}
+
+<div class="auth-card">
+    <h1 class="auth-title">Welcome to RouteBase</h1>
+    <p class="auth-subtitle">Sign in to access your activities and data.</p>
+    @* Unchanged contract: posts to this same page (carrying any ?returnUrl), auto antiforgery token,
+       no named fields — OnPost issues the OIDC Challenge. *@
+    <form method="post">
+        <button type="submit" class="btn-cockpit btn-cockpit-primary auth-submit">
+            <i class="bi bi-box-arrow-in-right" aria-hidden="true"></i>Sign in with Authentik
+        </button>
+    </form>
+</div>

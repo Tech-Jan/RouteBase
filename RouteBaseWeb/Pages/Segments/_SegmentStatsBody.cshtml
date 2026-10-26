@@ -1,0 +1,29 @@
+@model RouteBaseWeb.Models.Sharing.SegmentDetailView
+@*
+    The segment statistics body, rendered IDENTICALLY by /Segments/Statistics and by the anonymous share
+    view at /s/{token}. Two copies would drift, so there is one — gated by Model.Surfaces.
+
+    Adding markup here is free: it appears on both. Adding an OWNER control is not — gate it on
+    Model.Surfaces.*, never on Model.IsOwner, because share-ness is a property of the ROUTE (an owner
+    opening their own link must see what a stranger sees).
+
+    Partial names are ABSOLUTE on purpose: Razor resolves a partial name against the EXECUTING page's
+    directory, so a bare name here would break only on /s/{token}, only at runtime, and dotnet build would
+    not catch it. SharedPartialResolutionTests guards this.
+
+    The old `@@if (Model.Segment != null)` guards are gone: SegmentDetailView.Segment is non-nullable, and
+    the page 404s before rendering when the segment is not visible. The guards were dead, and keeping them
+    would have produced CS8073 "always true" warnings.
+*@
+
+<div class="cockpit-scroll">
+
+    <partial name="/Pages/Segments/_SegmentStatsHeader.cshtml" model="Model" />
+    <partial name="/Pages/Segments/_SegmentStatsKpis.cshtml" model="Model" />
+    <partial name="/Pages/Segments/_SegmentStatsMapPanel.cshtml" model="Model" />
+    <partial name="/Pages/Segments/_SegmentStatsCharts.cshtml" model="Model" />
+    <partial name="/Pages/Segments/_SegmentStatsEfforts.cshtml" model="Model" />
+
+</div>
+
+<partial name="/Pages/Segments/_SegmentReplayOverlay.cshtml" />

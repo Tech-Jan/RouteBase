@@ -1,0 +1,251 @@
+/* segment-create.css — Segment creation page (map + form) */
+
+/* ── Instructions box ───────────────────────────────────────────────────── */
+.seg-create-instructions {
+  background: oklch(0.50 0.08 220 / 0.10);
+  border: 1px solid oklch(0.50 0.08 220 / 0.20);
+  border-left: 3px solid var(--acc-cyan);
+  border-radius: var(--radius-md);
+  padding: 14px 18px;
+}
+
+.seg-create-instructions-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--fg-0);
+  margin: 0 0 8px;
+}
+
+.seg-create-instructions ol {
+  margin: 0;
+  padding-left: 20px;
+  color: var(--fg-1);
+  font-size: 12px;
+  line-height: 1.7;
+}
+
+/* ── Two-column layout ──────────────────────────────────────────────────── */
+.seg-create-layout {
+  display: grid;
+  grid-template-columns: 1fr 300px;
+  gap: 20px;
+  align-items: start;
+}
+
+/* ── Panels (both columns) ──────────────────────────────────────────────── */
+.seg-create-panel {
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.seg-create-panel-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--fg-0);
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+
+/* ── Form fields ────────────────────────────────────────────────────────── */
+.seg-create-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.seg-create-label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--fg-2);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.seg-create-input,
+.seg-create-select {
+  width: 100%;
+  background: var(--bg-3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  color: var(--fg-0);
+  font-family: var(--font-ui);
+  font-size: 13px;
+  padding: 7px 10px;
+  outline: none;
+}
+.seg-create-input:focus,
+.seg-create-select:focus { border-color: var(--acc-cyan); }
+.seg-create-input::placeholder { color: var(--fg-3); }
+
+/* ── Draw controls row ──────────────────────────────────────────────────── */
+.seg-create-draw-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+/* ── Snap-to-paths toggle row ───────────────────────────────────────────── */
+.seg-create-toggle-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.seg-create-toggle-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--fg-1);
+  user-select: none;
+}
+
+/* CSS-only toggle — keeps native <input type="checkbox"> for TS .checked access */
+.seg-create-toggle-input {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 34px;
+  height: 20px;
+  background: var(--bg-4);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  cursor: pointer;
+  position: relative;
+  flex-shrink: 0;
+  transition: background 0.15s, border-color 0.15s;
+}
+.seg-create-toggle-input::after {
+  content: '';
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  background: var(--fg-2);
+  border-radius: 50%;
+  top: 2px;
+  left: 2px;
+  transition: transform 0.15s, background 0.15s;
+}
+.seg-create-toggle-input:checked {
+  background: var(--acc-cyan);
+  border-color: var(--acc-cyan);
+}
+.seg-create-toggle-input:checked::after {
+  transform: translateX(14px);
+  background: oklch(0.14 0.008 240);
+}
+
+.seg-create-hint {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--fg-3);
+  margin: 0;
+  letter-spacing: 0.02em;
+}
+
+/* ── Map style switcher (MapShell renders the buttons) ──────────────────── */
+.seg-create-style-row {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.seg-create-style-row .btn-cockpit.active {
+  border-color: var(--acc-cyan);
+  color: var(--fg-0);
+}
+
+/* ── Map ────────────────────────────────────────────────────────────────── */
+#map {
+  height: 560px;
+  width: 100%;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--line);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+/* ── Stats mini-panel ───────────────────────────────────────────────────── */
+.seg-create-stats {
+  background: var(--bg-3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  padding: 10px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.seg-create-stat {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 12px;
+}
+
+.seg-create-stat-label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--fg-2);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.seg-create-stat-value {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--fg-0);
+  font-size: 13px;
+}
+
+/* ── Save button ────────────────────────────────────────────────────────── */
+.seg-create-save {
+  width: 100%;
+  justify-content: center;
+}
+.seg-create-save:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* ── Status div ─────────────────────────────────────────────────────────── */
+.seg-create-status {
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  border: 1px solid transparent;
+}
+.seg-create-status--info {
+  background: oklch(0.50 0.08 220 / 0.12);
+  border-color: oklch(0.50 0.08 220 / 0.25);
+  color: var(--fg-1);
+}
+.seg-create-status--success {
+  background: oklch(0.85 0.18 130 / 0.10);
+  border-color: oklch(0.85 0.18 130 / 0.30);
+  color: var(--acc-lime);
+}
+.seg-create-status--error {
+  background: oklch(0.72 0.18 25 / 0.10);
+  border-color: oklch(0.72 0.18 25 / 0.30);
+  color: var(--acc-red);
+}
+.seg-create-status a { color: var(--acc-cyan); text-decoration: none; }
+.seg-create-status a:hover { text-decoration: underline; }
+
+/* ── Responsive ─────────────────────────────────────────────────────────── */
+@media (max-width: 1024px) {
+  .seg-create-layout { grid-template-columns: 1fr 260px; }
+}
+
+@media (max-width: 768px) {
+  .seg-create-layout { grid-template-columns: 1fr; margin: 0 16px; }
+  .seg-create-instructions { margin: 0 16px; }
+  #map { height: 360px; }
+}

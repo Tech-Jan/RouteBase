@@ -1,0 +1,200 @@
+@page
+@using RouteBaseWeb.Models.Sharing
+@model RouteBaseWeb.Pages.Races.IndexModel
+@{
+    Layout = "_DashboardLayout";
+    ViewData["Title"] = "Races";
+}
+
+@section Styles {
+    @* The race cards' filter/sort controls strip is a core grid — it needs the shared grid toolbar CSS. *@
+    <link rel="stylesheet" href="~/css/grid-filter.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/races.css" asp-append-version="true" />
+}
+
+<div class="cockpit-scroll">
+
+    <partial name="_PageHeader" model="@(new PageHeaderModel(
+        Title: "Races",
+        Subtitle: "Replay a race: your ride as the course, the finishers as a field.",
+        Breadcrumbs: new[] { ("/", "Dashboard"), ("/Races", "Races") }
+    ))" />
+
+    <p id="raceStatus" class="race-import-status" hidden></p>
+
+    <section class="race-panel">
+        <div class="race-panel-head">New race</div>
+        <div class="race-panel-body">
+            <p class="race-hint">
+                The course is one of your own rides. For a multi-day route, merge the days in the track
+                editor first — the merged ride then shows up here like any other.
+            </p>
+            @* The onboarding blocker this signposts: a course must be an activity YOU OWN
+               (RaceCrud.CreateRaceAsync — you may race over a friend's ride, but you may not define a
+               course from one), so replaying a race you did not ride means importing its GPX first. That
+               path exists and works; it was simply not discoverable from here. A signpost rather than a
+               model change: the ownership rule is deliberate, and the missing piece was only the sentence
+               that tells you what to do about it. *@
+            <p class="race-hint">
+                Racing an event you did not ride? <a href="/Import">Import the course GPX</a> as one of
+                your own activities first — it can then be chosen here like any other ride.
+            </p>
+
+            <form id="raceCreateForm" class="race-create">
+                <label>
+                    Course
+                    <input class="race-input race-filter" id="raceCourseFilter" type="search"
+                           placeholder="Filter rides…" autocomplete="off" />
+                    @* The wrapping <label>'s implicit binding goes to the filter input above, so name the
+                       select explicitly. *@
+                    <select class="race-select" id="raceCourseActivity" required aria-label="Course ride">
+                        <option value="">Choose a ride…</option>
+                        @foreach (var activity in Model.CourseCandidates)
+                        {
+                            var km = ((activity.TotalDistance ?? 0) / 1000).ToString("0.0");
+                            <option value="@activity.TrackId" selected="@(activity.TrackId == Model.CourseTrackId)">
+                                @activity.TrackName — @km km
+                            </option>
+                        }
+                    </select>
+                </label>
+                <label>
+                    Name
+                    <input class="race-input" id="raceName" required placeholder="Race name" />
+                </label>
+                <label>
+                    Date
+                    <input class="race-input" id="raceDate" type="date" />
+                </label>
+                <label>
+                    Visibility
+                    <select class="race-select" id="raceVisibility">
+                        <option value="@Visibilities.Friends">Friends</option>
+                        <option value="@Visibilities.Private">Private</option>
+                        <option value="@Visibilities.Public">Public</option>
+                    </select>
+                </label>
+                <button class="btn-cockpit btn-cockpit-primary" type="submit">
+                    <i class="bi bi-plus-lg"></i> Create
+                </button>
+            </form>
+        </div>
+    </section>
+
+    <section class="race-panel" id="raceListSection">
+        <div class="race-panel-head">Your races</div>
+        @if (Model.Races.Count == 0)
+        {
+            <p class="race-empty race-panel-body">No races yet.</p>
+        }
+        else
+        {
+            @* Deleting a race is final — there is no race trash — so Delete selected stays disabled until
+               something is checked, and race-list-delete.ts confirms with the field size before it writes. *@
+            <div class="race-list-toolbar">
+                <label class="race-list-selectall">
+                    @* Not a .race-row-check: that class IS the selection, and select-all is not a row. *@
+                    <input type="checkbox" id="raceSelectAll" />
+                    <span id="raceSelectionLabel">Select all</span>
+                </label>
+                <button type="button" class="btn-cockpit btn-cockpit-danger btn-cockpit-sm"
+                        id="raceDeleteSelected" disabled>
+                    <i class="bi bi-trash"></i> Delete selected
+                </button>
+            </div>
+
+            @* Sort/filter controls strip (controls-only client grid, races-grid.ts) — its header + filter row
+               drive the course-minimap cards below via CSS order/is-hidden. Same pattern as the Segments list. *@
+            <div id="raceListGridToolbar" class="grid-toolbar"></div>
+            <div id="raceListGrid" class="race-controls-grid"></div>
+
+            <div class="race-card-grid">
+                @foreach (var race in Model.Races)
+                {
+                    var km      = race.RaceDistanceMeters.HasValue ? (race.RaceDistanceMeters.Value / 1000).ToString("0.0") : null;
+                    var vis     = (race.Visibility ?? Visibilities.Friends).ToLowerInvariant();
+                    var visIcon = vis == Visibilities.Private ? "bi-lock-fill" : vis == Visibilities.Public ? "bi-globe" : "bi-people-fill";
+                    var visTitle = vis == Visibilities.Private ? "Private" : vis == Visibilities.Public ? "Public" : "Friends";
+                    var raceShare = new ShareBadgeModel(
+                        Model.SharedRaceOpens.TryGetValue(race.RaceId, out var raceOpens) ? (ShareOpens?)raceOpens : null,
+                        "race-card-share");
+                    @* The whole card opens the replay — like a segment/dashboard card. It's a div, not an
+                       anchor, because the card holds a select checkbox: wrapping a checkbox in an <a> means
+                       the preventDefault that stops navigation also cancels the toggle. races.ts navigates on
+                       clicks that miss the inner controls; role/tabindex keep it keyboard-reachable. *@
+                    <div class="race-card" data-race-id="@race.RaceId"
+                         data-replay-href="/Races/Replay?raceId=@race.RaceId"
+                         role="link" tabindex="0"
+                         aria-label="Open replay for @race.RaceName">
+                        <div class="race-card-map">
+                            @* Select checkbox overlay (top-left); the delete button sits top-right. *@
+                            <label class="race-card-select" title="Select @race.RaceName">
+                                <input type="checkbox" class="race-row-check"
+                                       data-race-id="@race.RaceId"
+                                       data-race-name="@race.RaceName"
+                                       data-participant-count="@race.ParticipantCount"
+                                       aria-label="Select @race.RaceName" />
+                            </label>
+                            @* The course shape — lazily filled by races.ts (setupLazyThumbnails) from the course
+                               activity's GPS, exactly as the dashboard/segments minimaps. AUTHZ-P2: when the
+                               viewer may not see the course, CourseTrackId is null, so Razor omits data-track-id;
+                               the loader's `.minimap[data-track-id]` selector skips it and the placeholder stays. *@
+                            <div class="minimap map-placeholder"
+                                 id="race-minimap-@race.RaceId"
+                                 data-track-id="@race.CourseTrackId">
+                            </div>
+                            <button type="button" class="race-card-delete race-row-delete"
+                                    data-race-id="@race.RaceId"
+                                    data-race-name="@race.RaceName"
+                                    data-participant-count="@race.ParticipantCount"
+                                    title="Delete @race.RaceName">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
+                        <div class="race-card-info">
+                            <div class="race-card-meta">
+                                <i class="bi @visIcon race-card-vis" title="@visTitle" aria-label="@visTitle"></i>
+                                <partial name="/Pages/Shared/_ShareBadge.cshtml" model="raceShare" />
+                                <span class="race-card-date mono">@(race.RaceDate?[..10] ?? "—")</span>
+                            </div>
+                            <h2 class="race-card-name">@race.RaceName</h2>
+                            <div class="race-card-kpis">
+                                <div class="race-card-kpi">
+                                    <span class="race-card-kpi-value race-card-kpi-value--cyan">@(km ?? "—")<span class="race-card-kpi-unit"> km</span></span>
+                                    <span class="race-card-kpi-label">Distance</span>
+                                </div>
+                                <div class="race-card-kpi">
+                                    <span class="race-card-kpi-value">@race.ParticipantCount</span>
+                                    <span class="race-card-kpi-label">Field</span>
+                                </div>
+                                <div class="race-card-kpi">
+                                    <span class="race-card-kpi-value race-card-kpi-value--lime">@race.CheckpointCount</span>
+                                    <span class="race-card-kpi-label">Sections</span>
+                                </div>
+                            </div>
+                            <div class="race-card-actions">
+                                <button type="button" class="btn-cockpit btn-cockpit-ghost btn-cockpit-sm race-row-duplicate"
+                                        data-race-id="@race.RaceId"
+                                        title="Save as a copy of @race.RaceName">
+                                    <i class="bi bi-files"></i> Copy
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+            <p id="raceEmptyFiltered" class="race-empty-filtered" hidden>No races match the current filters.</p>
+        }
+    </section>
+</div>
+
+@section Scripts {
+    @* Bootstrap for the sort/filter controls grid — all visible race rows. camelCased so it maps to the
+       TS RacesGridRow shape. Only emitted when there are races (the grid needs a mount + rows). *@
+    @if (Model.Races.Count > 0)
+    {
+        <script type="application/json" id="racesGridBootstrap">@Html.Raw(RouteBaseWeb.Helpers.BootstrapJson.Serialize(Model.GridBootstrap))</script>
+        <script type="module" src="~/js/race-sim/races-grid.js" asp-append-version="true"></script>
+    }
+    <script type="module" src="~/js/race-sim/races.js" asp-append-version="true"></script>
+}

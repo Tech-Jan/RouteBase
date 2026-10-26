@@ -1,0 +1,91 @@
+@page
+@model MultiDayModel
+@{
+    Layout = "_DashboardLayout";
+    ViewData["Title"] = "Multi-Day Tours";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/multiday.css" asp-append-version="true">
+}
+
+@section Scripts {
+    <script type="module" src="~/js/pages/multiday.js" asp-append-version="true"></script>
+}
+
+<div class="cockpit-scroll">
+
+    <partial name="_PageHeader" model="@(new PageHeaderModel(
+        Title: "Multi-Day Tours",
+        Breadcrumbs: new (string Href, string Label)[] { ("/", "Dashboard"), ("/MultiDay", "Multi-Day Tours") }
+    ))" />
+
+    @if (Model.MultiDayTours.Any())
+    {
+        <div class="tour-grid">
+            @foreach (var tour in Model.MultiDayTours)
+            {
+                <div class="tour-card" data-tour-id="@tour.MultiDayId">
+                    <div class="tour-card-header">
+                        <span>@(tour.MultiDayTourName ?? "Unnamed Tour")</span>
+                        <button type="button" class="btn-cockpit btn-cockpit-danger tour-delete-btn"
+                                data-tour-id="@tour.MultiDayId"
+                                data-tour-name="@(tour.MultiDayTourName ?? "Unnamed Tour")"
+                                title="Delete tour — its activities are kept">Delete</button>
+                    </div>
+                    <div class="tour-card-body">
+
+                        @if (!string.IsNullOrEmpty(tour.MultiDayDescription))
+                        {
+                            <p class="tour-description">@tour.MultiDayDescription</p>
+                        }
+
+                        <div class="tour-meta">
+                            @if (tour.StartDate.HasValue && tour.EndDate.HasValue)
+                            {
+                                <span class="chip">@tour.StartDate.Value.ToString("dd.MM.yyyy") – @tour.EndDate.Value.ToString("dd.MM.yyyy")</span>
+                            }
+                            @if (tour.TotalDays.HasValue)
+                            {
+                                <span class="chip">@tour.TotalDays days</span>
+                            }
+                            @if (tour.TotalActivities.HasValue)
+                            {
+                                <span class="chip">@tour.TotalActivities activities</span>
+                            }
+                        </div>
+
+                        <div class="tour-stats">
+                            <div class="tour-stats-row">
+                                <span class="tour-stats-label">Distance</span>
+                                <span class="tour-stats-value">@((tour.TotalDistance / 1000)?.ToString("N2")) km</span>
+                            </div>
+                            <div class="tour-stats-row">
+                                <span class="tour-stats-label">Ascent</span>
+                                <span class="tour-stats-value">@tour.TotalAscent?.ToString("N0") m</span>
+                            </div>
+                            <div class="tour-stats-row">
+                                <span class="tour-stats-label">Descent</span>
+                                <span class="tour-stats-value">@tour.TotalDescent?.ToString("N0") m</span>
+                            </div>
+                            <div class="tour-stats-row">
+                                <span class="tour-stats-label">Total Time</span>
+                                <span class="tour-stats-value">@TimeSpan.FromSeconds(tour.TotalTime ?? 0).ToString(@"hh\:mm")</span>
+                            </div>
+                        </div>
+
+                    </div>
+                    @* No footer CTA: /MultiDay/Details/{id} never existed (Details.cshtml renders the tour
+                       name as static text for the same reason) — the link 404'd for every tour. *@
+                </div>
+            }
+        </div>
+    }
+    else
+    {
+        <partial name="_EmptyState" model="@(new EmptyStateModel(
+            Body: "No multi-day tours found. Create one to get started."
+        ))" />
+    }
+
+</div>

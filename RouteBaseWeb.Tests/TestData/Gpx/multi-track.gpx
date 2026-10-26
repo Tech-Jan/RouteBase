@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="Garmin"
+     xmlns="http://www.topografix.com/GPX/1/1">
+  <trk>
+    <name>First Track</name>
+    <type>running</type>
+    <trkseg>
+      <trkpt lat="47.2692" lon="11.4041">
+        <ele>600</ele>
+        <time>2023-06-15T08:00:00Z</time>
+      </trkpt>
+      <trkpt lat="47.2700" lon="11.4050">
+        <ele>610</ele>
+        <time>2023-06-15T08:05:00Z</time>
+      </trkpt>
+    </trkseg>
+  </trk>
+  <trk>
+    <name>Second Track</name>
+    <type>cycling</type>
+    <trkseg>
+      <trkpt lat="48.0000" lon="12.0000">
+        <ele>700</ele>
+        <time>2023-06-15T10:00:00Z</time>
+      </trkpt>
+      <trkpt lat="48.0010" lon="12.0010">
+        <ele>710</ele>
+        <time>2023-06-15T10:05:00Z</time>
+      </trkpt>
+      <trkpt lat="48.0020" lon="12.0020">
+        <ele>720</ele>
+        <time>2023-06-15T10:10:00Z</time>
+      </trkpt>
+    </trkseg>
+  </trk>
+</gpx>

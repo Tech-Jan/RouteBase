@@ -1,0 +1,813 @@
+/* activity-details.css — Activity Details page, cockpit design system */
+
+/* ── Panel base ──────────────────────────────────────────────────────────── */
+.det-panel {
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+}
+
+.det-panel-date {
+  font-size: 0.78rem;
+  color: var(--fg-2);
+}
+
+/* ── Type / visibility chips ─────────────────────────────────────────────── */
+/* Base pill folded onto .chip in cockpit-components.css. Deltas only: 1px tighter
+   vertical padding + baseline alignment for its inline header context. */
+.det-type-chip {
+  padding: 2px 8px;
+  vertical-align: middle;
+}
+
+.det-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+  font-size: 11px;
+  font-weight: 600;
+  vertical-align: middle;
+}
+.det-badge--info    { background: oklch(0.78 0.13 210 / 0.15); color: var(--acc-cyan);  border: 1px solid oklch(0.78 0.13 210 / 0.30); }
+.det-badge--danger  { background: oklch(0.72 0.18 25  / 0.15); color: var(--acc-red);   border: 1px solid oklch(0.72 0.18 25  / 0.30); }
+.det-badge--success { background: oklch(0.85 0.18 130 / 0.15); color: var(--acc-lime);  border: 1px solid oklch(0.85 0.18 130 / 0.30); }
+.det-badge--primary { background: oklch(0.78 0.13 210 / 0.15); color: var(--acc-cyan);  border: 1px solid oklch(0.78 0.13 210 / 0.30); }
+.det-badge--warn    { background: oklch(0.80 0.15 75  / 0.15); color: var(--acc-amber); border: 1px solid oklch(0.80 0.15 75  / 0.30); }
+.det-badge--muted   { background: var(--bg-3); color: var(--fg-2); border: 1px solid var(--line); }
+
+/* ── Edit mode inputs ────────────────────────────────────────────────────── */
+.det-input, .det-select {
+  height: 30px;
+  padding: 0 10px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--line-2);
+  background: var(--bg-4);
+  color: var(--fg-0);
+  font-size: 13px;
+  font-family: var(--font-ui);
+  outline: none;
+  vertical-align: middle;
+  transition: border-color 0.15s;
+}
+.det-input:focus, .det-select:focus { border-color: var(--acc-cyan); }
+.det-input--name   { width: 260px; }
+.det-select--type  { width: 190px; }
+.det-select--vis   { width: 120px; }
+
+/* ── Review banner (a ride that is not in circulation) ───────────────────── */
+/* Amber = awaiting review, grey = trashed. Sits between the header and the KPI strip so the numbers below
+   it are never read as "counted" — they are not, until Approve. */
+.det-review-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin: 0 0 16px;
+  padding: 11px 14px;
+  border: 1px solid oklch(0.80 0.15 75 / 0.35);
+  border-left: 3px solid var(--acc-amber);
+  border-radius: var(--radius-md);
+  background: oklch(0.80 0.15 75 / 0.08);
+  font-size: 13px;
+  color: var(--fg-1);
+}
+
+.det-review-banner--trashed {
+  border-color: var(--line);
+  border-left-color: var(--fg-3);
+  background: var(--bg-2);
+}
+
+.det-review-text { display: flex; align-items: center; gap: 9px; }
+.det-review-text .bi { font-size: 15px; color: var(--acc-amber); }
+.det-review-banner--trashed .det-review-text .bi { color: var(--fg-3); }
+
+.det-review-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.det-review-type { width: 150px; }
+
+/* ── Multi-day tour link ─────────────────────────────────────────────────── */
+.det-tour-link {
+  padding: 8px 4px;
+  font-size: 13px;
+  color: var(--fg-2);
+}
+
+/* ── Map hero ────────────────────────────────────────────────────────────── */
+.det-map-hero {
+  position: relative;
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--line);
+  overflow: hidden;
+  background: var(--bg-2);
+  flex-shrink: 0;
+}
+
+.det-hero-overlay {
+  position: absolute;
+  z-index: 1000;
+}
+
+.det-hero-tr {
+  top: 12px;
+  right: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.det-map-expand-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: var(--radius-md);
+  background: oklch(0.14 0.008 240 / 0.85);
+  backdrop-filter: blur(8px);
+  border: 1px solid var(--line);
+  color: var(--fg-2);
+  font-size: 13px;
+  cursor: pointer;
+  transition: color 0.1s, border-color 0.1s;
+}
+.det-map-expand-btn:hover { color: var(--fg-0); border-color: var(--line-2); }
+
+/* Map toolbar — surface + overlay stacking come from .toolbar-cockpit
+   (cockpit-components.css). The old base also set justify-content: flex-start,
+   the flex default, so folding is exact. */
+/* All controls cluster on the left (color, style, replay, size). */
+.det-map-toolbar-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* ── Toolbar dropdowns (details/summary) ────────────────────────────── */
+.det-dd { position: relative; flex-shrink: 0; }
+
+.det-dd-summary {
+  list-style: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 9px;
+  font-size: 11px;
+  font-family: var(--font-ui);
+  background: var(--bg-3);
+  color: var(--fg-0);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  white-space: nowrap;
+  transition: background 0.12s, border-color 0.12s;
+}
+.det-dd-summary::-webkit-details-marker { display: none; }
+.det-dd-summary::marker { display: none; }
+.det-dd-summary:hover { background: var(--bg-4); border-color: var(--line-2); }
+.det-dd[open] .det-dd-summary { border-color: var(--acc-cyan); }
+
+/* Muted prefix ("Color"), bright current value ("Speed"). */
+.det-dd-label { color: var(--fg-3); }
+/* Fixed-width value column so picking a longer/shorter option (e.g. "Solid" vs
+   "Heart Rate") doesn't resize the button and shove neighbouring controls. */
+.det-dd-value { font-weight: 600; display: inline-block; min-width: 10ch; }
+.det-dd-chevron { flex-shrink: 0; color: var(--fg-2); transition: transform 0.12s; }
+.det-dd[open] .det-dd-chevron { transform: rotate(180deg); }
+
+.det-dd-menu {
+  position: absolute;
+  left: 0;
+  top: calc(100% + 4px);
+  min-width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  padding: 5px;
+  z-index: 50;
+  box-shadow: var(--shadow-2);
+}
+/* Right-aligned dropdowns open toward the left so they don't overflow the panel edge. */
+.det-dd-end .det-dd-menu { left: auto; right: 0; }
+
+.det-map-btn {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 6px 10px;
+  font-size: 12px;
+  color: var(--fg-1);
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.1s, color 0.1s;
+}
+.det-map-btn:hover  { background: var(--bg-3); color: var(--fg-0); }
+.det-map-btn.active { background: var(--acc-cyan); color: oklch(0.14 0.008 240); font-weight: 600; }
+
+.det-map-btn-solo {
+  padding: 5px 9px;
+  font-size: 14px;
+  color: var(--fg-1);
+  background: var(--bg-3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.12s, color 0.12s;
+  display: inline-flex;
+  align-items: center;
+}
+.det-map-btn-solo:hover { background: var(--bg-4); color: var(--fg-0); }
+
+/* Replay button in toolbar (amber, matching segment statistics) */
+.det-replay-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 30px;
+  padding: 0 11px;
+  background: oklch(0.80 0.15 75);
+  border: 1px solid oklch(0.80 0.15 75);
+  border-radius: var(--radius-md);
+  color: oklch(0.10 0.02 75);
+  font-size: 11px;
+  font-weight: 600;
+  font-family: var(--font-ui);
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: background 0.12s;
+}
+.det-replay-btn:hover {
+  background: oklch(0.86 0.14 75);
+  border-color: oklch(0.86 0.14 75);
+}
+
+#map {
+  height: 700px;
+  width: 100%;
+  background-color: #c9d8e8;
+}
+
+/* fullscreen */
+.det-map-hero.map-fullscreen {
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  z-index: 9999 !important;
+  border-radius: 0 !important;
+  margin: 0 !important;
+}
+.det-map-hero.map-fullscreen #map { height: 100vh !important; }
+body.map-fullscreen-active { overflow: hidden; }
+body.map-fullscreen-active .cockpit-sidebar { display: none; }
+
+/* The replay dock is pinned to this card's bottom edge and runs edge to edge (replay-controls.css), so
+   the card's own rounding and border are what would clip and outline it. The fullscreen rule above
+   already drops the radius — but replay does not strictly imply fullscreen (no fullscreen button, or
+   the viewer left it), and the border survives fullscreen either way as a hairline under the chart. */
+body.replay-active .det-map-hero {
+  border-radius: 0;
+  border: none;
+}
+
+/* ── Photos + Segment action bar (grouped accordion, one body open at a time) ─── */
+.det-actions {
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+}
+
+.det-actions-tabs {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  padding: 10px 16px;
+}
+
+.det-actions-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: var(--radius-md);
+  background: var(--bg-3);
+  border: 1px solid var(--line);
+  color: var(--fg-1);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+}
+.det-actions-tab:hover  { background: var(--bg-4); color: var(--fg-0); }
+.det-actions-tab.active { background: var(--acc-cyan); color: oklch(0.14 0.008 240); border-color: var(--acc-cyan); }
+
+.det-actions-count {
+  background: var(--bg-4);
+  color: var(--fg-2);
+  border-radius: 999px;
+  padding: 1px 8px;
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+.det-actions-count:empty { display: none; }
+.det-actions-tab.active .det-actions-count { background: oklch(1 0 0 / 0.22); color: inherit; }
+
+/* Body reveals below the tabs; the divider only shows when a body is open (hidden bodies don't render). */
+.det-actions-body {
+  padding: 14px 16px 16px;
+  border-top: 1px solid var(--line);
+}
+
+.det-seg-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 20px;
+  /* No top margin: the "Create Segment" button is hidden while the form is shown, so the bar's own
+     padding is the only top spacing needed (avoids a big empty strip above the form). */
+  width: 100%;
+}
+
+/* A group wraps as a single unit (so coords / hints / name+actions each stay on one line). */
+.det-seg-group {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.det-seg-group-name { flex: 1 1 auto; }   /* name + buttons grow to fill the rest of the desktop row */
+
+/* Inline field: label to the LEFT of the input, not stacked above it. */
+.det-seg-field {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+}
+.det-seg-field-name { flex: 1 1 auto; }
+
+.det-seg-label {
+  font-size: 11px;
+  color: var(--fg-2);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+
+.det-seg-input {
+  height: 32px;
+  padding: 0 10px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--line-2);
+  background: var(--bg-4);
+  color: var(--fg-0);
+  font-size: 13px;
+  font-family: var(--font-ui);
+  outline: none;
+  transition: border-color 0.15s;
+}
+.det-seg-input:focus         { border-color: var(--acc-cyan); }
+.det-seg-input--active       { border-color: var(--acc-cyan) !important; }
+/* Number boxes only ever hold a value like "15.25" — keep them narrow. */
+.det-seg-input--km { width: 84px; }
+#segmentName { width: 100%; min-width: 140px; }
+
+/* Chart-pick prompt + max distance share one line. */
+.det-seg-hints {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.det-seg-hint { font-size: 10px; color: var(--fg-3); }
+.det-seg-picker-hint:empty { display: none; }
+
+.det-seg-preview {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-top: 12px;
+  padding: 10px 12px;
+  background: var(--bg-3);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--line);
+  font-size: 12px;
+  color: var(--fg-1);
+}
+.det-seg-preview strong { color: var(--fg-0); }
+
+.det-seg-field-btns {
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+/* ── Charts panel ────────────────────────────────────────────────────────── */
+.det-charts-panel {
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+}
+
+.det-charts-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--line);
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.det-chart-tabs {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.det-chart-tab {
+  padding: 4px 8px;
+  border-radius: var(--radius-md);
+  background: var(--bg-3);
+  border: 1px solid var(--line);
+  color: var(--fg-1);
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.det-chart-tab:hover  { background: var(--bg-4); color: var(--fg-0); }
+.det-chart-tab.active { background: var(--acc-cyan); color: oklch(0.14 0.008 240); border-color: var(--acc-cyan); }
+
+.det-charts-body { padding: 12px 16px; }
+
+.chart-container {
+  position: relative;
+  height: 250px;
+  width: 100%;
+}
+
+/* The hover values now render in a floating readout box above the crosshair —
+   see .chart-readout* in cockpit-components.css (shared with Statistics/Segments). */
+
+/* ── Chart panel visibility ──────────────────────────────────────────────── */
+.chart-panel         { display: none; }
+.chart-panel.active  { display: block; }
+
+/* ── Splits panel ────────────────────────────────────────────────────────── */
+.det-splits-panel {
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+}
+
+.det-splits-header {
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--line);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--fg-0);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.det-table-wrap { overflow-x: auto; }
+
+.det-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  color: var(--fg-0);
+}
+
+.det-table th {
+  padding: 8px 12px;
+  text-align: left;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--fg-2);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+}
+
+.det-table td {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--line);
+  vertical-align: middle;
+}
+
+.det-table tbody tr          { cursor: pointer; }
+.det-table tbody tr:hover    { background: var(--bg-3); }
+.det-table tbody tr:last-child td { border-bottom: none; }
+
+.det-table tfoot td {
+  padding: 8px 12px;
+  font-weight: 600;
+  border-top: 1px solid var(--line-2);
+  color: var(--fg-0);
+  background: var(--bg-2);
+}
+
+/* ── Pace bar (replaces Bootstrap .progress) ─────────────────────────────── */
+.det-pace-bar-wrap {
+  height: 20px;
+  background: var(--bg-3);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.det-pace-bar {
+  height: 100%;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-right: 5px;
+  font-size: 10px;
+  font-weight: 600;
+  color: oklch(0.14 0.008 240);
+  min-width: 30px;
+  white-space: nowrap;
+  transition: width 0.3s ease;
+}
+.det-pace-bar--fast   { background: var(--acc-lime); }
+.det-pace-bar--medium { background: var(--acc-amber); }
+.det-pace-bar--slow   { background: var(--acc-red); }
+
+/* ── Elevation text helpers ──────────────────────────────────────────────── */
+.det-elev-up   { color: var(--acc-lime); }
+.det-elev-down { color: var(--acc-red); }
+.det-elev-flat { color: var(--fg-3); }
+
+/* ── Notice (replaces .alert) ────────────────────────────────────────────── */
+.det-notice {
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  font-size: 12px;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 12px 0;
+}
+.det-notice a { color: inherit; text-decoration: underline; }
+.det-notice--info { background: oklch(0.78 0.13 210 / 0.10); border: 1px solid oklch(0.78 0.13 210 / 0.25); color: var(--acc-cyan); }
+.det-notice--warn { background: oklch(0.80 0.15 75  / 0.10); border: 1px solid oklch(0.80 0.15 75  / 0.25); color: var(--acc-amber); }
+
+/* ── Custom segments panel ───────────────────────────────────────────────── */
+.det-custom-panel {
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+}
+
+.det-custom-header {
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--line);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--fg-0);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.det-custom-body { padding: 14px 16px; }
+
+/* ── Segment cards (built by activity-segments.ts) ───────────────────────── */
+.det-seg-card {
+  background: var(--bg-3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  margin-bottom: 12px;
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.det-seg-card:hover         { border-color: var(--acc-cyan); box-shadow: 0 0 0 1px oklch(0.78 0.13 210 / 0.20); }
+.det-seg-card.det-seg-card--locked { border-color: var(--acc-amber); background: oklch(0.80 0.15 75 / 0.05); }
+
+.det-seg-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--line);
+}
+
+.det-seg-card-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--fg-0);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.det-seg-card-loc { font-size: 11px; color: var(--fg-2); }
+
+.det-seg-card-body { padding: 12px 14px; }
+
+.det-seg-card-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px 16px;
+  margin-bottom: 12px;
+  font-size: 12px;
+  color: var(--fg-1);
+}
+.det-seg-card-stats strong { color: var(--fg-0); }
+
+.det-seg-card-efforts { display: none; margin-top: 10px; }
+.det-seg-card-efforts.det-visible { display: block; }
+
+.det-seg-efforts-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+}
+.det-seg-efforts-table th {
+  padding: 5px 8px;
+  font-weight: 600;
+  color: var(--fg-2);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid var(--line);
+}
+.det-seg-efforts-table td {
+  padding: 5px 8px;
+  border-bottom: 1px solid var(--line);
+  vertical-align: middle;
+}
+.det-seg-efforts-table tr:last-child td { border-bottom: none; }
+.det-seg-efforts-table tr.det-row--current { background: oklch(0.78 0.13 210 / 0.08); }
+
+.det-seg-card-summary {
+  margin-top: 8px;
+  font-size: 11px;
+  color: var(--fg-2);
+}
+
+.det-seg-card-footer {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+}
+
+/* ── Marker z-index (unchanged from before) ──────────────────────────────── */
+.custom-marker, .current-marker { z-index: 1000; }
+
+/* ── Responsive ──────────────────────────────────────────────────────────── */
+@media (max-width: 1024px) {
+}
+
+@media (max-width: 768px) {
+  /* Keep all map controls on one line where they fit: tighten gaps and padding. */
+  .det-map-toolbar            { gap: 6px; padding: 6px 8px; }
+  .det-map-toolbar-group      { gap: 6px; }
+  .det-dd-summary             { gap: 4px; padding: 0 7px; }
+  .det-replay-btn             { padding: 0 9px; }
+  /* Each form group takes its own line: coords · hints · name+actions. */
+  .det-seg-form               { gap: 8px 12px; }
+  .det-seg-group-coords,
+  .det-seg-hints,
+  .det-seg-group-name         { flex: 1 1 100%; }
+  .det-seg-preview            { grid-template-columns: 1fr 1fr; }
+  .det-seg-card-stats         { grid-template-columns: 1fr; }
+
+  /* Charts use more of the screen width on phones (matches the segments page). */
+  .det-charts-body            { padding: 12px 8px; }
+}
+
+@media (max-width: 480px) {
+  .det-seg-preview            { grid-template-columns: 1fr; }
+  #map                        { height: 450px; }
+  /* Collapse to icons/values only so the whole map toolbar (Color · Style ·
+     Photos · Size) stays on one row on narrow phones (~412px). */
+  .det-replay-label           { display: none; }
+  .det-photos-label           { display: none; }
+  /* Pickers keep their value ("Solid", "Satellite") — the "Color"/"Style" prefix
+     is the droppable part. Size has no value, so its label stays. */
+  .det-dd[data-picker] .det-dd-label { display: none; }
+  /* Without the prefix there's no room for the fixed value column; let it shrink. */
+  .det-dd-value               { min-width: 0; }
+  .det-map-toolbar .act-photos-toggle { padding: 5px 8px; }
+  /* Replay is the primary action — give the lone ▶ a bigger target than the pills. */
+  .det-replay-btn             { height: 34px; padding: 0 17px; font-size: 17px; }
+}
+
+/* Version history panel (owner only) — every state the ride has ever been in. */
+.version-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.version-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    background: var(--bg-3);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    flex-wrap: wrap;
+}
+
+/* A refused restore, under the row rather than beside it — a full-basis flex item forces its own line, so the
+   version's text keeps the whole width instead of being squeezed into a column. */
+.version-row-error {
+    flex: 0 0 100%;
+    font-size: 0.8rem;
+    color: var(--acc-red);
+}
+
+/* Reset-to-original: the one irreversible action in the panel, so it sits apart from the per-version rows
+   rather than among them — a destructive button beside a list of things you might want to keep is the one
+   people hit by accident. */
+.version-panel-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid var(--line);
+}
+
+.version-row--head {
+    border-color: var(--acc-cyan);
+}
+
+.version-row-main {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+    flex: 1;
+}
+
+.version-row-title {
+    color: var(--fg-0);
+    font-weight: 500;
+    font-size: 0.9rem;
+}
+
+/* When the edit was made — the field people actually pick a version by. Muted: it rides in the title line
+   without competing with the version number. */
+.version-row-when {
+    color: var(--fg-3);
+    font-weight: 400;
+    font-size: 0.8rem;
+}
+
+/* "Show all N versions" — a link, not a control: it reveals rows, it does not act on the ride. */
+.version-expander {
+    margin-top: 8px;
+    padding: 0;
+    background: none;
+    border: none;
+    color: var(--fg-2);
+    font-size: 0.8rem;
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+.version-expander:hover {
+    color: var(--fg-0);
+}
+
+.version-row-sub {
+    font-size: 0.8rem;
+    color: var(--fg-2);
+}
+
+.version-row-stats {
+    font-size: 0.8rem;
+    color: var(--fg-3);
+    font-family: var(--font-mono);
+}
+
+
+

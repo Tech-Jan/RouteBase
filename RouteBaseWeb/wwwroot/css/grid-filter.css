@@ -1,0 +1,415 @@
+/*
+ * Reusable grid filter row + client grid-view styling.
+ * Pairs with src/js/core/grid/*. The shared table "chrome" (panel frame, sticky header, typography,
+ * borders, row hover) lives here so every consumer of the `grid-table` class — the Activities grid, the
+ * Segments controls strip, and any future card grid — gets the same look. Pages add only their own
+ * specifics (e.g. a fixed scroll height) on top.
+ */
+
+/* ── Table chrome (shared look for any .grid-table) ─────────────────────────── */
+/* Optional bordered card frame around the toolbar + table. */
+.grid-table-panel {
+	position: relative;
+	background: var(--bg-2);
+	border: 1px solid var(--line);
+	border-radius: var(--radius-lg);
+	overflow: hidden;
+}
+/* Optional scroll window. Pages set a height (e.g. clamp(...)) when the table scrolls its own rows;
+   omit the height for controls-only strips that have no body to scroll. */
+.grid-table-wrapper {
+	overflow: auto;
+	/* Reserve the scrollbar gutter so columns don't shift when the bar appears/disappears on filter. */
+	scrollbar-gutter: stable;
+}
+
+.grid-table {
+	width: 100%;
+	border-collapse: collapse;
+	font-size: 13px;
+	color: var(--fg-0);
+}
+/* Header + filter row stay pinned while the body scrolls. */
+.grid-table thead {
+	position: sticky;
+	top: 0;
+	z-index: 2;
+	background: var(--bg-3);
+}
+.grid-table th {
+	padding: 9px 12px;
+	font-family: var(--font-mono);
+	font-size: 10px;
+	font-weight: 500;
+	text-transform: uppercase;
+	letter-spacing: 0.08em;
+	color: var(--fg-2);
+	border-bottom: 1px solid var(--line);
+	white-space: nowrap;
+}
+.grid-table td {
+	padding: 9px 12px;
+	border-bottom: 1px solid oklch(0.22 0.008 240);
+	color: var(--fg-1);
+	vertical-align: middle;
+}
+.grid-table tbody tr:last-child td { border-bottom: none; }
+.grid-table tbody tr:hover td { background: oklch(0.23 0.009 240); }
+/* Editor-pick mode: tint the picked rows (scoped to the Activities table so other selection grids are
+   unaffected). After the hover rule so a picked+hovered row keeps the accent. */
+.act-table tbody tr:has(.grid-sel-cb:checked) td { background: color-mix(in oklch, var(--acc-cyan) 12%, transparent); }
+.act-table tbody tr:has(.grid-sel-cb:checked) td:first-child { box-shadow: inset 3px 0 0 var(--acc-cyan); }
+.act-table tbody tr:has(.grid-sel-cb:checked):hover td { background: color-mix(in oklch, var(--acc-cyan) 20%, transparent); }
+/* First-column indent. */
+.grid-table thead th:first-child,
+.grid-table tbody td:first-child { padding-left: 18px; }
+
+/* Synced top scrollbar ------------------------------------------------------ */
+/* A thin strip above the grid that mirrors the scroll container's horizontal scroll (see
+   grid-top-scrollbar.ts). Height is set inline to the platform scrollbar thickness. */
+.grid-top-scrollbar {
+	overflow-x: auto;
+	overflow-y: hidden;
+}
+.grid-top-scrollbar-inner {
+	height: 1px;
+}
+
+/* Column resizing ----------------------------------------------------------- */
+/* Header cells anchor the drag handle; fixed table layout (set in JS) keeps widths stable on filter. */
+.grid-table thead th { position: relative; }
+.grid-col-resize {
+	position: absolute;
+	top: 0;
+	right: -3px;
+	width: 7px;
+	height: 100%;
+	cursor: col-resize;
+	z-index: 3;
+	touch-action: none;
+}
+.grid-col-resize:hover,
+body.grid-resizing .grid-col-resize {
+	background: var(--acc-cyan, #36c5d0);
+	opacity: 0.4;
+}
+body.grid-resizing {
+	cursor: col-resize;
+	user-select: none;
+}
+
+/* Column reordering ---------------------------------------------------------- */
+/* A drag grip at the start of each header; dragging it reorders columns (see grid-view.ts). The header
+   cell is the drop target — a cyan edge marker shows where the dragged column will land. */
+.grid-col-grip {
+	cursor: grab;
+	margin-right: 4px;
+	font-size: 0.85em;
+	line-height: 1;
+	color: var(--fg-1, #aeb6c2);
+	opacity: 0.35;
+	user-select: none;
+	touch-action: none;
+}
+.grid-table thead th:hover .grid-col-grip {
+	opacity: 0.7;
+}
+.grid-col-grip:hover {
+	opacity: 1;
+	color: var(--acc-cyan, #36c5d0);
+}
+.grid-col-grip:active {
+	cursor: grabbing;
+}
+.grid-col-dragging {
+	opacity: 0.5;
+}
+/* Insertion markers: a cyan bar on the side of the header where the dragged column will drop. */
+.grid-col-drop-before,
+.grid-col-drop-after {
+	box-shadow: inset 3px 0 0 0 transparent;
+}
+.grid-col-drop-before {
+	box-shadow: inset 3px 0 0 0 var(--acc-cyan, #36c5d0);
+}
+.grid-col-drop-after {
+	box-shadow: inset -3px 0 0 0 var(--acc-cyan, #36c5d0);
+}
+
+/* Sortable header ----------------------------------------------------------- */
+.grid-th-sort {
+	cursor: pointer;
+	user-select: none;
+}
+.grid-th-sort:hover {
+	color: var(--acc-cyan, #36c5d0);
+}
+.grid-sort-icon {
+	margin-left: 0.25rem;
+	font-size: 0.85em;
+	color: var(--acc-cyan, #36c5d0);
+}
+.grid-sort-icon--none {
+	opacity: 0.5;
+}
+/* Order badge shown next to the arrow when more than one column is sorted (multi-sort grids). */
+.grid-sort-rank {
+	margin-left: 1px;
+	font-size: 0.7em;
+	font-weight: 700;
+	vertical-align: super;
+}
+
+/* Filter row ----------------------------------------------------------------- */
+.grid-filter-row > .grid-filter-cell {
+	padding: 4px 6px;
+	vertical-align: top;
+	background: var(--bg-1, rgba(255, 255, 255, 0.02));
+}
+
+.grid-filter-input {
+	width: 100%;
+	min-width: 0;
+	box-sizing: border-box;
+	padding: 3px 6px;
+	font-size: 12px;
+	color: var(--fg-0, #e7eaee);
+	background: var(--bg-0, #0e1116);
+	border: 1px solid var(--line);
+	border-radius: 4px;
+	/* Render native control glyphs (date calendar icon, picker popup) in dark-mode colors so they're
+	   visible on the dark background instead of the browser's default dark-on-dark light scheme. */
+	color-scheme: dark;
+}
+.grid-filter-input:focus {
+	outline: none;
+	border-color: var(--acc-cyan, #36c5d0);
+}
+/* Match the filter text to the column's data alignment (numeric columns are right-aligned). */
+.grid-filter-cell.text-end .grid-filter-input {
+	text-align: right;
+}
+
+.grid-filter-range {
+	display: flex;
+	gap: 4px;
+}
+.grid-filter-range-input {
+	min-width: 0;
+}
+
+/* Multiselect popover ([...]) ------------------------------------------------ */
+.grid-filter-multi {
+	position: relative;
+}
+.grid-filter-multi-summary {
+	list-style: none;
+	cursor: pointer;
+	padding: 3px 8px;
+	font-size: 12px;
+	color: var(--fg-0, #e7eaee);
+	background: var(--bg-0, #0e1116);
+	border: 1px solid var(--line);
+	border-radius: 4px;
+	white-space: nowrap;
+}
+.grid-filter-multi-summary::-webkit-details-marker {
+	display: none;
+}
+.grid-filter-multi-summary::after {
+	content: ' ▾';
+	opacity: 0.6;
+}
+.grid-filter-multi-menu {
+	/* Positioned `fixed` via JS on open so the popover escapes the table's
+	   `overflow` clipping (.act-table-wrapper) instead of being cut off at the edge. */
+	position: fixed;
+	z-index: 1000;
+	min-width: 160px;
+	max-width: calc(100vw - 8px); /* never wider than a narrow (mobile) viewport */
+	max-height: 260px;
+	overflow-y: auto;
+	padding: 6px;
+	background: var(--bg-1, #161b22);
+	border: 1px solid var(--line);
+	border-radius: 6px;
+	box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+.grid-filter-multi-option {
+	display: flex;
+	gap: 6px;
+	align-items: center;
+	padding: 3px 4px;
+	font-size: 12px;
+	color: var(--fg-0, #e7eaee);
+	cursor: pointer;
+	white-space: nowrap;
+}
+.grid-filter-multi-option:hover {
+	background: var(--bg-2, rgba(255, 255, 255, 0.05));
+	border-radius: 4px;
+}
+
+/* Combo filter (text box + checkbox popover) --------------------------------- */
+.grid-filter-combo {
+	display: flex;
+	gap: 4px;
+	align-items: stretch;
+}
+.grid-filter-combo .grid-filter-input {
+	flex: 1 1 auto;
+}
+.grid-filter-combo-popup {
+	flex: 0 0 auto;
+}
+/* The trigger shows only the chevron (no text); highlight it while options are checked. */
+.grid-filter-combo-trigger {
+	padding: 3px 6px;
+}
+.grid-filter-combo-trigger--active {
+	border-color: var(--acc-cyan, #36c5d0);
+	color: var(--acc-cyan, #36c5d0);
+}
+
+/* While refreshing, keep existing rows in place (stable scroll position) but dim them. */
+.grid-tbody--loading {
+	opacity: 0.5;
+	transition: opacity 0.1s ease-in;
+	pointer-events: none;
+}
+
+/* Body message rows (loading / empty / error) -------------------------------- */
+.grid-row-message > td {
+	padding: 14px 10px;
+	text-align: center;
+	color: var(--fg-1, #aeb6c2);
+	font-size: 13px;
+}
+.grid-row-error > td {
+	color: var(--acc-red, #e5534b);
+}
+
+/* Reusable grid toolbar (row count + Reset filters + Reset all + Columns) -------------------------
+   Rendered by GridView into a page-provided mount above the table. Generic — any grid gets it by
+   passing `toolbarMount` + `toolbar`. */
+.grid-toolbar {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	padding: 6px 8px;
+	border-bottom: 1px solid var(--line);
+}
+.grid-toolbar-count {
+	font-size: 12px;
+	color: var(--fg-1, #aeb6c2);
+	white-space: nowrap;
+}
+.grid-toolbar-actions {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+.grid-toolbar-btn {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	height: 30px;
+	padding: 3px 10px;
+	font-size: 12px;
+	color: var(--fg-0, #e7eaee);
+	background: var(--bg-0, #0e1116);
+	border: 1px solid var(--line);
+	border-radius: 4px;
+	cursor: pointer;
+	white-space: nowrap;
+	transition: background 0.12s, border-color 0.12s, color 0.12s;
+}
+.grid-toolbar-btn:hover {
+	border-color: var(--acc-cyan, #36c5d0);
+	color: var(--acc-cyan, #36c5d0);
+}
+.grid-toolbar-btn--icon {
+	width: 30px;
+	padding: 0;
+	justify-content: center;
+}
+/* The Columns dropdown reuses the multiselect popover (.grid-filter-multi*); just align it in the row. */
+.grid-toolbar-cols {
+	display: inline-flex;
+}
+.grid-toolbar-cols-popup > .grid-filter-multi-summary {
+	height: 30px;
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+}
+
+/* ── Selection columns (per-row checkbox + filtered-scope master) ─────────────── */
+/* Header master: an icon stacked over a tristate checkbox (mirrors the old .seg-col-master look). */
+.grid-sel-master {
+	display: inline-flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 3px;
+	cursor: pointer;
+}
+.grid-sel-master-icon {
+	display: inline-flex;
+	line-height: 1;
+	opacity: 0.8;
+}
+.grid-sel-master-cb,
+.grid-sel-cb {
+	cursor: pointer;
+	margin: 0;
+}
+/* Center the per-row checkbox in its cell. */
+.grid-table td.grid-sel-cell {
+	text-align: center;
+}
+
+/* ── Mobile / touch (generic — applies to every grid) ───────────────────────── */
+/* Touch devices: no hover exists, so hover-revealed affordances must be visible by default,
+   and finger-sized targets need more room than a 7px strip. */
+@media (hover: none) {
+	.grid-col-grip {
+		opacity: 0.6;
+	}
+	.grid-col-resize {
+		width: 16px;
+		right: -8px;
+	}
+	/* Sticky-hover artifacts: a tapped row keeps :hover until the next tap — suppress the highlight. */
+	.grid-table tbody tr:hover td {
+		background: inherit;
+	}
+}
+@media (pointer: coarse) {
+	/* Comfortable tap targets for the filter controls. */
+	.grid-filter-input,
+	.grid-filter-multi-summary {
+		min-height: 32px;
+	}
+	.grid-sel-master-cb,
+	.grid-sel-cb {
+		width: 18px;
+		height: 18px;
+	}
+}
+/* Narrow viewports: tighter chrome so more data fits; the wrapper's overflow scroll (with the synced
+   top scrollbar) remains the baseline for wide tables. */
+@media (max-width: 600px) {
+	.grid-table th,
+	.grid-table td {
+		padding: 7px 8px;
+	}
+	.grid-table thead th:first-child,
+	.grid-table tbody td:first-child {
+		padding-left: 10px;
+	}
+	.grid-toolbar {
+		flex-wrap: wrap;
+		gap: 6px;
+		padding: 6px;
+	}
+}

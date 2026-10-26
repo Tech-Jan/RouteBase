@@ -1,0 +1,121 @@
+@page
+@model FriendsModel
+@{
+    Layout = "_DashboardLayout";
+    ViewData["Title"] = "Friends";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/friends.css" asp-append-version="true">
+}
+
+<div class="cockpit-scroll">
+
+    <partial name="_PageHeader" model="@(new PageHeaderModel(
+        Title: "Friends",
+        Breadcrumbs: new (string Href, string Label)[] { ("/", "Dashboard"), ("/Friends", "Friends") }
+    ))" />
+
+    @* ── Pending Requests (only if any) ──────────────────────────────── *@
+    @if (Model.PendingRequests.Any())
+    {
+        <section class="friends-section">
+            <div class="friends-section-header">
+                <span>Pending Requests</span>
+                <span class="friends-badge" id="pendingCount">@Model.PendingRequests.Count</span>
+            </div>
+            <table class="friends-table">
+                <thead>
+                    <tr>
+                        <th>From</th>
+                        <th class="col-hide-mobile">Email</th>
+                        <th class="col-hide-mobile">Requested</th>
+                        <th class="col-actions"></th>
+                    </tr>
+                </thead>
+                <tbody id="pendingRequestsBody">
+                    @foreach (var req in Model.PendingRequests)
+                    {
+                        <tr id="pending-row-@req.FriendshipId">
+                            <td>@(req.DisplayName ?? req.Email ?? req.UserId)</td>
+                            <td class="col-meta col-hide-mobile">@req.Email</td>
+                            <td class="col-meta col-hide-mobile" data-utc-ts="@req.RequestedAt">—</td>
+                            <td class="col-actions">
+                                <button class="btn-cockpit btn-cockpit-primary btn-cockpit-xs"
+                                        data-action="accept" data-id="@req.FriendshipId">Accept</button>
+                                <button class="btn-cockpit btn-cockpit-danger btn-cockpit-xs"
+                                        data-action="decline" data-id="@req.FriendshipId">Decline</button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </section>
+    }
+
+    @* ── Friends List ─────────────────────────────────────────────────── *@
+    <section class="friends-section">
+        <div class="friends-section-header">
+            <span>Friends</span>
+            <span class="friends-badge" id="friendsCount">@Model.Friends.Count</span>
+        </div>
+        <div id="friends-list-body">
+            @if (Model.Friends.Any())
+            {
+                <table class="friends-table" id="friendsTable">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th class="col-hide-mobile">Email</th>
+                            <th class="col-hide-mobile">Friends Since</th>
+                            <th class="col-actions"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="friendsBody">
+                        @foreach (var friend in Model.Friends)
+                        {
+                            <tr id="friend-row-@friend.FriendshipId">
+                                <td>@(friend.DisplayName ?? friend.Email ?? friend.UserId)</td>
+                                <td class="col-meta col-hide-mobile">@friend.Email</td>
+                                <td class="col-meta col-hide-mobile" data-utc-ts="@friend.FriendsSince">—</td>
+                                <td class="col-actions">
+                                    <button class="btn-cockpit btn-cockpit-danger btn-cockpit-xs"
+                                            data-action="remove" data-id="@friend.FriendshipId"
+                                            data-name="@(friend.DisplayName ?? friend.Email ?? "this friend")">
+                                        Remove
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+            else
+            {
+                <div id="noFriendsMsg" class="empty-state" style="margin:16px 20px;">
+                    No friends yet. Use the search below to find and add people.
+                </div>
+            }
+        </div>
+    </section>
+
+    @* ── Find Friends ─────────────────────────────────────────────────── *@
+    <section class="friends-section">
+        <div class="friends-section-header">
+            <span>Find Friends</span>
+        </div>
+        <div class="friends-search-bar">
+            <input type="text" id="searchInput" class="friends-search-input"
+                   aria-label="Search for friends by name or email"
+                   placeholder="Enter exact name or email…" autocomplete="off" />
+            <button class="btn-cockpit btn-cockpit-primary btn-cockpit-sm"
+                    id="searchBtn">Search</button>
+        </div>
+        <div id="searchResults"></div>
+    </section>
+
+</div>
+
+@section Scripts {
+    <script type="module" src="~/js/pages/friends.js" asp-append-version="true"></script>
+}

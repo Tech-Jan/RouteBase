@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="StravaGPX"
+     xmlns="http://www.topografix.com/GPX/1/1">
+  <trk>
+    <name>Evening Ride</name>
+    <type>cycling</type>
+    <trkseg>
+      <trkpt lat="47.2692" lon="11.4041">
+        <ele>100</ele>
+        <time>2023-06-15T18:00:00Z</time>
+      </trkpt>
+      <trkpt lat="47.2700" lon="11.4050">
+        <ele>110</ele>
+        <time>2023-06-15T18:02:00Z</time>
+      </trkpt>
+      <trkpt lat="47.2710" lon="11.4060">
+        <ele>130</ele>
+        <time>2023-06-15T18:04:00Z</time>
+      </trkpt>
+    </trkseg>
+  </trk>
+</gpx>

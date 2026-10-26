@@ -1,0 +1,100 @@
+@model RouteBaseWeb.Models.ReplayDockModel
+@*
+    THE REPLAY DOCK — one bottom-anchored stack of [grab handle][transport bar][chart strip], shared by
+    every replay: the activity replay, the segment replay and the race replay (owner page + /s/{token}
+    fork, which render the same partial).
+
+    The stack is pinned to the bottom edge and the strip is its LAST child, so growing the strip pushes the
+    handle and the bar UP — dragging the bar upwards IS opening the drawer, and pushing it back down
+    compresses the strip to nothing. Closed, the strip is 0 px tall and carries no chrome, so what is left
+    is exactly the transport bar that has always floated over the map. Looks and layout live in
+    replay-controls.css (.replay-dock / .replay-drawer / .replay-controls); behaviour in
+    core/replay-chart-drawer.ts.
+
+    This markup used to be hand-rolled three times, and it drifted: the race dock's grip was a sibling
+    BELOW the map rather than part of the bar, and its seek slider had quietly lost the focus outline the
+    other two carried. One partial, so a change to the stage lands once and no page can be the odd one out.
+
+    Ids come from the model, whole, because the pages' TypeScript resolves them by id and the repo rule is
+    that every identifier greps — see ReplayDockModel. The dock does NOT own the map, the follow sidebar or
+    the exit button; those stay with the page whose replay they belong to.
+*@
+<div id="@Model.DockId" class="replay-dock replay-drawer"
+     style="@(Model.HiddenUntilPlayback ? "display: none;" : null)">
+
+    <div class="replay-dock-bar">
+        @* Tap to collapse, drag to resize. Hidden until a strip is actually mounted where the page has
+           rides that may have nothing to draw. *@
+        <button id="@Model.HandleId" type="button" class="replay-drawer-handle"
+                aria-controls="@Model.StripId" aria-label="Pull up or push down the chart strip"
+                hidden="@(Model.HandleHiddenUntilMounted ? "hidden" : null)">
+            <span class="replay-drawer-grip"></span>
+        </button>
+
+        <div id="@Model.ControlsId" class="replay-controls"
+             style="@(Model.HiddenUntilPlayback ? "display: none;" : null)">
+
+            @* aria-label tracks the current state (kept in sync by replay-transport.setPlayIcon), so a
+               screen reader announces play-vs-paused rather than a fixed "Play / Pause". *@
+            <button id="@Model.PlayPauseId" type="button" class="replay-play" title="Play / Pause"
+                    aria-label="@(Model.StartsPlaying ? "Pause" : "Play")">
+                <i class="bi @(Model.StartsPlaying ? "bi-pause-fill" : "bi-play-fill")"></i>
+            </button>
+
+            @if (Model.ModeButtonId is not null)
+            {
+                <button id="@Model.ModeButtonId" type="button" class="replay-mode-btn"
+                        title="Sync by time — click to sync by % completion"
+                        aria-label="Sync by time or by % completion">
+                    <i class="bi bi-clock"></i>
+                </button>
+            }
+
+            <div class="replay-speed-stepper">
+                <button id="@Model.SpeedSlowerId" type="button" class="replay-speed-btn"
+                        title="Slower" aria-label="Slower">
+                    <i class="bi bi-dash-lg"></i>
+                </button>
+                @* aria-live: the +/- stepper changes this value discretely on user action, so announcing
+                   the new speed is helpful, not chatty (unlike the per-frame elapsed clock). *@
+                <span class="replay-speed-label" id="@Model.SpeedLabelId" aria-live="polite">@Model.SpeedLabelText</span>
+                <button id="@Model.SpeedFasterId" type="button" class="replay-speed-btn"
+                        title="Faster" aria-label="Faster">
+                    <i class="bi bi-plus-lg"></i>
+                </button>
+            </div>
+
+            @* Elapsed only. The duration used to flank the slider on the right, which on a phone cost the
+               scrubber ~45 px it could not spare — and the number never changes, so it was the one label
+               worth losing. *@
+            <div class="replay-seek-container">
+                <div class="replay-seek-track">
+                    <span class="replay-time-label start" id="@Model.CurrentTimeId">0:00</span>
+                    <input id="@Model.SeekId" class="replay-seek" type="range"
+                           min="0" max="100" value="0" step="0.1" aria-label="Replay position" />
+                </div>
+            </div>
+
+            @if (Model.LoadingStatusId is not null)
+            {
+                @* Full-res sharpening progress (PS-03); hidden when empty via :empty in CSS. *@
+                <span id="@Model.LoadingStatusId" class="replay-loading-status"></span>
+            }
+
+            @* Hidden source-of-truth for the speed stepper — the ladder is populated dynamically. *@
+            <select id="@Model.SpeedSelectId" class="replay-speed-hidden" title="Playback speed"
+                    aria-label="Playback speed" hidden></select>
+        </div>
+    </div>
+
+    <div id="@Model.StripId" class="@Model.StripClass replay-drawer-body replay-dock-strip">
+        @if (Model.StripPartial is not null)
+        {
+            <partial name="@Model.StripPartial" model="@Model.StripPartialModel" />
+        }
+        else
+        {
+            <canvas id="@Model.CanvasId" class="replay-dock-canvas" aria-label="@Model.CanvasAriaLabel"></canvas>
+        }
+    </div>
+</div>

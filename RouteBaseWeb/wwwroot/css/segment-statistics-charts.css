@@ -1,0 +1,196 @@
+/* segment-statistics-charts.css — chart panel, chip toggles, segmented controls */
+
+/* ── Segmented control ───────────────────────────────────────────────────── */
+
+.seg-segmented {
+  display: inline-flex;
+  background: var(--bg-3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.seg-radio {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.seg-segmented-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-family: var(--font-mono);
+  color: var(--fg-2);
+  background: transparent;
+  border: none;
+  border-right: 1px solid var(--line);
+  cursor: pointer;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  transition: color 0.1s, background 0.1s;
+  user-select: none;
+}
+
+.seg-segmented-btn:last-of-type { border-right: none; }
+.seg-segmented-btn:hover { color: var(--fg-0); }
+.seg-radio:checked + .seg-segmented-btn {
+  color: var(--acc-cyan);
+  background: oklch(0.75 0.13 210 / 0.12);
+}
+
+/* X-axis switch: active option reads like a filled toggle thumb — solid accent
+   fill with dark text — so the "on" side is unmistakable. */
+.seg-xaxis-switch .seg-radio:checked + .seg-segmented-btn,
+.seg-xaxis-switch .seg-radio:checked + .seg-segmented-btn:hover {
+  color: var(--bg-0);
+  background: var(--acc-cyan);
+  font-weight: 600;
+}
+
+/* ── Per-chart delta (Δ) toggle ──────────────────────────────────────────────
+   Small triangle button pinned to each chart's top-left corner. Flips that one
+   chart between Total and "delta vs reference effort"; filled accent when active. */
+.chart-delta-toggle {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  z-index: 3;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 1px solid var(--border, rgba(140, 145, 160, 0.35));
+  border-radius: var(--radius-sm, 6px);
+  background: color-mix(in srgb, var(--bg-1, #1c1f26) 78%, transparent);
+  color: var(--txt-1, #c8ccd6);
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0.65;
+  transition: opacity 0.12s ease, background 0.12s ease, color 0.12s ease;
+}
+.chart-delta-toggle:hover { opacity: 1; }
+.chart-delta-toggle.is-active,
+.chart-delta-toggle[aria-pressed="true"] {
+  opacity: 1;
+  color: var(--bg-0);
+  background: var(--acc-cyan);
+  border-color: var(--acc-cyan);
+}
+
+/* ── Chip toggles ────────────────────────────────────────────────────────── */
+
+/* The chart tabs stay on a single row — labels collapse to icon-only on narrow screens (below). */
+.seg-chip-row {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+/* X-axis switch lives at the end of the chip row; a little extra space sets it
+   apart from the chart-tab toggles since it is a mode switch, not a tab. */
+.seg-xaxis-switch { margin-left: 4px; }
+
+.chip-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-family: var(--font-mono);
+  letter-spacing: 0.02em;
+  color: var(--fg-2);
+  background: var(--bg-3);
+  border: 1px solid var(--line);
+  cursor: pointer;
+  transition: color 0.12s, background 0.12s, border-color 0.12s;
+  white-space: nowrap;
+}
+
+.chip-toggle:hover { color: var(--fg-0); border-color: var(--line-2); }
+
+/* Inline SVG chip icon (e.g. the elevation mountain) — sized to match the bi font
+   icons and inheriting the chip's current colour so it tints with hover/active. */
+.chip-toggle .chip-svg-icon {
+  width: 14px;
+  height: 14px;
+  flex: 0 0 auto;
+}
+
+.chip-toggle.active {
+  color: var(--acc-cyan);
+  background: oklch(0.75 0.13 210 / 0.10);
+  border-color: var(--acc-cyan);
+}
+
+/* Narrow screens: drop the labels and make each tab a compact square so all of them fit one row. */
+@media (max-width: 600px) {
+  .chip-toggle .chip-label { display: none; }
+  .chip-toggle {
+    gap: 0;
+    padding: 0;
+    width: 38px;
+    height: 32px;
+    border-radius: var(--radius-md);
+  }
+  .chip-toggle i { font-size: 15px; }
+  .chip-toggle .chip-svg-icon { width: 15px; height: 15px; }
+
+  /* The X-axis switch collapses to icon-only too, keeping the joined switch look. */
+  .seg-xaxis-switch .seg-seg-label { display: none; }
+  .seg-xaxis-switch .seg-segmented-btn {
+    gap: 0;
+    padding: 0;
+    width: 34px;
+    height: 32px;
+    justify-content: center;
+  }
+  .seg-xaxis-switch .seg-segmented-btn i { font-size: 15px; }
+}
+
+/* ── Chart panel stack ───────────────────────────────────────────────────── */
+
+.chart-panel-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.chart-container {
+  position: relative;
+  height: 280px;
+}
+
+.chart-panel { display: none; }
+.chart-panel.active { display: block; }
+
+/* ── Progress controls ───────────────────────────────────────────────────── */
+
+.seg-progress-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0 10px;
+}
+
+.seg-ctrl-label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--fg-3);
+  white-space: nowrap;
+}
+

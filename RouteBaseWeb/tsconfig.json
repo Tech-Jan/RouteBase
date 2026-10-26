@@ -1,0 +1,62 @@
+{
+  // Base TypeScript config — used by IDE (VS Code tsserver) and `npm run typecheck`.
+  // Does NOT emit files (noEmit: true). Output is controlled by Vite.
+  //
+  "compilerOptions": {
+    "target": "ES2017",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "module": "ES2022",
+    "moduleResolution": "bundler",
+
+    // Type checking — full strict mode enabled (Phase 7E complete)
+    "strict": true,
+    // Type-quality pass (2026-08-01): the four zero-cost strictness flags, flipped after measuring
+    // 0 errors each (noUnusedLocals: 1 fix). Declined WITH a number:
+    // noPropertyAccessFromIndexSignature 317 (stylistic, declined).
+    "noImplicitOverride": true,
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitReturns": true,
+    "noUnusedLocals": true,
+    // Phase L (2026-08-02): flipped after the L1–L13 sweep paid the full 1539-error debt
+    // (896 at handoff, slices per-directory: guards/must()-invariants/`?? NaN` with in-bounds
+    // arguments — never a bare `!`). Every indexed read is now checked; the postfix-! floor is
+    // pinned at its honest minimum in type-quality-ratchet.test.ts (c).
+    "noUncheckedIndexedAccess": true,
+    // K8 (2026-08-01): flipped after the T4/T5 sweep (74 sites — option bags widened to
+    // `?: T | undefined` where explicit-undefined means absent, conditional spread where presence
+    // is a signal, NonNullable<> on Chart.js index-type casts). Explicit undefined in an optional
+    // slot is now a compile error unless the slot says it takes one.
+    "exactOptionalPropertyTypes": true,
+
+    // Emit — Vite handles output, tsc is type-check only
+    "noEmit": true,
+    "skipLibCheck": true,
+    "allowJs": false,
+    "declaration": false,
+    "sourceMap": false,
+
+    // Include Node.js types for Vite config files (path, fs, __dirname).
+    // Do NOT add "jquery" here — our manual `declare const $` in globals.d.ts is
+    // sufficient and adding it would conflict with @types/jquery's own global.
+    "types": ["node"],
+
+    // Paths — for future use when replacing window.* globals
+    "paths": {
+      "@core/*":          ["./src/js/core/*"],
+      "@maplibre/*":      ["./src/js/maplibre/*"],
+      "@activity/*":      ["./src/js/activity/*"],
+      "@segment-stats/*": ["./src/js/segment-stats/*"],
+      "@overview/*":      ["./src/js/overview/*"],
+      "@pages/*":         ["./src/js/pages/*"],
+      "@types/*":         ["./src/js/types/*"]
+    }
+  },
+  "include": [
+    "src/js/**/*.ts",
+    "vite.config.esm.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "wwwroot"
+  ]
+}

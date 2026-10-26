@@ -1,0 +1,430 @@
+@page
+@model RouteBaseWeb.Pages.KeysAndDataModel
+@{
+    Layout = "_DashboardLayout";
+    ViewData["Title"] = "API Keys & Database";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/keys-and-data.css" asp-append-version="true">
+    <link rel="stylesheet" href="~/css/profile-settings.css" asp-append-version="true">
+}
+
+<div class="cockpit-scroll">
+
+    <partial name="_PageHeader" model="@(new PageHeaderModel(
+        Title: "API Keys & Database",
+        Subtitle: "Strava, MapTiler and phone-app keys, imports, and your data",
+        Breadcrumbs: new (string Href, string Label)[] { ("/", "Dashboard"), ("/KeysAndData", "API Keys & Database") }
+    ))" />
+
+    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+    {
+        <div class="sync-notice sync-notice--error" role="alert">
+            <span>@Model.ErrorMessage</span>
+            <button class="sync-notice-close" data-dismiss-notice aria-label="Dismiss">×</button>
+        </div>
+    }
+
+    @if (!string.IsNullOrEmpty(Model.SuccessMessage))
+    {
+        <div class="sync-notice sync-notice--success" role="status">
+            <span>@Model.SuccessMessage</span>
+            <button class="sync-notice-close" data-dismiss-notice aria-label="Dismiss">×</button>
+        </div>
+    }
+
+    <!-- ── Strava Integration ────────────────────────────────────────── -->
+    <section class="sync-section">
+        <h2 class="sync-section-title">Strava Integration</h2>
+
+        @if (!Model.IsAuthenticated)
+        {
+            <p class="sync-body-text">
+                Connect your Strava account to automatically import activities that don't exist in your database yet.
+            </p>
+            <div class="sync-callout sync-callout--info">
+                You will be redirected to Strava to authorize this application.
+                Only permission to read your activities is requested.
+            </div>
+            <div>
+                <button type="button" class="btn-cockpit btn-cockpit-primary" data-open-dialog="stravaCredentialsDialog">
+                    Connect with Strava
+                </button>
+            </div>
+        }
+        else
+        {
+            <div class="sync-connected-row">
+                <span class="sync-status sync-status--connected">Connected to Strava</span>
+                @if (Model.AthleteId.HasValue)
+                {
+                    <span class="sync-athlete-id">Athlete ID: @Model.AthleteId</span>
+                }
+                <form method="post" asp-page-handler="Disconnect">
+                    <button type="submit" class="btn-cockpit btn-cockpit-danger btn-cockpit-sm">Disconnect</button>
+                </form>
+            </div>
+
+            <div class="divider"></div>
+
+            <p class="sync-sub-title">Import Activities</p>
+            <p class="sync-body-text">
+                Import activities from Strava. Only activities that don't already exist in the database will be imported.
+            </p>
+
+            <div class="sync-import-controls">
+                <div class="settings-field">
+                    <label for="importPeriod" class="settings-label">Import Period</label>
+                    <select id="importPeriod" class="settings-select">
+                        <option value="7">Last 7 days</option>
+                        <option value="30" selected>Last 30 days</option>
+                        <option value="90">Last 90 days</option>
+                        <option value="180">Last 6 months</option>
+                        <option value="365">Last year</option>
+                        <option value="all">All activities</option>
+                    </select>
+                </div>
+                <button type="button" class="btn-cockpit btn-cockpit-primary" id="btnImport">
+                    Import Activities
+                </button>
+            </div>
+
+            <div id="importProgress" class="sync-progress" style="display:none">
+                <div class="sync-progress-track">
+                    <div class="sync-progress-bar" id="progressBar" style="width:0%"></div>
+                </div>
+                <p class="sync-progress-text" id="progressText">Preparing import...</p>
+            </div>
+
+            <div id="importResults"></div>
+        }
+    </section>
+
+    <!-- ── Application Settings ─────────────────────────────────────── -->
+    <section class="sync-section">
+        <h2 class="sync-section-title">Application Settings</h2>
+
+        <p class="sync-sub-title">MapTiler API Key</p>
+        <p class="sync-body-text">Configure your MapTiler API key to enable 3D terrain maps and premium map styles.</p>
+
+        @if (Model.HasMapTilerKey)
+        {
+            <div class="sync-callout sync-callout--info">
+                <span class="sync-status sync-status--connected">MapTiler API key is configured</span>
+            </div>
+        }
+        else
+        {
+            <div class="sync-callout sync-callout--warn">
+                No MapTiler API key configured. 3D terrain maps will not be available.
+            </div>
+        }
+
+        <div>
+            <button type="button" class="btn-cockpit btn-cockpit-primary" data-open-dialog="mapTilerKeyDialog">
+                @(Model.HasMapTilerKey ? "Update" : "Configure") MapTiler API Key
+            </button>
+        </div>
+        <p class="settings-hint">
+            Don't have a MapTiler account?
+            <a href="https://cloud.maptiler.com/account/keys/" target="_blank" style="color:var(--acc-cyan)">Create a free account</a>
+        </p>
+    </section>
+
+    <!-- ── Database Management ──────────────────────────────────────── -->
+    <section class="sync-section">
+        <h2 class="sync-section-title">Database Management</h2>
+        <p class="sync-body-text">
+            Delete activities and reset API credentials. Segments will be preserved unless explicitly selected.
+        </p>
+        <div class="sync-callout sync-callout--danger">
+            <strong>Warning:</strong> Deleted data cannot be recovered. Resetting will permanently delete selected activities, GPS data, multi-day tours, pictures, and credentials.
+        </div>
+        <div>
+            <button type="button" class="btn-cockpit btn-cockpit-danger" data-open-dialog="resetDatabaseDialog">
+                Reset Database
+            </button>
+        </div>
+    </section>
+
+    <!-- ── Mobile API Key ────────────────────────────────────────────── -->
+    <section class="sync-section" id="apiKeyCard">
+        <h2 class="sync-section-title">Mobile API Key</h2>
+        <p class="sync-body-text">
+            Paste the full setup code below into the Android app to configure it in one step.
+            (For a manual integration, the setup code is <code style="font-family:var(--font-mono);font-size:12px;background:var(--bg-3);padding:1px 5px;border-radius:3px">serverUrl|key</code> — send only the part after the <code style="font-family:var(--font-mono);font-size:12px;background:var(--bg-3);padding:1px 5px;border-radius:3px">|</code> as the <code style="font-family:var(--font-mono);font-size:12px;background:var(--bg-3);padding:1px 5px;border-radius:3px">X-Api-Key</code> header.)
+        </p>
+
+        <div id="apiKeyStatus" class="api-key-status">Loading…</div>
+
+        <div id="apiKeyValue" class="hidden">
+            <div class="api-key-warn">
+                Copy the setup code now — paste it into the Android app to configure it in one step. It will not be shown again.
+            </div>
+            <div class="api-key-row">
+                <span id="apiKeyText" class="api-key-code"></span>
+                <button class="btn-cockpit btn-cockpit-ghost btn-cockpit-sm" type="button" id="copyKeyBtn">
+                    Copy setup code
+                </button>
+            </div>
+        </div>
+
+        <div class="api-key-actions">
+            <button class="btn-cockpit btn-cockpit-primary" type="button" id="generateKeyBtn">
+                Generate New Key
+            </button>
+            <button class="btn-cockpit btn-cockpit-danger hidden" type="button" id="revokeKeyBtn">
+                Revoke Key
+            </button>
+        </div>
+    </section>
+
+    <!-- ── Strava Credentials Dialog ────────────────────────────────── -->
+    <dialog id="stravaCredentialsDialog" class="sync-dialog">
+        @* Submit is intercepted by keys-and-data.ts (POST /api/strava/auth-url). method="dialog"
+           so a stray non-JS submit just closes the dialog instead of hitting a dead handler. *@
+        <form method="dialog">
+            <div class="sync-dialog-header">
+                <h3 class="sync-dialog-title">Strava API Credentials</h3>
+                <button type="button" class="sync-dialog-close" data-close-dialog="stravaCredentialsDialog" aria-label="Close">×</button>
+            </div>
+            <div class="sync-dialog-body">
+                <div class="sync-callout sync-callout--info">
+                    To connect, you need to create a <strong>Strava API application</strong>.
+                    See <a href="https://developers.strava.com/docs/getting-started/#account" target="_blank">how to create a Strava app</a>
+                    for step-by-step instructions. When creating the app, set the <strong>Authorization Callback Domain</strong> to:<br>
+                    <code>@Request.Host.Host</code>
+                </div>
+
+                <div class="sync-dialog-field">
+                    <label for="clientId" class="sync-dialog-label">Client ID <span style="color:var(--acc-red)">*</span></label>
+                    <input type="text" id="clientId" name="clientId" required
+                           class="sync-dialog-input" placeholder="Enter your Strava Client ID"
+                           value="@Model.ClientId">
+                    <p class="sync-dialog-hint">Your application's Client ID from Strava</p>
+                </div>
+
+                <div class="sync-dialog-field">
+                    <label for="clientSecret" class="sync-dialog-label">Client Secret <span style="color:var(--acc-red)">*</span></label>
+                    <input type="password" id="clientSecret" name="clientSecret" required
+                           class="sync-dialog-input" placeholder="Enter your Strava Client Secret">
+                    <p class="sync-dialog-hint">Your application's Client Secret from Strava</p>
+                </div>
+
+                <div class="sync-callout sync-callout--warn">
+                    Your credentials will be stored securely in the database and never shared.
+                </div>
+            </div>
+            <div class="sync-dialog-footer">
+                <button type="button" class="btn-cockpit btn-cockpit-ghost" data-close-dialog="stravaCredentialsDialog">Cancel</button>
+                <button type="submit" class="btn-cockpit btn-cockpit-primary" id="btnSaveConnect">Save and Connect</button>
+            </div>
+        </form>
+    </dialog>
+
+    <!-- ── MapTiler Key Dialog ───────────────────────────────────────── -->
+    <dialog id="mapTilerKeyDialog" class="sync-dialog">
+        <form method="post" asp-page-handler="SaveMapTilerKey">
+            <div class="sync-dialog-header">
+                <h3 class="sync-dialog-title">Configure MapTiler API Key</h3>
+                <button type="button" class="sync-dialog-close" data-close-dialog="mapTilerKeyDialog" aria-label="Close">×</button>
+            </div>
+            <div class="sync-dialog-body">
+                <div class="sync-callout sync-callout--info">
+                    <strong>How to get a MapTiler API key:</strong>
+                    <ol>
+                        <li>Go to <a href="https://cloud.maptiler.com/account/keys/" target="_blank">MapTiler Cloud</a></li>
+                        <li>Sign up or log in (free account available)</li>
+                        <li>Create a new API key</li>
+                        <li>Copy and paste it below</li>
+                    </ol>
+                </div>
+
+                <div class="sync-dialog-field">
+                    <label for="mapTilerApiKey" class="sync-dialog-label">MapTiler API Key <span style="color:var(--acc-red)">*</span></label>
+                    <input type="password" id="mapTilerApiKey" name="apiKey" required
+                           class="sync-dialog-input" placeholder="Enter your MapTiler API key">
+                    <p class="sync-dialog-hint">Your MapTiler Cloud API key</p>
+                </div>
+
+                <div class="sync-callout sync-callout--warn">
+                    Your API key will be stored securely. For production use, enable domain restrictions in your MapTiler account settings to prevent unauthorized use.
+                </div>
+            </div>
+            <div class="sync-dialog-footer">
+                <button type="button" class="btn-cockpit btn-cockpit-ghost" data-close-dialog="mapTilerKeyDialog">Cancel</button>
+                <button type="submit" class="btn-cockpit btn-cockpit-primary" id="btnSaveMapTilerKey">Save API Key</button>
+            </div>
+        </form>
+    </dialog>
+
+    <!-- ── Reset Database Dialog ────────────────────────────────────── -->
+    <dialog id="resetDatabaseDialog" class="sync-dialog sync-dialog--wide">
+        <div class="sync-dialog-header">
+            <h3 class="sync-dialog-title">Delete Data</h3>
+            <button type="button" class="sync-dialog-close" data-close-dialog="resetDatabaseDialog" aria-label="Close">×</button>
+        </div>
+        <form method="post" asp-page-handler="ResetDatabase" id="resetDatabaseForm">
+            <div class="sync-dialog-body">
+                <div class="sync-callout sync-callout--danger">
+                    <strong>Deleted data cannot be recovered!</strong>
+                    Select exactly what you want to remove, then type the confirmation phrase.
+                </div>
+
+                <!-- Quick-select presets — one click to isolate a single group -->
+                <div class="reset-quick">
+                    <span class="reset-quick-label">Quick select:</span>
+                    <button type="button" class="reset-quick-btn" data-quick-select="photos">Photos only</button>
+                </div>
+
+                <!-- Activity Data group -->
+                <div class="reset-group">
+                    <div class="reset-group-header">
+                        <div class="reset-check-item">
+                            <input type="checkbox" id="grpActivities" class="group-master" data-group="activities" checked>
+                            <label class="reset-check-label" for="grpActivities">
+                                <strong class="reset-group-title">Activity Data</strong>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="reset-group-body group-children" data-group="activities">
+                        <div class="reset-check-item">
+                            <input type="checkbox" id="chkActivities" name="delActivities" value="true" checked
+                                   class="child-check" data-group="activities" data-forces="chkGps,chkGpsInSeg,chkPhotos">
+                            <label class="reset-check-label" for="chkActivities">
+                                <strong>Activities</strong>
+                                <small>All tracks &amp; metadata</small>
+                            </label>
+                        </div>
+                        <div class="reset-check-item">
+                            <input type="checkbox" id="chkGps" name="delGps" value="true" checked
+                                   class="child-check" data-group="activities" data-required-by="chkActivities">
+                            <label class="reset-check-label" for="chkGps">
+                                <strong>GPS Data</strong>
+                                <small>All GPS track points</small>
+                            </label>
+                        </div>
+                        <div class="reset-check-item">
+                            <input type="checkbox" id="chkPhotos" name="delPhotos" value="true" checked
+                                   class="child-check" data-group="activities" data-required-by="chkActivities">
+                            <label class="reset-check-label" for="chkPhotos">
+                                <strong>Photos</strong>
+                                <small>Activity photos &amp; renditions</small>
+                            </label>
+                        </div>
+                        <div class="reset-check-item">
+                            <input type="checkbox" id="chkMultiDay" name="delMultiDay" value="true" checked
+                                   class="child-check" data-group="activities">
+                            <label class="reset-check-label" for="chkMultiDay">
+                                <strong>Multi-Day Tours</strong>
+                                <small>Tour groups (activities kept)</small>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Segment Data group -->
+                <div class="reset-group">
+                    <div class="reset-group-header">
+                        <div class="reset-check-item">
+                            <input type="checkbox" id="grpSegments" class="group-master" data-group="segments" checked>
+                            <label class="reset-check-label" for="grpSegments">
+                                <strong class="reset-group-title">Segment Data</strong>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="reset-group-body group-children" data-group="segments">
+                        <div class="reset-check-item">
+                            <input type="checkbox" id="chkGpsInSeg" name="delSegmentMatches" value="true" checked
+                                   class="child-check" data-group="segments" data-required-by="chkActivities chkSegments">
+                            <label class="reset-check-label" for="chkGpsInSeg">
+                                <strong>Segment Matches</strong>
+                                <small>GPSinSegment analysis results</small>
+                            </label>
+                        </div>
+                        <div class="reset-check-item">
+                            <input type="checkbox" id="chkSegments" name="delSegments" value="true"
+                                   class="child-check" data-group="segments" data-forces="chkGpsInSeg">
+                            <label class="reset-check-label" for="chkSegments">
+                                <strong>Segments &amp; GPS</strong>
+                                <small>Segment definitions + Segment_GPS</small>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Credentials group -->
+                <div class="reset-group">
+                    <div class="reset-group-header">
+                        <div class="reset-check-item">
+                            <input type="checkbox" id="grpCredentials" class="group-master" data-group="credentials" checked>
+                            <label class="reset-check-label" for="grpCredentials">
+                                <strong class="reset-group-title">Credentials &amp; Settings</strong>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="reset-group-body group-children" data-group="credentials">
+                        <div class="reset-check-item">
+                            <input type="checkbox" id="chkStravaToken" name="delStravaToken" value="true" checked
+                                   class="child-check" data-group="credentials">
+                            <label class="reset-check-label" for="chkStravaToken">
+                                <strong>Strava Token</strong>
+                                <small>OAuth access token</small>
+                            </label>
+                        </div>
+                        <div class="reset-check-item">
+                            <input type="checkbox" id="chkStravaApiKey" name="delStravaApiKey" value="true" checked
+                                   class="child-check" data-group="credentials">
+                            <label class="reset-check-label" for="chkStravaApiKey">
+                                <strong>Strava API Key</strong>
+                                <small>Client ID &amp; Secret</small>
+                            </label>
+                        </div>
+                        <div class="reset-check-item">
+                            <input type="checkbox" id="chkMapTiler" name="delMapTiler" value="true" checked
+                                   class="child-check" data-group="credentials">
+                            <label class="reset-check-label" for="chkMapTiler">
+                                <strong>MapTiler Key</strong>
+                                <small>Map API key</small>
+                            </label>
+                        </div>
+                        <div class="reset-check-item">
+                            <input type="checkbox" id="chkProfileSettings" name="delProfileSettings" value="true" checked
+                                   class="child-check" data-group="credentials">
+                            <label class="reset-check-label" for="chkProfileSettings">
+                                <strong>Profile Settings</strong>
+                                <small>Chart &amp; map preferences</small>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Dependency notice -->
+                <div id="depNotice" class="reset-dep-notice hidden">
+                    <span id="depNoticeText"></span>
+                </div>
+
+                <div class="sync-dialog-divider"></div>
+
+                <div>
+                    <label class="reset-confirm-label">Type <code style="font-family:var(--font-mono);font-size:11px">DELETE</code> to confirm:</label>
+                    @* name= so the phrase POSTs — the handler verifies it server-side too. *@
+                    <input type="text" id="confirmationText" name="confirmationText" class="reset-confirm-input"
+                           placeholder="Type DELETE" autocomplete="off">
+                </div>
+            </div>
+            <div class="sync-dialog-footer">
+                <button type="button" class="btn-cockpit btn-cockpit-ghost" data-close-dialog="resetDatabaseDialog">Cancel</button>
+                <button type="submit" class="btn-cockpit btn-cockpit-danger" id="btnConfirmReset" disabled>
+                    Delete Selected Data
+                </button>
+            </div>
+        </form>
+    </dialog>
+
+</div>
+
+@section Scripts {
+    <script type="module" src="~/js/pages/keys-and-data.js" asp-append-version="true"></script>
+}

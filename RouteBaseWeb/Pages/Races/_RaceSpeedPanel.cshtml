@@ -1,0 +1,40 @@
+@model bool
+@*
+    THE race page's main chart: per-rider speed against completion of the course, over the course itself —
+    the terrain tinted per section, a rule at every section boundary, the field's own p10–p90 spread, and
+    the replay playhead. Rendered by BOTH the owner page and the /s/{token} fork: it is a view, not a
+    control, so the two must not drift (see the header of _ShareRaceBody.cshtml).
+
+    It sits directly under the map now, where the dock's elevation strip used to be read. That strip is
+    still there and still the live 30 Hz surface for 508 rider dots — but only in FULLSCREEN replay
+    (race-replay.css); inline, this is the one picture, because "where the course climbs, the field slows,
+    and here is what THESE two riders did about it" was being read across two charts lined up by eye.
+
+    Why it is a panel and not a strip in the dock: it ZOOMS, and the dock is a fixed-height overlay on the
+    map's bottom edge — the wrong place to pinch, drag, and click a section boundary into place.
+
+    The model is one bool: whether the viewer may edit. It reaches the canvas's aria-label only — the
+    click-to-place behaviour itself is gated in race-replay-view (editable:false on the fork).
+
+    #raceSpeedPanel is the empty-state host and must WRAP the canvas directly — core/chart-empty-state
+    finds the canvas by querySelector. Note the panel prefers #raceSpeedNote for "no riders drawn yet",
+    precisely so the canvas is NOT hidden: the course, and the boundaries you place on it, must stay.
+*@
+@* race-panel-speed lifts the panel's overflow clip — the readout box floats above the plot. *@
+<section class="race-panel race-panel-speed">
+    <div class="race-panel-head">
+        <span>Speed</span>
+        @* Not an overlay: a race whose sections are still being laid out has no highlighted riders, and
+           the canvas has to keep showing the course underneath. *@
+        <small class="race-speed-note" id="raceSpeedNote" hidden></small>
+        @* Recorded vs smoothed, same control as the activity and segment speed charts. Its own
+           preference key, so switching here does not move those. *@
+        <button class="chart-mode-toggle" id="raceSpeedModeToggle" type="button" aria-pressed="false"></button>
+    </div>
+    <div class="race-speed-wrap" id="raceSpeedPanel">
+        <canvas id="raceSpeedChart" class="race-speed-chart"
+                aria-label="@(Model
+                    ? "Speed against completion of the course, over the course profile — click to split a section, drag a boundary to move it"
+                    : "Speed against completion of the course, over the course profile, one line per drawn rider")"></canvas>
+    </div>
+</section>

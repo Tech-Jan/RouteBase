@@ -1,0 +1,65 @@
+@using RouteBaseWeb.Services.TrackEdit
+@model TrackEditChrome
+@* The track editor's Details chrome (A3 §1.1/§4) — owner-only. Every element id below is a DOM contract:
+   edit-toolbar.ts, edit-mode-controller.ts, edit-mode-entry.ts and slot-tools.ts getElementById them by name,
+   so an id here is never renamed without changing them in the same commit.
+
+   History is NOT here. It lives in the Details history panel and only there (EditorSurfaces): a head cannot
+   move while the ride is checked out, so an in-editor history door could never have worked. *@
+
+@* The editor door (A3 §1.1) — needs ≥ MinSlotPoints. ONE button, two states, because the ride's checkout
+   pointer IS the state: a ride with an open edit offers Resume + Discard exactly where Edit would otherwise
+   be. The resume values are server-rendered (F-1) and read off the button, so a view-only visit still issues
+   no page-load request. *@
+@if (Model.IsOwner && Model.Part == TrackEditChromePart.EnterButton && Model.PointCount >= 2)
+{
+    @if (Model.Resume is EditResumeHint resume)
+    {
+        <button type="button" class="btn-cockpit btn-cockpit-primary btn-cockpit-sm" id="trackEditResumeBtn"
+                data-resume-session-id="@resume.SessionId"
+                data-resume-edits="@resume.EditCount"
+                data-resume-updated="@resume.UpdatedAt.ToString("o")">
+            <i class="bi bi-play-fill"></i> <span id="trackEditResumeLabel">Resume edit</span>
+        </button>
+        <button type="button" class="btn-cockpit btn-cockpit-ghost btn-cockpit-sm" id="trackEditDiscardOpenBtn">
+            <i class="bi bi-trash"></i> Discard edit
+        </button>
+    }
+    else
+    {
+        <button type="button" class="btn-cockpit btn-cockpit-ghost btn-cockpit-sm" id="trackEditEnterBtn">
+            <i class="bi bi-scissors"></i> Edit track
+        </button>
+    }
+}
+
+@* Track editor toolbar (A3 §4) — shown via body.track-edit-active. #trackEditSlotTools is the A4 mount. *@
+@if (Model.IsOwner && Model.Part == TrackEditChromePart.Toolbar)
+{
+    <div id="trackEditToolbar" class="track-edit-toolbar">
+        <div class="track-edit-toolbar-row">
+            <span class="track-edit-mode-label">Edit mode</span>
+            <div class="track-edit-tools">
+                <button type="button" id="trackEditCropBtn" class="btn-cockpit btn-cockpit-ghost btn-cockpit-sm" disabled><i class="bi bi-scissors"></i> Crop</button>
+                <button type="button" id="trackEditCutBtn" class="btn-cockpit btn-cockpit-ghost btn-cockpit-sm" disabled><i class="bi bi-x-square"></i> Cut</button>
+                <button type="button" id="trackEditSplitBtn" class="btn-cockpit btn-cockpit-ghost btn-cockpit-sm"><i class="bi bi-slash-lg"></i> Split</button>
+            </div>
+            <div id="trackEditSlotTools" class="track-edit-slot-tools"></div>
+            <div class="track-edit-history">
+                <button type="button" id="trackEditUndoBtn" class="btn-cockpit btn-cockpit-ghost btn-cockpit-sm" disabled><i class="bi bi-arrow-counterclockwise"></i> Undo</button>
+                <button type="button" id="trackEditRedoBtn" class="btn-cockpit btn-cockpit-ghost btn-cockpit-sm" disabled><i class="bi bi-arrow-clockwise"></i> Redo</button>
+                <span id="trackEditOpCounter" class="track-edit-op-counter">ops 0/500</span>
+            </div>
+            <div class="track-edit-actions">
+                <button type="button" id="trackEditSaveBtn" class="btn-cockpit btn-cockpit-primary btn-cockpit-sm"><i class="bi bi-save"></i> Save&hellip;</button>
+                <button type="button" id="trackEditDiscardBtn" class="btn-cockpit btn-cockpit-danger btn-cockpit-sm"><i class="bi bi-trash"></i> Discard</button>
+                <button type="button" id="trackEditCloseBtn" class="btn-cockpit btn-cockpit-ghost btn-cockpit-sm"><i class="bi bi-x-lg"></i> Close</button>
+            </div>
+        </div>
+        <div class="track-edit-toolbar-row track-edit-status-row">
+            <span id="trackEditSelReadout" class="track-edit-sel-readout">No selection</span>
+            <span id="trackEditHint" class="track-edit-hint">click chart or map to set start</span>
+            <span id="trackEditSlotBadge" class="track-edit-slot-badge"></span>
+        </div>
+    </div>
+}

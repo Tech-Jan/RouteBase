@@ -1,0 +1,18 @@
+@using RouteBaseWeb.Models.Sharing
+@model ActivityPhotosPanel
+@* Photos body for the Details action bar (§4). The tab button + count live in _ActivityDetailBody.cshtml
+   (grouped with Create Segment); this renders the grid that activity-photos.ts populates. *@
+<div class="det-actions-body" id="detPhotosBody" hidden>
+    @* Owner-only: /Import is not reachable for a non-owner, and not at all for a share viewer. *@
+    @if (Model.CanAdd)
+    {
+        <div class="det-photos-actions">
+            <a href="/Import?trackId=@Model.TrackId" class="btn-cockpit btn-cockpit-ghost btn-cockpit-sm">
+                <i class="bi bi-plus-lg" aria-hidden="true"></i> Add photos
+            </a>
+        </div>
+    }
+    <div class="det-photos-grid" id="detPhotosGrid"></div>
+    <p class="det-photos-truncated" id="detPhotosTruncated" hidden></p>
+    <p class="det-photos-empty" id="detPhotosEmpty" hidden>No photos yet — add some to see them on the map.</p>
+</div>

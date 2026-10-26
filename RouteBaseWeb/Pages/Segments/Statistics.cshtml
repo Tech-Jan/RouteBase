@@ -1,0 +1,20 @@
+@page
+@model StatisticsModel
+@{
+    Layout = "_DashboardLayout";
+    ViewData["Title"] = Model.Segment?.SegmentName ?? "Segment Statistics";
+}
+@* Composition root only. The body and scripts live in partials that the anonymous share view
+   (/s/{token}) renders too, over the same SegmentDetailView — see _SegmentStatsBody.cshtml.
+   Model.View is non-null here: OnGetAsync returns NotFound() before reaching the page otherwise. *@
+
+@* Each partial carries its own _CdnLibs line, so both routes pull the same libs from one place. *@
+@section Styles {
+    <partial name="/Pages/Segments/_SegmentStatsStyles.cshtml" />
+}
+
+<partial name="/Pages/Segments/_SegmentStatsBody.cshtml" model="Model.View!" />
+
+@section Scripts {
+    <partial name="/Pages/Segments/_SegmentStatsScripts.cshtml" model="Model.View!" />
+}

@@ -1,0 +1,71 @@
+/* Share-link dialog — used by BOTH the activity details page and the segment statistics page.
+   Extracted out of activity-details.css when segment sharing landed: the segment page does not load
+   activity-details.css, so leaving these rules there meant the shared dialog rendered unstyled on it.
+   This is share rule 4 (a stylesheet one route loads and the other does not) in miniature. */
+
+/* ── Share-link dialog (owner only) ───────────────────────────────────────────── */
+.share-dlg {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--bg-2);
+  color: var(--fg-0);
+  padding: 0;
+  max-width: 520px;
+  width: calc(100% - 32px);
+}
+
+.share-dlg::backdrop { background: oklch(0 0 0 / 0.55); }
+
+.share-dlg-form { padding: 20px; display: flex; flex-direction: column; gap: 12px; }
+
+.share-dlg-title { font-size: 1.05rem; margin: 0; display: flex; align-items: center; gap: 8px; }
+.share-dlg-subtitle { font-size: 0.9rem; margin: 4px 0 0; color: var(--fg-1); }
+.share-dlg-help { margin: 0; color: var(--fg-2); font-size: 0.85rem; line-height: 1.45; }
+.share-dlg-label { color: var(--fg-2); font-size: 0.8rem; }
+
+.share-dlg-controls { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.share-dlg-status:empty { display: none; }
+.share-dlg-status { margin: 0; color: var(--acc-red); font-size: 0.82rem; }
+
+.share-dlg-result { display: flex; flex-direction: column; gap: 6px; }
+.share-dlg-urlrow { display: flex; gap: 8px; }
+.share-dlg-urlrow .det-input { flex: 1; min-width: 0; font-family: var(--font-mono); font-size: 0.8rem; }
+
+.share-dlg-list { display: flex; flex-direction: column; gap: 6px; }
+.share-dlg-empty { margin: 0; color: var(--fg-3); font-size: 0.82rem; }
+
+/* The resource's lifetime total — it counts links this list no longer shows (ended ones are capped), which
+   is why it sits above the rows rather than being summed from them. Matches the card badge. */
+.share-dlg-total {
+  margin: 0 0 2px;
+  color: var(--fg-2);
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.share-dlg-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+}
+
+.share-dlg-expiry { color: var(--fg-2); font-size: 0.8rem; }
+
+/* Carries the row's spacer (was on .share-dlg-expiry) so expiry and open count read as one left-hand
+   group and Revoke stays pinned right. Dimmer than the expiry: it is the line you scan, not the line you
+   act on — until the number is wrong, which is the whole reason it is here. */
+.share-dlg-opens {
+  color: var(--fg-3);
+  font-size: 0.76rem;
+  font-variant-numeric: tabular-nums;
+  margin-right: auto;
+}
+
+.share-dlg-state { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; }
+.share-dlg-state--on  { color: var(--acc-lime); }
+.share-dlg-state--off { color: var(--fg-3); }
+
+.share-dlg-actions { display: flex; justify-content: flex-end; }

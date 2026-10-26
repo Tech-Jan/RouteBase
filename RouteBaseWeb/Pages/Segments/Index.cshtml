@@ -1,0 +1,184 @@
+@page
+@using RouteBaseWeb.Models.Sharing
+@model IndexModel
+@{
+    Layout = "_DashboardLayout";
+    ViewData["Title"] = "Segments";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/grid-filter.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/segments-index.css" asp-append-version="true" />
+}
+
+<div class="cockpit-scroll">
+
+    <partial name="_PageHeader" model="@(new PageHeaderModel(
+        Title: "Segments",
+        Subtitle: Model.TotalSegments > 0 ? $"{Model.TotalSegments} segment{(Model.TotalSegments == 1 ? "" : "s")}" : null,
+        Breadcrumbs: new (string Href, string Label)[] { ("/", "Dashboard"), ("/Segments", "Segments") },
+        RightActionsHtml: new HtmlString(
+            "<button id=\"analyzeAllSegmentsBtn\" class=\"btn-cockpit btn-cockpit-ghost\">" +
+                "<i class=\"bi bi-lightning-charge\"></i> Analyze All" +
+            "</button>" +
+            "<a href=\"/Segments/Create\" class=\"btn-cockpit btn-cockpit-primary\">" +
+                "<i class=\"bi bi-plus-circle\"></i> Create Segment" +
+            "</a>")
+    ))" />
+
+    @if (Model.Segments.Any())
+    {
+        <!-- Live "X / Y maps loaded" counter — mirrors the activities-overview track counter.
+             Minimaps load lazily on scroll; segments-index.ts updates this as cards enter view. -->
+        <div class="seg-index-status-bar">
+            <span id="segMinimapStatus" class="seg-index-map-status"></span>
+        </div>
+
+        <!-- Fixed-height list window (mirrors the Activities table wrapper): the toolbar sits above the
+             scroll; the sort/filter controls strip stays pinned at the top while the segment cards scroll
+             under it, so the page area stays a constant size regardless of segment count. The grid runs in
+             controls-only mode (externalResults) — rendered by overview/segments-grid.ts. -->
+        <div class="grid-table-panel seg-list-panel">
+            <div id="segmentsGridToolbar" class="grid-toolbar"></div>
+            <div class="seg-list-scroll">
+                <div id="segmentsGrid" class="seg-controls-grid"></div>
+
+                <!-- Segment card grid ────────────────────────────────────────────── -->
+                <div class="seg-card-grid">
+            @foreach (var segment in Model.Segments)
+            {
+                @* FUX-02: a wrapper <div>, not an <a>, so the delete <button> is no longer nested inside a
+                   link (an invalid content model). A stretched overlay <a> (inset:0) keeps the whole card
+                   navigating with every native anchor affordance — Enter/Space, middle-click, ⌘/ctrl-click
+                   open-in-new-tab — that a role="link" div would drop. The delete button (z-index:3) sits
+                   above the overlay (z-index:1) and outside it, so it stays clickable and the markup is valid. *@
+                <div class="seg-card" data-segment-id="@segment.SegmentId" style="position:relative;">
+                    <a class="seg-card-link" href="/Segments/Statistics?id=@segment.SegmentId"
+                       aria-label="Open @segment.SegmentName" style="position:absolute;inset:0;z-index:1;"></a>
+                    <div class="seg-card-body">
+                        <div class="seg-card-map">
+                            <div class="segment-minimap"
+                                 id="seg-minimap-@segment.SegmentId"
+                                 data-segment-id="@segment.SegmentId">
+                            </div>
+                            @* Owner only — legacy null-owner segments are view-only (OwnedSegments
+                               refuses their writes; the button could never succeed). *@
+                            @if (segment.UserId == Model.CurrentUserId)
+                            {
+                                <button class="seg-delete-btn"
+                                        title="Delete segment"
+                                        data-segment-id="@segment.SegmentId" data-segment-name="@segment.SegmentName">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg>
+                                </button>
+                            }
+                        </div>
+                        <div class="seg-card-info">
+                            <div class="seg-card-meta">
+                                @{
+                                    // Same icon/colour vocabulary as the dashboard activity card, so one
+                                    // symbol means one thing across the app.
+                                    var segVis = (segment.Visibility ?? Visibilities.Default).ToLowerInvariant();
+                                    var segVisIcon = segVis == Visibilities.Private ? "bi-lock-fill"
+                                                   : segVis == Visibilities.Public ? "bi-globe" : "bi-people-fill";
+                                    var segVisTitle = segVis == Visibilities.Private ? "Private"
+                                                    : segVis == Visibilities.Public ? "Public" : "Friends";
+                                    var segVisClass = segVis == Visibilities.Private ? "vis--private"
+                                                    : segVis == Visibilities.Public ? "vis--public" : "vis--friends";
+                                    var segShare = new ShareBadgeModel(
+                                        Model.SharedSegmentOpens.TryGetValue(segment.SegmentId.Value, out var segOpens)
+                                            ? (ShareOpens?)segOpens : null,
+                                        "seg-card-share");
+                                }
+                                <i class="bi @segVisIcon seg-card-vis @segVisClass"
+                                   title="@segVisTitle" aria-label="@segVisTitle"></i>
+                                <partial name="/Pages/Shared/_ShareBadge.cshtml" model="segShare" />
+                                @if (!string.IsNullOrEmpty(segment.ActivityType))
+                                {
+                                    <span class="chip">@segment.ActivityType</span>
+                                }
+                                @if (Model.UserDisplayNames.Count > 0 && segment.UserId != null &&
+                                     Model.UserDisplayNames.TryGetValue(segment.UserId, out var segOwner))
+                                {
+                                    <span class="seg-card-owner">
+                                        @(segment.UserId == Model.CurrentUserId ? "Me" : segOwner)
+                                    </span>
+                                }
+                            </div>
+                            <h2 class="seg-card-name">@segment.SegmentName</h2>
+                            @{
+                                var effortCount = Model.EffortCounts.TryGetValue(segment.SegmentId, out var ec) ? ec : 0;
+                                var totals = Model.EffortTotals.TryGetValue(segment.SegmentId, out var t) ? t : null;
+                                // Efforts exist but totals aren't precomputed yet (pre-analyze) → show "-".
+                                var pendingTotals = totals == null && effortCount > 0;
+                                string? distTotalStr = totals != null ? $"{(totals.TotalDistance / 1000).ToString("F2")} km" : (pendingTotals ? "-" : null);
+                                string? elevTotalStr = totals != null ? $"{totals.TotalElevation.ToString("F0")} m" : (pendingTotals ? "-" : null);
+                                string? totalTimeStr = null;
+                                if (totals != null && totals.TotalTime > 0)
+                                {
+                                    var ts = TimeSpan.FromSeconds(totals.TotalTime);
+                                    totalTimeStr = $"{(int)ts.TotalHours}:{ts.Minutes:D2}:{ts.Seconds:D2}";
+                                }
+                                else if (pendingTotals)
+                                {
+                                    totalTimeStr = "-";
+                                }
+                            }
+                            <div class="seg-card-kpis">
+                                <div class="seg-card-kpi">
+                                    <span class="seg-card-kpi-value">@effortCount</span>
+                                    <span class="seg-card-kpi-label">Effort@(effortCount == 1 ? "" : "s")</span>
+                                </div>
+                                <div class="seg-card-kpi">
+                                    <span class="seg-card-kpi-value seg-card-kpi-value--cyan">@(((segment.SegmentDistance ?? 0) / 1000).ToString("F2"))<span class="seg-card-kpi-unit"> km</span>@if (distTotalStr != null) {<span class="seg-card-kpi-total"> / @distTotalStr</span>}</span>
+                                    <span class="seg-card-kpi-label">Distance @if (distTotalStr != null) {<span class="seg-card-kpi-label-total">/ Total</span>}</span>
+                                </div>
+                                <div class="seg-card-kpi">
+                                    <span class="seg-card-kpi-value seg-card-kpi-value--lime">@(segment.SegmentAscent ?? 0)<span class="seg-card-kpi-unit"> m</span>@if (elevTotalStr != null) {<span class="seg-card-kpi-total"> / @elevTotalStr</span>}</span>
+                                    <span class="seg-card-kpi-label">Ascent @if (elevTotalStr != null) {<span class="seg-card-kpi-label-total">/ Total</span>}</span>
+                                </div>
+                                @if (segment.SegmentDescent.HasValue && segment.SegmentDescent.Value > 0)
+                                {
+                                    <div class="seg-card-kpi">
+                                        <span class="seg-card-kpi-value seg-card-kpi-value--orange">@segment.SegmentDescent.Value.ToString("F0")<span class="seg-card-kpi-unit"> m</span></span>
+                                        <span class="seg-card-kpi-label">Descent</span>
+                                    </div>
+                                }
+                                @if (totalTimeStr != null)
+                                {
+                                    <div class="seg-card-kpi">
+                                        <span class="seg-card-kpi-value">@totalTimeStr</span>
+                                        <span class="seg-card-kpi-label">Total Time</span>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+                </div>
+
+                <!-- No results (all cards filtered out) — toggled by segments-grid.ts -->
+                <div id="segEmptyState" class="seg-empty-filtered" hidden>No segments match the selected filters.</div>
+            </div>
+        </div>
+    }
+    else
+    {
+        <partial name="_EmptyState" model="@(new EmptyStateModel(
+            Body: "Create your first segment to start tracking your performance on specific routes.",
+            CtaHref: "/Segments/Create",
+            CtaLabel: "Get started now"
+        ))" />
+    }
+</div>
+
+@section Scripts {
+    @* Bootstrap for the sort/filter controls grid — all segment rows + filter options.
+       Consumed by overview/segments-grid.ts. camelCase so it maps to the TS row/option shapes. *@
+    @if (Model.Segments.Any())
+    {
+        <script type="application/json" id="segmentsGridBootstrap">@Html.Raw(RouteBaseWeb.Helpers.BootstrapJson.Serialize(Model.GridBootstrap))</script>
+        <script type="module" src="~/js/overview/segments-grid.js" asp-append-version="true"></script>
+    }
+    <script type="module" src="~/js/pages/segments-index.js" asp-append-version="true"></script>
+}

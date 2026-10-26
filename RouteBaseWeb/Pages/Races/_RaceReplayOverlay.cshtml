@@ -1,0 +1,31 @@
+@* Race replay chrome — the follow sidebar and the fullscreen close button. Always in the DOM (the map is
+   inline); both overlay the map, and are restyled when the #raceHero enters fullscreen. Mirrors the
+   segment replay overlay (_SegmentReplayOverlay.cshtml) but is race-owned so the Segments feature stays
+   untouched.
+
+   The transport bar is NOT here — it lives in the bottom dock in _RaceHero.cshtml, stacked under the grab
+   handle and over the chart strip, so the three are one object you drag. *@
+
+<div id="raceReplaySidebar" class="race-replay-sidebar">
+    @* A layout container, not a heading — it holds only the follow toggle + a collapse chevron, so an
+       <h6> here announced an empty level-6 heading and jumped the page's heading levels. *@
+    <div class="race-replay-sidebar-header" id="raceReplaySidebarHeader">
+        <span><i class="bi bi-flag-fill" aria-hidden="true"></i></span>
+        <button type="button" id="raceReplayFollowToggle" class="race-replay-follow-toggle"
+                title="Camera: follow a rider / free mode">(follow)</button>
+        <i class="bi bi-chevron-up race-replay-sidebar-chevron" aria-hidden="true"></i>
+    </div>
+    @* Real riders, pinned — always visible, a distinct colour from their in-field copy below. *@
+    <div id="raceReplaySidebarPinned" class="race-replay-sidebar-pinned"></div>
+    <div id="raceReplaySidebarBody" class="race-replay-sidebar-body">
+        <div class="race-empty">No field yet — import a results file.</div>
+    </div>
+    @* Drag (mouse or touch) to make the list wider — more room for names. Width is remembered. *@
+    <div id="raceReplaySidebarResize" class="race-replay-sidebar-resize" title="Drag to resize" aria-hidden="true"></div>
+</div>
+
+@* Only visible in fullscreen — mirrors the segment replay's floating exit. Exits fullscreen (the replay
+   keeps running inline), matching the decoupled Play / fullscreen model. *@
+<button id="raceReplayExit" type="button" class="race-replay-exit-float" title="Exit fullscreen" aria-label="Exit fullscreen" style="display:none;">
+    <i class="bi bi-x" aria-hidden="true"></i>
+</button>

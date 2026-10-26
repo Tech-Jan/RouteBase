@@ -1,0 +1,125 @@
+@model List<RouteBaseWeb.Models.Split>
+<div class="det-splits-panel">
+    <div class="det-splits-header">
+        <i class="bi bi-stopwatch"></i> Splits Analysis
+    </div>
+    <div class="det-table-wrap">
+        <table class="det-table">
+            <thead>
+                <tr>
+                    <th>Split</th>
+                    <th>Distance</th>
+                    <th>Time</th>
+                    <th>Pace</th>
+                    <th>Speed</th>
+                    <th style="width:28%;">Pace Visualization</th>
+                    <th>Elev Change</th>
+                </tr>
+            </thead>
+            <tbody>
+                @{
+                    var validPaces = Model.Where(s => s.Pace > 0 && s.Pace < 60).Select(s => s.Pace).ToList();
+                    double minPace  = validPaces.Any() ? validPaces.Min() : 0;
+                    double maxPace  = validPaces.Any() ? validPaces.Max() : 10;
+                    double paceRange = maxPace - minPace;
+                }
+                @foreach (var split in Model)
+                {
+                    double normalizedPace = paceRange > 0
+                        ? Math.Min(100, Math.Max(10, ((maxPace - split.Pace) / paceRange) * 100))
+                        : 50;
+                    string barVariant = split.Pace <= minPace + paceRange * 0.33 ? "det-pace-bar--fast"
+                                      : split.Pace <= minPace + paceRange * 0.66 ? "det-pace-bar--medium"
+                                      : "det-pace-bar--slow";
+                    double startDistance = split.CumulativeDistance - split.Distance;
+                    @* DC-03: machine-read attrs use InvariantCulture — a comma-decimal host culture
+                       would otherwise render "12,34" and parseFloat would truncate at the comma. *@
+                    <tr class="split-row"
+                        data-split-start="@startDistance.ToString("F2", System.Globalization.CultureInfo.InvariantCulture)"
+                        data-split-end="@split.CumulativeDistance.ToString("F2", System.Globalization.CultureInfo.InvariantCulture)">
+                        <td><strong>@split.SplitNumber</strong></td>
+                        <td>@split.CumulativeDistance km</td>
+                        <td>@split.Time.ToString(@"mm\:ss")</td>
+                        <td>
+                            @if (split.Pace > 0 && split.Pace < 60)
+                            {
+                                var pm = (int)split.Pace;
+                                var ps = (int)Math.Round((split.Pace - pm) * 60);
+                                <span>@pm:@ps.ToString().PadLeft(2, '0') min/km</span>
+                            }
+                            else { <span class="det-elev-flat">-</span> }
+                        </td>
+                        <td>@split.Speed km/h</td>
+                        <td>
+                            @if (split.Pace > 0 && split.Pace < 60)
+                            {
+                                var pbMin = (int)split.Pace;
+                                var pbSec = (int)Math.Round((split.Pace - pbMin) * 60);
+                                <div class="det-pace-bar-wrap">
+                                    <div class="det-pace-bar @barVariant"
+                                         style="width:@normalizedPace.ToString("F0")%">
+                                        @pbMin:@pbSec.ToString().PadLeft(2, '0')
+                                    </div>
+                                </div>
+                            }
+                            else { <span class="det-elev-flat">No data</span> }
+                        </td>
+                        <td>
+                            @if (split.NetElevationChange > 0)
+                            {
+                                <span class="det-elev-up"><i class="bi bi-arrow-up"></i> +@split.NetElevationChange.ToString("F1") m</span>
+                            }
+                            else if (split.NetElevationChange < 0)
+                            {
+                                <span class="det-elev-down"><i class="bi bi-arrow-down"></i> @split.NetElevationChange.ToString("F1") m</span>
+                            }
+                            else
+                            {
+                                <span class="det-elev-flat">0 m</span>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+            <tfoot>
+                <tr>
+                    <td><strong>Total</strong></td>
+                    <td><strong>@Model.Last().CumulativeDistance.ToString("F2") km</strong></td>
+                    <td><strong>@TimeSpan.FromSeconds(Model.Sum(s => s.Time.TotalSeconds)).ToString(@"hh\:mm\:ss")</strong></td>
+                    <td colspan="2">
+                        @{
+                            var totalDist = Model.Sum(s => s.Distance);
+                            var totalMin  = Model.Sum(s => s.Time.TotalMinutes);
+                            if (totalDist > 0)
+                            {
+                                var avgPaceDecimal = totalMin / totalDist;
+                                var avgPaceMin = (int)avgPaceDecimal;
+                                var avgPaceSec = (int)Math.Round((avgPaceDecimal - avgPaceMin) * 60);
+                                <strong>Avg: @avgPaceMin:@avgPaceSec.ToString().PadLeft(2, '0') min/km</strong>
+                            }
+                            else { <strong>Avg: --</strong> }
+                        }
+                    </td>
+                    <td></td>
+                    <td>
+                        @{
+                            var totalElevChange = Model.Sum(s => s.NetElevationChange);
+                        }
+                        @if (totalElevChange > 0)
+                        {
+                            <strong class="det-elev-up"><i class="bi bi-arrow-up"></i> +@totalElevChange.ToString("F0") m</strong>
+                        }
+                        else if (totalElevChange < 0)
+                        {
+                            <strong class="det-elev-down"><i class="bi bi-arrow-down"></i> @totalElevChange.ToString("F0") m</strong>
+                        }
+                        else
+                        {
+                            <strong class="det-elev-flat">0 m</strong>
+                        }
+                    </td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+</div>

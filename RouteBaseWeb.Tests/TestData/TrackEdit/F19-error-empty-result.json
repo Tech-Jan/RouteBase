@@ -1,0 +1,17 @@
+{
+  "fixtureVersion": 1,
+  "name": "error-empty-result",
+  "description": "E5: cropTo to a single point (from==to) leaves 1 < MinSlotPoints -> resultTooSmall at opIndex 1",
+  "sources": {
+    "101": {
+      "time": [1000, 1010, 1020],
+      "lat": [47000000, 47000100, 47000200],
+      "lng": [8000000, 8000100, 8000200]
+    }
+  },
+  "script": { "schemaVersion": 1, "ops": [
+    { "op": "loadActivity", "activityId": 101 },
+    { "op": "cropTo", "slot": 0, "from": 1, "to": 1 }
+  ] },
+  "expectError": { "opIndex": 1, "code": "resultTooSmall" }
+}

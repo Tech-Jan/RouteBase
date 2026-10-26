@@ -1,0 +1,190 @@
+@page
+@model RouteBaseWeb.Pages.RecordModel
+@{
+    Layout = "_DashboardLayout";
+    ViewData["Title"] = "Record Activity";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/record.css" asp-append-version="true" />
+}
+
+<div class="cockpit-scroll">
+
+    <partial name="_PageHeader" model="@(new PageHeaderModel(
+        Title: "Record Activity",
+        Breadcrumbs: new (string Href, string Label)[] { ("/", "Dashboard"), ("/Record", "Record") }
+    ))" />
+
+    <div class="rec-layout">
+
+        @* ─── No active session: show start form ─── *@
+        <div id="rec-start" style="@(Model.ActiveSession != null ? "display:none" : "")">
+            <div class="rec-form-panel">
+                <p class="rec-form-title">Start a new recording</p>
+                <p class="rec-form-hint">
+                    <i class="bi bi-info-circle" aria-hidden="true"></i>
+                    Android app (ask the developer)
+                </p>
+                <div class="rec-form-grid">
+                    <div class="rec-form-field">
+                        <label for="rec-activity-type" class="rec-form-label">Activity Type</label>
+                        <select id="rec-activity-type" class="rec-select">
+                            @foreach (var t in ActivityTypeVocabulary.Recordable)
+                            {
+                                <option value="@t">@ActivityTypeVocabulary.DisplayLabel(t)</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="rec-form-field">
+                        <label for="rec-track-name" class="rec-form-label">Name</label>
+                        <input id="rec-track-name" type="text" class="rec-input" placeholder="Live Recording" />
+                    </div>
+                    <div class="rec-form-field">
+                        <label for="rec-visibility" class="rec-form-label">Visibility</label>
+                        <select id="rec-visibility" class="rec-select">
+                            <option value="@Visibilities.Friends">Friends</option>
+                            <option value="@Visibilities.Public">Public</option>
+                            <option value="@Visibilities.Private">Private</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="rec-start-row">
+                    <button id="rec-start-btn" class="btn-cockpit btn-cockpit-danger" style="font-size:14px;padding:8px 20px;">
+                        <i class="bi bi-record-circle" aria-hidden="true"></i> Start Recording
+                    </button>
+                    <span id="rec-start-error" class="rec-start-error" role="alert" style="display:none"></span>
+                </div>
+            </div>
+        </div>
+
+        @* ─── Everyone streaming right now (you + friends) ─── *@
+        <div class="rec-friends-panel">
+            <div class="rec-panel-header">
+                <i class="bi bi-people-fill" style="color:var(--acc-lime)" aria-hidden="true"></i> Live Now
+            </div>
+            @if (Model.LiveSessions.Count > 0)
+            {
+                <div class="rec-live-actions">
+                    <label class="rec-live-selectall">
+                        <input type="checkbox" id="rec-live-select-all" />
+                        <span>Select all</span>
+                    </label>
+                    <button type="button" id="rec-watch-selected"
+                            class="btn-cockpit btn-cockpit-primary btn-cockpit-sm" disabled
+                            title="Open the selected riders together on one map">
+                        <i class="bi bi-map" aria-hidden="true"></i> Watch selected on one map
+                    </button>
+                </div>
+                <div class="rec-friends-list">
+                    @foreach (var s in Model.LiveSessions)
+                    {
+                        <div class="rec-friend-item">
+                            <input type="checkbox" class="rec-live-pick" value="@s.SessionId"
+                                   aria-label="@("Watch " + s.DisplayName + " on the shared map")" />
+                            <div class="rec-friend-info">
+                                <span class="rec-friend-name">@s.DisplayName</span>
+                                <span class="chip">@s.ActivityType</span>
+                                <span class="rec-friend-time" data-started-at="@s.StartedAt.ToUtcIso()">since --:--</span>
+                            </div>
+                            <a href="/LiveView/@s.SessionId" target="_blank"
+                               class="btn-cockpit btn-cockpit-ghost btn-cockpit-sm">
+                                <i class="bi bi-broadcast" aria-hidden="true"></i> Watch Live
+                            </a>
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="rec-friends-empty">
+                    <i class="bi bi-broadcast" aria-hidden="true"></i> No live stream running at the moment.
+                </div>
+            }
+        </div>
+
+        @* ─── Active session: show live stats ─── *@
+        <div id="rec-active"
+             data-session-id="@Model.ActiveSession?.SessionId"
+             data-track-id="@Model.ActiveSession?.TrackId"
+             data-started-at="@Model.ActiveSession?.StartedAt.ToUtcIso()"
+             data-last-sequence="@Model.ActiveSession?.LastSequence"
+             data-point-count="@Model.ActiveSession?.PointCount"
+             style="@(Model.ActiveSession == null ? "display:none" : "")">
+
+            <div class="rec-active-panel">
+
+                @* GPS status bar *@
+                <div id="rec-gps-status" class="rec-gps-status">
+                    <i class="bi bi-geo-alt" aria-hidden="true"></i>
+                    <span id="rec-gps-text">Waiting for GPS...</span>
+                </div>
+
+                @* Live stats *@
+                <div class="kpi-strip kpi-strip--cards">
+                    <div class="kpi-card">
+                        <div class="kpi-value mono tnum" id="rec-elapsed">00:00</div>
+                        <div class="kpi-label"><i class="bi bi-clock" aria-hidden="true"></i> Elapsed</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-value mono tnum" id="rec-distance">0.00 km</div>
+                        <div class="kpi-label"><i class="bi bi-rulers" aria-hidden="true"></i> Distance</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-value mono tnum" id="rec-speed">0.0 km/h</div>
+                        <div class="kpi-label"><i class="bi bi-speedometer2" aria-hidden="true"></i> Speed</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-value mono tnum" id="rec-points">0</div>
+                        <div class="kpi-label"><i class="bi bi-pin-map" aria-hidden="true"></i> Points</div>
+                    </div>
+                </div>
+
+                @* Controls *@
+                <div class="rec-controls">
+                    <button id="rec-stop-btn" class="btn-cockpit btn-cockpit-danger">
+                        <i class="bi bi-stop-circle" aria-hidden="true"></i> Stop Recording
+                    </button>
+                    <div id="rec-share-link" class="rec-share-link" style="display:none">
+                        <i class="bi bi-share" aria-hidden="true"></i> Live view:
+                        <a id="rec-share-url" href="#" target="_blank"></a>
+                    </div>
+                </div>
+
+                @* Stopped / finalized banner *@
+                <div id="rec-stopped-banner" class="rec-stopped-banner" style="display:none">
+                    <i class="bi bi-check-circle" aria-hidden="true"></i> Recording stopped — finalizing stats...
+                    <a id="rec-activity-link" href="#" style="display:none">View Activity</a>
+                </div>
+
+            </div>
+        </div>
+
+        @* ─── Review queue: auto rides awaiting a decision, as cards ─── *@
+        @if (Model.ReviewActivities.Count > 0)
+        {
+            <partial name="_ReviewCards" model="Model.ReviewActivities" />
+        }
+
+        @* ─── My recent sessions (everything not awaiting review) ─── *@
+        @{
+            var otherSessions = Model.RecentSessions.Where(s => !s.IsPending && !s.IsTrashed).ToList();
+        }
+        @if (otherSessions.Count > 0)
+        {
+            <div class="rec-sessions-panel" id="my-sessions-card">
+                <div class="rec-sessions-header">
+                    <span><i class="bi bi-clock-history" aria-hidden="true"></i> My Recent Sessions</span>
+                    <span class="rec-sessions-count">Last @otherSessions.Count sessions</span>
+                </div>
+                <partial name="_RecentSessionsTable" model="Model.RecentSessions" />
+            </div>
+        }
+
+    </div>
+</div>
+
+@section Scripts {
+    <script type="module" src="~/js/live-recording/live-recording.js" asp-append-version="true"></script>
+    <script type="module" src="~/js/live-recording/record-review.js" asp-append-version="true"></script>
+}

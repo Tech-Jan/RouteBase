@@ -1,0 +1,18 @@
+@page
+@model ErrorModel
+@{
+    ViewData["Title"] = "Error";
+}
+
+<div class="auth-card">
+    <i class="bi bi-exclamation-triangle auth-icon auth-icon--danger" aria-hidden="true"></i>
+    <h1 class="auth-title">Error</h1>
+    <p class="auth-subtitle">An error occurred while processing your request.</p>
+    @if (Model.ShowRequestId)
+    {
+        <p class="auth-error-code">Request ID: <code>@Model.RequestId</code></p>
+    }
+    <div class="auth-actions">
+        <a asp-page="/Index" class="btn-cockpit btn-cockpit-ghost">Go to Dashboard</a>
+    </div>
+</div>

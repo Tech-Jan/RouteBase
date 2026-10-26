@@ -1,0 +1,59 @@
+{
+  "fixtureVersion": 1,
+  "name": "append-close-gap",
+  "description": "source times shifted so junction gap = gapSeconds (10); anchor 1020, next 2000, shift 970",
+  "sources": {
+    "201": {
+      "time": [1000, 1010, 1020],
+      "lat": [47000000, 47000100, 47000200],
+      "lng": [8000000, 8000100, 8000200],
+      "altitude": [1000, 1010, 1020],
+      "distance": [0, 100, 200],
+      "speed": [500, 510, 520],
+      "heartRate": [120, 121, 122],
+      "gradeSmooth": [10, 11, 12],
+      "cadence": [80, 81, 82],
+      "power": [200, 201, 202],
+      "pressure": [101300, 101310, 101320]
+    },
+    "202": {
+      "time": [2000, 2010],
+      "lat": [47000300, 47000400],
+      "lng": [8000300, 8000400],
+      "altitude": [1030, 1040],
+      "distance": [0, 50],
+      "speed": [530, 540],
+      "heartRate": [123, 124],
+      "gradeSmooth": [13, 14],
+      "cadence": [83, 84],
+      "power": [203, 204],
+      "pressure": [101330, 101340]
+    }
+  },
+  "script": { "schemaVersion": 1, "ops": [
+    { "op": "loadActivity", "activityId": 201 },
+    { "op": "loadActivity", "activityId": 202 },
+    { "op": "append", "target": 0, "source": 1, "timeMode": "close", "gapSeconds": 10 }
+  ] },
+  "expect": {
+    "slots": [
+      {
+        "slotId": 0,
+        "origin": { "activityId": 201 },
+        "channels": {
+          "time": [1000, 1010, 1020, 1030, 1040],
+          "lat": [47000000, 47000100, 47000200, 47000300, 47000400],
+          "lng": [8000000, 8000100, 8000200, 8000300, 8000400],
+          "altitude": [1000, 1010, 1020, 1030, 1040],
+          "distance": [0, 100, 200, 200, 250],
+          "speed": [500, 510, 520, 530, 540],
+          "heartRate": [120, 121, 122, 123, 124],
+          "gradeSmooth": [10, 11, 12, 13, 14],
+          "cadence": [80, 81, 82, 83, 84],
+          "power": [200, 201, 202, 203, 204],
+          "pressure": [101300, 101310, 101320, 101330, 101340]
+        }
+      }
+    ]
+  }
+}

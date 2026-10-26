@@ -1,0 +1,713 @@
+/* =====================================================================
+   replay-controls.css  —  Shared Replay UI Base Styles
+
+   Base styles for ALL replay controls: controls bar, seek slider,
+   playback buttons, info overlay, markers, loading, follow-mode states,
+   collapsible header, and responsive breakpoints.
+
+   Used by:
+     - Activity Details page (inline replay)
+     - Activity Replay page (fullscreen 3D)
+     - Segment Statistics page (multi-effort replay, extended by segment-replay.css)
+   ===================================================================== */
+
+/* ── Marker ──────────────────────────────────────────────────────────── */
+.replay-marker,
+.activity-replay-marker {
+    z-index: 10002 !important;
+    pointer-events: none;
+    will-change: transform;
+    backface-visibility: hidden;
+}
+
+/* ── Floating exit button (top-right corner, outside the bar) ─────────── */
+#replayExit {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    z-index: 10002;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border-radius: 50%;
+    border: none;
+    background: rgba(220, 53, 69, 0.85);
+    color: white;
+    font-size: 18px;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    backdrop-filter: blur(6px);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
+    transition: background 0.15s, transform 0.15s;
+    touch-action: manipulation;
+    flex-shrink: 0;
+}
+#replayExit:hover  { background: rgba(167, 29, 42, 0.95); transform: scale(1.1); }
+#replayExit:active { transform: scale(0.95); }
+#replayExit i { color: white !important; font-size: 16px; }
+
+/* ── Controls bar ────────────────────────────────────────────────────── */
+.replay-controls {
+    /* The transport bar. It only ever renders INSIDE the dock (_ReplayDock.cshtml) — there is no
+       standalone floating-pill layout any more, so this IS the definition, not a base the dock overrides.
+       Full-bleed: width 100%, no radius/border/shadow, because the chart strip butts straight up against
+       it and the dock's flex column does the centring — so the slide-up only slides (no translateX, which
+       is why disabling animations can no longer shove the bar half its width off-centre). */
+    width: 100%;
+
+    background: rgba(14, 14, 18, 0.92);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    padding: 8px 14px;
+
+    /* Single row: play | speed stepper | seek (flex) */
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
+
+    animation: replayDockSlideUp 0.25s cubic-bezier(.22,.68,0,1.2) both;
+    touch-action: auto;
+}
+
+/* ── Seek track (flexes to fill the row) ─────────────────────────────── */
+.replay-seek-container {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.replay-seek-track {
+    /* Elapsed label, then the slider taking the rest of the row */
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.replay-time-label {
+    font-size: 11px;
+    font-variant-numeric: tabular-nums;
+    color: rgba(255, 255, 255, 0.55);
+    font-family: 'SF Mono', 'Consolas', monospace;
+    white-space: nowrap;
+    flex-shrink: 0;
+    /* Reserved width, so the slider does not shuffle sideways as the elapsed time gains a digit. */
+    min-width: 36px;
+}
+
+/* The seek slider. A CLASS, not three ids: the activity, segment and race replays each carried their own
+   copy of this skin and they drifted — the race's had lost the thumb glow, the hover and the focus
+   outline. One rule set now, applied by _ReplayDock.cshtml. */
+.replay-seek {
+    flex: 1;
+    height: 4px;
+    border-radius: 2px;
+    background: rgba(255, 255, 255, 0.18);
+    border: none;
+    outline: none;
+    -webkit-appearance: none;
+    appearance: none;
+    cursor: pointer;
+    touch-action: auto;
+    /* Gold fill using accent-color where supported */
+    accent-color: var(--acc-amber);
+}
+.replay-seek::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--acc-amber);
+    box-shadow: 0 0 6px oklch(0.80 0.15 75 / 0.5);
+    cursor: pointer;
+    transition: transform 0.15s;
+}
+.replay-seek::-webkit-slider-thumb:hover { transform: scale(1.25); }
+.replay-seek::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--acc-amber);
+    border: none;
+    box-shadow: 0 0 6px oklch(0.80 0.15 75 / 0.5);
+    cursor: pointer;
+}
+
+/* ── Shared button base ──────────────────────────────────────────────── */
+.replay-controls button {
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 0 14px;
+    height: 38px;
+    transition: opacity 0.15s, transform 0.1s;
+    touch-action: manipulation;
+    flex-shrink: 0;
+    color: white;
+    background: rgba(255, 255, 255, 0.12);
+}
+.replay-controls button:hover  { opacity: 0.85; }
+.replay-controls button:active { transform: scale(0.95); }
+.replay-controls button i { color: white !important; font-size: 15px; }
+
+/* Play/Pause — circular, prominent. Two-class selector so it wins over the `.replay-controls button`
+   base, which is what the id selectors used to buy. */
+.replay-controls .replay-play {
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    border-radius: 50%;
+    background: var(--acc-cyan);
+    box-shadow: 0 0 0 3px oklch(0.78 0.13 210 / 0.25);
+    font-size: 17px;
+    color: oklch(0.14 0.008 240);
+}
+.replay-controls .replay-play:hover { opacity: 0.85; }
+.replay-controls .replay-play i { font-size: 17px; color: oklch(0.14 0.008 240) !important; }
+
+/* Mode toggle (clock ↔ %) — square icon button, matches the speed buttons.
+   Two-class selector so it wins over the `.replay-controls button` base. */
+.replay-controls .replay-mode-btn {
+    width: 34px;
+    height: 34px;
+    padding: 0;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.12);
+}
+.replay-controls .replay-mode-btn:hover { background: rgba(255, 255, 255, 0.22); opacity: 1; }
+.replay-controls .replay-mode-btn i { font-size: 15px; }
+.replay-controls .replay-mode-btn.is-percent {
+    background: var(--acc-cyan);
+}
+.replay-controls .replay-mode-btn.is-percent i { color: oklch(0.14 0.008 240) !important; }
+
+/* ── Speed stepper (slower / label / faster) ─────────────────────────── */
+.replay-speed-stepper {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+}
+/* Two-class selector so it wins over the `.replay-controls button` base */
+.replay-controls .replay-speed-btn {
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.12);
+}
+.replay-controls .replay-speed-btn:hover { background: rgba(255, 255, 255, 0.22); opacity: 1; }
+.replay-controls .replay-speed-btn i { font-size: 13px; }
+.replay-controls .replay-speed-btn.is-disabled {
+    opacity: 0.3;
+    pointer-events: none;
+}
+.replay-speed-label {
+    min-width: 36px;
+    text-align: center;
+    font-size: 12px;
+    font-weight: 600;
+    color: white;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    user-select: none;
+}
+
+/* The underlying <select> stays in the DOM as state but is never shown */
+.replay-speed-hidden { display: none !important; }
+
+/* ── "Play Replay" button in map header ──────────────────────────────── */
+#playReplayBtn {
+    animation: fadeIn 0.3s ease-out;
+}
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+/* ── Info overlay (top-left during inline replay) ────────────────────── */
+.replay-info-overlay {
+    position: absolute;
+    top: 16px;
+    left: 16px;
+    z-index: 10000;
+    background: rgba(14, 14, 18, 0.88);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 12px 16px;
+    border-radius: 14px;
+    color: white;
+    min-width: 160px;
+    max-width: 220px;
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.4);
+    animation: rcSlideIn 0.25s ease-out both;
+    touch-action: auto;
+    font-family: var(--font-ui);
+}
+@keyframes rcSlideIn {
+    from { transform: translateX(-20px); opacity: 0; }
+    to   { transform: translateX(0);     opacity: 1; }
+}
+
+.replay-stat {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin: 5px 0;
+    gap: 8px;
+}
+.replay-stat-label {
+    color: rgba(255, 255, 255, 0.55);
+    font-size: 11px;
+    white-space: nowrap;
+}
+.replay-stat-value {
+    font-weight: 600;
+    font-size: 12px;
+    color: white;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+/* Speed bar — fixed per-activity time-weighted CDF scale (see speed-scale.ts).
+   Width is comparable across the whole replay rather than to a drifting max. */
+.replay-speed-bar-track {
+    height: 4px;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 2px;
+    margin: -2px 0 6px;
+    overflow: hidden;
+}
+.replay-speed-bar-fill {
+    height: 100%;
+    width: 0%;
+    border-radius: 2px;
+    background: var(--acc-amber);
+    transition: width 0.15s ease;
+}
+
+/* ── Touch target rule for the map canvas ────────────────────────────── */
+#map canvas { touch-action: none; }
+
+/* ── Accessibility focus ─────────────────────────────────────────────── */
+.replay-controls button:focus,
+.replay-seek:focus {
+    outline: 2px solid var(--acc-amber);
+    outline-offset: 2px;
+}
+
+/* ── Loading helpers ─────────────────────────────────────────────────── */
+
+/* =====================================================================
+   RESPONSIVE
+   ===================================================================== */
+
+/* ── Tablet (≤ 900 px) — bar narrows slightly ────────────────────────── */
+/* Tablet: nothing to do. The transport bar is full-width at every breakpoint now — the dock owns the
+   width. The old ≤900px "narrow the pill, lift it 16px" rule was part of the retired standalone layout. */
+
+/* ── Mobile (≤ 600 px) — bar anchors flush to bottom safe area ────────── */
+@media (max-width: 600px) {
+    .replay-controls {
+        width: 100%;
+        /* No translateX needed — bar is full-width, centring is irrelevant */
+        transform: none;
+        padding: 10px 12px;
+        /* Safe-area inset kept deliberately: this is the docked bar's bottom padding on a phone. The
+           .replay-dock .replay-controls rule below resets it to a flat 10px for docked bars and .replay-dock
+           carries the inset instead (it is the bottom-most box whether the strip is open or closed). Both
+           are commented at their rules — do NOT "simplify" the inset away, it is not a double-count. */
+        padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+        /* Tight enough to keep play, stepper and seek on one line on a phone. */
+        gap: 7px;
+    }
+
+    /* Seek thumb bigger for fingers */
+    .replay-seek::-webkit-slider-thumb { width: 22px; height: 22px; }
+    .replay-seek::-moz-range-thumb    { width: 22px; height: 22px; }
+
+    .replay-controls .replay-play { width: 38px; height: 38px; }
+    .replay-controls .replay-speed-btn { width: 28px; height: 28px; }
+    .replay-speed-stepper { gap: 3px; }
+    .replay-speed-label { min-width: 30px; font-size: 11px; }
+
+    /* Exit button */
+    #replayExit { top: 12px; right: 12px; width: 34px; height: 34px; font-size: 16px; }
+
+    /* Info overlay: sits top-left, constrained so it never overlaps exit */
+    .replay-info-overlay {
+        top: 12px;
+        left: 12px;
+        min-width: 130px;
+        max-width: calc(50% - 20px); /* never reaches the exit button */
+        padding: 10px 12px;
+        border-radius: 12px;
+    }
+    .replay-info-overlay h6 { font-size: 9px; }
+    .replay-stat-label { font-size: 10px; }
+    .replay-stat-value { font-size: 11px; }
+}
+
+/* ── Very small (≤ 400 px / 320 px devices) ──────────────────────────── */
+@media (max-width: 400px) {
+    .replay-controls {
+        padding: 8px 10px;
+        padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+        gap: 6px;
+    }
+
+    /* The elapsed label gives the scrubber back what it can spare */
+    .replay-time-label {
+        font-size: 10px;
+        min-width: 28px;
+    }
+
+    /* Seek thumb: keep 44 px touch target but visually smaller */
+    .replay-seek::-webkit-slider-thumb { width: 20px; height: 20px; }
+    .replay-seek::-moz-range-thumb    { width: 20px; height: 20px; }
+
+    /* Buttons: reduce height to keep the single row compact */
+    .replay-controls button {
+        height: 34px;
+        font-size: 13px;
+        padding: 0 10px;
+    }
+
+    .replay-controls .replay-play {
+        width: 36px;
+        height: 36px;
+    }
+    .replay-controls .replay-play i { font-size: 15px; }
+
+    .replay-controls .replay-speed-btn { width: 26px; height: 26px; }
+    .replay-controls .replay-speed-btn i { font-size: 12px; }
+    .replay-speed-label { min-width: 26px; font-size: 10px; }
+
+    /* Info overlay: icon-only title row, very compact */
+    .replay-info-overlay {
+        top: 8px;
+        left: 8px;
+        min-width: 110px;
+        max-width: calc(50% - 16px);
+        padding: 8px 10px;
+        border-radius: 10px;
+    }
+    .replay-info-overlay h6 {
+        font-size: 8px;
+        margin-bottom: 5px;
+        padding-bottom: 4px;
+        letter-spacing: 0.5px;
+    }
+    .replay-stat { margin: 3px 0; gap: 4px; }
+    .replay-stat-label { font-size: 9px; }
+    .replay-stat-value { font-size: 10px; }
+
+    /* Exit button: tuck tighter into corner */
+    #replayExit { top: 8px; right: 8px; width: 30px; height: 30px; font-size: 14px; }
+}
+
+/* ── Info overlay: collapsible header ─────────────────────────────────── */
+
+/* =====================================================================
+   Make replay UI fixed to the viewport when a page enters replay mode.
+   This ensures controls are not clipped by the map card on mobile
+   browsers (real phones) and matches the segment-stats replay behavior.
+   The rule is intentionally scoped to `body.replay-active` so the
+   controls remain positioned relative to the map in non-replay state.
+   ===================================================================== */
+body.replay-active #replayInfo,
+body.replay-active #replayExit {
+    position: fixed;
+    pointer-events: auto; /* re-enable interaction when elevated to viewport */
+    z-index: 10001;
+}
+
+/* The bottom stack is elevated as ONE dock — grip, transport bar and strip together — exactly as the
+   segment replay does it (#segReplayDock in segment-replay.css). Pinning the bar itself instead would
+   lift it out of the stack: the grip would no longer sit above it, and pulling the drawer open would
+   push the grip up while the bar stayed behind. `.replay-dock` supplies the insets and keeps its own
+   `pointer-events: none` (only its real children are interactive). */
+body.replay-active #activityReplayDock {
+    position: fixed;
+    z-index: 10001;
+}
+
+/* Top-left info overlay */
+body.replay-active #replayInfo {
+    top: max(env(safe-area-inset-top, 12px), 12px);
+    left: max(env(safe-area-inset-left, 12px), 12px);
+    right: auto;
+    transform: none;
+}
+
+/* Top-right exit button */
+body.replay-active #replayExit {
+    top: max(env(safe-area-inset-top, 12px), 12px);
+    right: max(env(safe-area-inset-right, 12px), 12px);
+    left: auto;
+}
+
+/* MapLibre corner controls (compass / 3D / buildings) live top-left, where the replay info overlay
+   covers them. Drop them below the overlay's collapsed header — same treatment as the segment/race
+   replays (segment-replay.css / race-replay.css). The controls carry a 10px built-in margin, so
+   top:58px renders ~68px, just clear of the collapsed info header. An EXPANDED overlay still covers
+   them: collapse it (chevron) to reach them. Scoped to #map so only the Details replay is affected. */
+body.replay-active #map .maplibregl-ctrl-top-left {
+    top: 58px;
+}
+
+/* Mobile: the dock is what goes full-width and flush (see `.replay-dock-bar` in its own query), and the
+   safe-area inset belongs to whatever is bottom-most — which is the dock, since the strip can open below
+   the bar. So a docked bar drops the inset the standalone rule adds, or it is counted twice. */
+@media (max-width: 600px) {
+    .replay-dock .replay-controls {
+        padding-bottom: 10px;
+    }
+}
+
+.replay-info-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    margin: 0 0 8px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid oklch(0.80 0.15 75 / 0.25);
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    gap: 6px;
+}
+
+.replay-info-header span {
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--acc-amber);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+/* Follow / free toggle in the info header — mirrors the segments/race follow toggle.
+   Shows the action a click performs: "(unfollow)" while following, "(follow)" in free look.
+   margin-right:auto pins it to the left of the header and pushes the chevron to the edge. */
+.replay-follow-toggle {
+    margin-right: auto;
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    color: rgba(255, 255, 255, 0.55);
+    transition: color 0.15s;
+}
+.replay-follow-toggle:hover,
+.replay-follow-toggle.is-following {
+    color: var(--acc-amber);
+}
+
+.replay-info-chevron {
+    font-size: 11px;
+    color: oklch(0.80 0.15 75 / 0.65);
+    transition: transform 0.25s ease;
+    flex-shrink: 0;
+}
+
+/* Body — smooth collapse/expand */
+.replay-info-body {
+    max-height: 300px;
+    overflow: hidden;
+    transition: max-height 0.3s cubic-bezier(.4,0,.2,1),
+                opacity    0.25s ease;
+    opacity: 1;
+}
+
+.replay-info-overlay.ri-collapsed .replay-info-body {
+    max-height: 0;
+    opacity: 0;
+}
+
+.replay-info-overlay.ri-collapsed .replay-info-chevron {
+    transform: rotate(180deg);
+}
+
+/* The h6 is just the label inside the flex header — `.replay-info-header span` carries the styling.
+   This rule only neutralises the browser's own h6 defaults (block margin, smaller bold text) and keeps
+   the arrow cursor, since the header itself is `cursor: pointer` for the collapse toggle. */
+.replay-info-overlay h6 {
+    margin: 0;
+    font-size: inherit;
+    font-weight: inherit;
+    cursor: default;
+}
+
+/* ── Mobile: start collapsed by default, tighter layout ──────────────── */
+@media (max-width: 600px) {
+    .replay-info-overlay {
+        min-width: 120px;
+        max-width: calc(50vw - 20px);
+        padding: 8px 12px;
+    }
+}
+
+/* ── Pull-up chart drawer (driven by core/replay-chart-drawer.ts) ─────────────────────
+   Shared by the race replay and the segment replay. The module owns only the class toggles and the
+   --replay-drawer-h custom property; everything you can see is here. */
+
+.replay-drawer {
+    display: flex;
+    flex-direction: column;
+}
+
+/* The grab strip: tap to collapse, drag to resize.
+   Deliberately just the GRIP — no panel, no border, no box of its own. A second rounded surface above the
+   transport read as a second control; a bare grip reads as a place to pull. The hit area stays generous
+   while the grip itself hugs the bottom of it, so the gesture starts where the thing you are dragging is. */
+.replay-drawer-handle {
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    width: 100%;
+    height: 13px;
+    padding: 0 0 2px;
+    border: 0;
+    background: transparent;
+    cursor: ns-resize;
+    touch-action: none;   /* the drag must not also scroll the page */
+    flex: 0 0 auto;
+}
+
+/* Bright and shadowed: over a map this sits on anything from a snowfield to a forest. */
+.replay-drawer-grip {
+    width: 42px;
+    height: 4px;
+    border-radius: 999px;
+    background: rgba(226, 232, 240, 0.8);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.7);
+    transition: background 0.15s ease, width 0.15s ease;
+}
+
+.replay-drawer-handle:hover .replay-drawer-grip,
+.replay-drawer-handle:focus-visible .replay-drawer-grip {
+    background: #ffffff;
+    width: 56px;
+}
+
+.replay-drawer:not(.is-open) .replay-drawer-grip {
+    /* Closed, the grip is the only thing left — make it read as "there is more here". */
+    width: 56px;
+}
+
+/* The collapsing box. Height, not max-height: the drag sets an exact pixel size, and a max-height
+   transition to a guessed number either clips the charts or eases against nothing. */
+.replay-drawer-body {
+    height: var(--replay-drawer-h, 0px);
+    overflow: hidden;
+    transition: height 0.22s ease;
+}
+
+/* A drag must track the finger — an eased height would lag behind it. Dropped on release (see
+   replay-chart-drawer.ts), which is what turns the settle into an animation rather than a jump. */
+.replay-drawer.is-resizing .replay-drawer-body {
+    transition: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .replay-drawer-body { transition: none; }
+}
+
+/* ── The replay DOCK: [grip][transport bar][chart strip] as one bottom-anchored stack ──────────────────
+   Used by the segment replay and the activity replay — both of which put their transport over a map, and
+   both of which now let you pull that bar up off a chart strip and push it back down.
+
+   The stack is pinned to the bottom edge and the strip is its LAST child, so growing the strip pushes the
+   grip and the bar UP: dragging the bar upwards IS opening the drawer. Closed, the strip is 0 px tall and
+   carries no chrome, so what is left is exactly the transport bar that was always there.
+
+   Positioned `absolute` here (inside a map hero); a page whose map is the viewport overrides to `fixed`. */
+
+.replay-dock {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    /* The dock spans the full width so the strip can, but it must not steal the map's bottom edge —
+       only its real children are interactive, and the strip is 0 px tall when closed. */
+    pointer-events: none;
+    /* Deliberately NO background: the drawer handle is a child, and the grip is meant to float on the
+       map as a bare pill. The bar and the canvas paint their own surface instead. */
+}
+
+/* Bar column and strip are ONE surface: same width, no radius, no border, no gap. The bar used to be a
+   680 px floating pill above a narrower strip, which put two rounded, separately-bordered boxes on top
+   of each other with the map showing between their corners. Full-bleed is also what the strip wants —
+   an elevation profile reads better the wider it is.
+   No margin in either state, on purpose: the bar sits on the bottom edge open or closed, so closing the
+   drawer moves the CHARTS and nothing else. It used to lift 20 px as the strip vanished — the bar
+   bounced back up at the end of the gesture and left a dead band under itself. */
+.replay-dock-bar {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    pointer-events: auto;
+}
+
+/* The transport bar's full definition now lives on `.replay-controls` itself (the dock is its only
+   layout), so there is nothing left to override here. Its entrance is replayDockSlideUp — a pure
+   translateY. The old rcSlideUp ended on translateX(-50%) with animation-fill-mode: both, and an animated
+   value outranks any declaration, so the bar sat half its own width left of centre whenever animations
+   were disabled (reduced-motion, a user stylesheet). The dock's flex column does the centring now. */
+@keyframes replayDockSlideUp {
+    from { transform: translateY(60px); opacity: 0; }
+    to   { transform: translateY(0);    opacity: 1; }
+}
+
+/* Full width, and no inset: any horizontal padding here would show as a step against the bar above,
+   which is edge-to-edge. Its height comes from --replay-drawer-h (.replay-drawer-body above). */
+.replay-dock-strip {
+    width: 100%;
+    padding: 0;
+    pointer-events: auto;
+}
+
+.replay-dock-canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+    /* Square: the chart is the lower half of one block whose upper half is the transport bar. */
+    border-radius: 0;
+    background: rgba(14, 14, 18, 0.92);
+    /* The canvas sizes its BITMAP to this box (core/profile-chart.ts), which is why the height comes from
+       the drawer's box rather than a number here. */
+    touch-action: none;
+    cursor: crosshair;
+}
+
+/* No width overrides for the dock at any breakpoint any more: `.replay-dock-bar` and `.replay-dock-strip`
+   are both 100% everywhere, which is the whole point — the two have to agree to read as one block. */
+
+@media (max-width: 600px) {
+    .replay-dock .replay-drawer-handle {
+        height: 20px;   /* a thumb needs more than a mouse does */
+    }
+
+    /* The safe-area inset belongs to whatever is bottom-most, and that changes as the drawer opens — so
+       it lives on the dock, which is bottom-most either way. */
+    .replay-dock {
+        padding-bottom: env(safe-area-inset-bottom, 0px);
+    }
+}

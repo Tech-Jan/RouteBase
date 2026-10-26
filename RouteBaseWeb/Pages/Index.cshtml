@@ -1,0 +1,208 @@
+@page
+@model IndexModel
+@using RouteBaseWeb.Helpers
+@using RouteBaseWeb.Models.Sharing
+@{
+    Layout = "_DashboardLayout";
+    ViewData["Title"] = "Dashboard";
+
+    var displayName = User.FindFirst("preferred_username")?.Value
+                   ?? User.FindFirst("name")?.Value
+                   ?? User.Identity?.Name
+                   ?? "Athlete";
+    var firstName = displayName.Split(' ')[0];
+}
+
+<div class="cockpit-scroll scroll-thin">
+
+    <!-- ── Greeting row ──────────────────────────────────────────────── -->
+    <div class="cockpit-greeting">
+        <div>
+            @* Greeting/date were computed from the SERVER clock (DateTime.UtcNow), which is wrong for
+               any viewer not in UTC — dashboard.ts overwrites both from the browser's own clock on load. *@
+            <div class="greeting-date mono" id="cockpit-greeting-date">@Model.FormattedDate</div>
+            <div class="greeting-text"><span id="cockpit-greeting-word">@Model.Greeting</span>, @firstName</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:14px;font-size:12px;color:var(--fg-2);">
+            <a href="/Import" style="display:flex;align-items:center;gap:6px;color:var(--fg-2);text-decoration:none;">
+                <!-- upload icon -->
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3m0 0l-4 4m4-4l4 4M4 15v4a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-4"/></svg>
+                Import
+            </a>
+        </div>
+    </div>
+
+    @* ── KPI strip ───────────────────────────────────────────────────
+       Placeholders only: the strip reflects the grid's FILTERED rows, which only the client knows, so
+       dashboard/dashboard.ts fills every id below on init — synchronously, from the inline bootstrap island
+       (no fetch). Server-rendering values here would paint the unfiltered set for a frame and re-introduce
+       the KPI twin. The period label follows the greeting's precedent: server clock first, browser clock
+       a moment later. *@
+    <div class="kpi-panel">
+        <div class="kpi-panel-header">
+            <span class="kpi-panel-period mono" id="kpi-period-label">@DateTime.UtcNow.ToString("MMMM yyyy")</span>
+        </div>
+        <div class="kpi-strip">
+        <div class="kpi-card">
+            <div id="kpi-label-distance" class="kpi-label mono">Distance</div>
+            <div id="kpi-value-row-distance" class="kpi-value-row">
+                <span class="kpi-value mono tnum" style="color:var(--acc-cyan);">—</span>
+            </div>
+            <div class="kpi-footer"><span id="kpi-trend-distance"></span></div>
+        </div>
+        <div class="kpi-card">
+            <div id="kpi-label-time" class="kpi-label mono">Moving time</div>
+            <div id="kpi-value-row-time" class="kpi-value-row">
+                <span class="kpi-value mono tnum" style="color:var(--fg-0);">—</span>
+            </div>
+            <div class="kpi-footer"><span id="kpi-trend-time"></span></div>
+        </div>
+        <div class="kpi-card">
+            <div id="kpi-label-elevation" class="kpi-label mono">Elevation</div>
+            <div id="kpi-value-row-elevation" class="kpi-value-row">
+                <span class="kpi-value mono tnum" style="color:var(--acc-lime);">—</span>
+            </div>
+            <div class="kpi-footer"><span id="kpi-trend-elevation"></span></div>
+        </div>
+        <div class="kpi-card">
+            <div id="kpi-label-hr" class="kpi-label mono">Avg HR</div>
+            <div id="kpi-value-row-hr" class="kpi-value-row">
+                <span class="kpi-value mono tnum" style="color:var(--acc-amber);">—</span>
+            </div>
+            <div class="kpi-footer"><span id="kpi-trend-hr"></span></div>
+        </div>
+        <div class="kpi-card">
+            <div id="kpi-label-activities" class="kpi-label mono">Activities</div>
+            <div id="kpi-value-row-activities" class="kpi-value-row">
+                <span class="kpi-value mono tnum" style="color:var(--fg-1);">—</span>
+            </div>
+            <div class="kpi-footer"><span id="kpi-trend-activities"></span></div>
+        </div>
+        </div>
+    </div>
+
+    <!-- ── Main body: feed + right rail ──────────────────────────────── -->
+    <div class="cockpit-body">
+
+        <!-- Feed -->
+        <div>
+            <div class="feed-header">
+                <span class="feed-title mono">
+                    Recent activities
+                    @if (Model.TotalActivities > 0)
+                    {
+                        <span style="color:var(--fg-3);">· @Model.TotalActivities</span>
+                    }
+                </span>
+            </div>
+
+            <!-- Sort/filter controls strip (reusable client grid in controls-only mode, like the
+                 Segments page): header + filter row drive the cards below via CSS order/is-hidden.
+                 No scroll window — the feed flows with the page. Rendered by dashboard/dashboard-grid.ts. -->
+            @if (Model.RecentActivities.Any())
+            {
+                <div class="grid-table-panel dash-feed-panel">
+                    <div id="dashboardGridToolbar" class="grid-toolbar"></div>
+                    <div id="dashboardGrid" class="dash-controls-grid"></div>
+                </div>
+            }
+
+            <!-- Activity cards -->
+            <div class="feed-list">
+                @if (!Model.RecentActivities.Any())
+                {
+                    <div style="padding:32px;text-align:center;color:var(--fg-3);font-family:var(--font-mono);font-size:12px;letter-spacing:0.08em;text-transform:uppercase;">
+                        No activities found
+                    </div>
+                }
+                @foreach (var activity in Model.RecentActivities)
+                {
+                    <partial name="_ActivityCard" model="activity"
+                             view-data='@(new ViewDataDictionary(ViewData) { ["CurrentUserId"] = Model.CurrentUserId, ["PhotoCount"] = Model.PhotoCounts.GetValueOrDefault(activity.TrackId), ["ShareOpens"] = Model.SharedTrackOpens.TryGetValue(activity.TrackId.Value, out var trackOpens) ? (ShareOpens?)trackOpens : null })' />
+                }
+            </div>
+            <div id="dashFeedEmpty" class="dash-feed-empty mono" hidden>No activities match the current filters.</div>
+        </div>
+
+        <!-- Right rail -->
+        <div class="cockpit-rail">
+
+            <!-- Weekly volume widget -->
+            <div class="widget-card" id="weekly-volume-widget">
+                <div class="widget-header">
+                    <span class="widget-title mono">Weekly volume</span>
+                    <span class="cal-month-label mono" id="volume-period-label"></span>
+                </div>
+                <!-- Skeleton — replaced by dashboard.ts -->
+                <div class="widget-skeleton" style="height:32px;margin-bottom:14px;border-radius:4px;"></div>
+                <div class="widget-skeleton" style="height:52px;border-radius:4px;"></div>
+                <div style="display:flex;justify-content:space-between;margin-top:16px;padding-top:14px;border-top:1px solid var(--line);">
+                    <div class="widget-skeleton" style="width:60px;height:36px;border-radius:4px;"></div>
+                    <div class="widget-skeleton" style="width:60px;height:36px;border-radius:4px;"></div>
+                    <div class="widget-skeleton" style="width:60px;height:36px;border-radius:4px;"></div>
+                </div>
+            </div>
+
+            <!-- Heatmap widget -->
+            <div class="widget-card" id="heatmap-widget">
+                <div class="widget-header heatmap-widget-header">
+                    <div class="heatmap-header-row">
+                        <div class="cal-month-nav">
+                            <button class="widget-link cal-nav-btn cal-nav-year" id="heatmap-year-prev" title="Previous year" aria-label="Previous year">«</button>
+                            <button class="widget-link cal-nav-btn cal-nav-month" id="heatmap-prev" aria-label="Previous month">‹</button>
+                            <span class="cal-month-label mono" id="heatmap-month-label"></span>
+                            <button class="widget-link cal-nav-btn cal-nav-month" id="heatmap-next" aria-label="Next month">›</button>
+                            <button class="widget-link cal-nav-btn cal-nav-year" id="heatmap-year-next" title="Next year" aria-label="Next year">»</button>
+                        </div>
+                    </div>
+                    <div class="heatmap-today-row">
+                        <button class="link-btn" id="heatmap-today">Today</button>
+                    </div>
+                </div>
+                <div class="widget-skeleton" style="height:160px;border-radius:4px;"></div>
+            </div>
+
+            <!-- Segments widget -->
+            <div class="widget-card" id="segments-widget">
+                <div class="widget-header">
+                    <span class="widget-title mono">Your segments</span>
+                    <a href="/Segments" class="widget-link mono">All</a>
+                </div>
+                <div style="display:flex;flex-direction:column;gap:12px;">
+                    <div class="widget-skeleton" style="height:36px;border-radius:4px;"></div>
+                    <div class="widget-skeleton" style="height:36px;border-radius:4px;"></div>
+                    <div class="widget-skeleton" style="height:36px;border-radius:4px;"></div>
+                </div>
+            </div>
+
+            <!-- Friends widget -->
+            <div class="widget-card" id="friends-widget">
+                <div class="widget-header">
+                    <span class="widget-title mono">Friends recent</span>
+                    <a href="/Friends" class="widget-link mono">All</a>
+                </div>
+                <div style="display:flex;flex-direction:column;gap:10px;">
+                    <div class="widget-skeleton" style="height:32px;border-radius:4px;"></div>
+                    <div class="widget-skeleton" style="height:32px;border-radius:4px;"></div>
+                    <div class="widget-skeleton" style="height:32px;border-radius:4px;"></div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @* Bootstrap for the feed's sort/filter controls grid — all activity rows + filter options. Consumed by
+       dashboard/dashboard.ts, which drives BOTH the cards and the KPI/volume/calendar widgets from the filtered
+       rows. camelCase so it maps to the TS row/option shapes. *@
+    @if (Model.RecentActivities.Any())
+    {
+        <script type="application/json" id="dashboardGridBootstrap">@Html.Raw(RouteBaseWeb.Helpers.BootstrapJson.Serialize(Model.GridBootstrap))</script>
+    }
+    <script type="module" src="~/js/dashboard/dashboard.js" asp-append-version="true"></script>
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/grid-filter.css" asp-append-version="true" />
+}

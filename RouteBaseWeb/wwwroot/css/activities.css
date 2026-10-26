@@ -1,0 +1,427 @@
+/* activities.css — Activities list page */
+
+/* ── Utility overrides (Bootstrap-free equivalents used by this page) ── */
+.text-end   { text-align: right; }
+.text-nowrap { white-space: nowrap; }
+
+/* ── Map hero ───────────────────────────────────────────────────────── */
+.act-map-hero {
+  position: relative;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.act-hero-overlay { position: absolute; z-index: 1000; }
+.act-hero-tr { top: 12px; right: 12px; display: flex; gap: 6px; }
+
+.act-map-expand-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: var(--radius-md);
+  background: oklch(0.14 0.008 240 / 0.85);
+  backdrop-filter: blur(8px);
+  border: 1px solid var(--line);
+  color: var(--fg-2);
+  font-size: 13px;
+  cursor: pointer;
+  transition: color 0.1s, border-color 0.1s;
+}
+.act-map-expand-btn:hover { color: var(--fg-0); border-color: var(--line-2); }
+
+/* ── Map toolbar ──────────────────────────────────────────────────────
+   Surface + overlay stacking come from .toolbar-cockpit (cockpit-components.css). */
+
+/* Bottom toolbar (paint controls) sits below the map — no overlay stacking needed. */
+.act-map-toolbar--bottom { z-index: auto; }
+
+.act-map-status {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--fg-3);
+  /* Sits at its natural DOM position — first in the toolbar, so the loading progress /
+     track count is left-aligned, with the dropdown buttons following to its right. */
+}
+/* Empty before the counter loads — don't reserve a row for it. */
+.act-map-status:empty { display: none; }
+
+/* ── Filtered-track display mode (segmented 3-state) ─────────────────────── */
+.act-map-mode {
+  display: inline-flex;
+  flex-shrink: 0;
+  gap: 2px;
+  padding: 2px;
+  background: var(--bg-3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+}
+.act-map-mode-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 26px;
+  padding: 0 10px;
+  font-size: 12px;
+  font-family: var(--font-ui);
+  color: var(--fg-2);
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.12s, color 0.12s;
+}
+.act-map-mode-btn i { font-size: 14px; line-height: 1; }
+.act-map-mode-btn:hover  { background: var(--bg-4); color: var(--fg-0); }
+.act-map-mode-btn.active { background: var(--acc-cyan); color: oklch(0.14 0.008 240); font-weight: 600; }
+
+/* ── Toolbar dropdowns (details/summary) ─────────────────────────────────── */
+.act-dd { position: relative; flex-shrink: 0; }
+
+.act-dd-summary {
+  list-style: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 9px;
+  font-size: 12px;
+  font-family: var(--font-ui);
+  background: var(--bg-3);
+  color: var(--fg-0);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  white-space: nowrap;
+  transition: background 0.12s, border-color 0.12s;
+}
+.act-dd-summary::-webkit-details-marker { display: none; }
+.act-dd-summary::marker { display: none; }
+.act-dd-summary:hover { background: var(--bg-4); border-color: var(--line-2); }
+.act-dd[open] .act-dd-summary { border-color: var(--acc-cyan); }
+
+.act-dd-label { color: var(--fg-3); }
+.act-dd-value { font-weight: 600; display: inline-block; white-space: nowrap; }
+.act-dd-chevron { flex-shrink: 0; color: var(--fg-2); transition: transform 0.12s; }
+.act-dd[open] .act-dd-chevron { transform: rotate(180deg); }
+
+.act-dd-menu {
+  position: absolute;
+  left: 0;
+  top: calc(100% + 4px);
+  min-width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  padding: 5px;
+  z-index: 50;
+  box-shadow: var(--shadow-2);
+}
+.act-dd-end .act-dd-menu { left: auto; right: 0; }
+
+.act-dd-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 6px 10px;
+  font-size: 12px;
+  color: var(--fg-1);
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.1s, color 0.1s;
+}
+.act-dd-item:hover  { background: var(--bg-3); color: var(--fg-0); }
+.act-dd-item.active { background: var(--acc-cyan); color: oklch(0.14 0.008 240); font-weight: 600; }
+
+#activitiesMap {
+  height: 700px;
+  width: 100%;
+}
+
+.act-map-spinner {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1000;
+}
+
+@keyframes act-spin { to { transform: rotate(360deg); } }
+
+.act-map-spinner-ring {
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--line);
+  border-top-color: var(--acc-cyan);
+  border-radius: 50%;
+  animation: act-spin 0.7s linear infinite;
+}
+
+.act-map-message {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 120px;
+  height: 100%;
+  color: var(--fg-2);
+  font-size: 13px;
+}
+.act-map-message--error { color: var(--acc-red); }
+
+/* Fullscreen — class names must match MapUtils.mapFullscreen */
+.map-fullscreen {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  z-index: 9999 !important;
+  margin: 0 !important;
+  border-radius: 0 !important;
+}
+.map-fullscreen #activitiesMap {
+  height: 100% !important;
+  width: 100% !important;
+  border-radius: 0 !important;
+}
+body.map-fullscreen-active { overflow: hidden; }
+body.map-fullscreen-active .cockpit-sidebar { display: none; }
+
+/* ── Summary bar ────────────────────────────────────────────────────── */
+.act-summary-bar {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--fg-3);
+  padding: 0 2px;
+}
+
+/* ── Table panel ────────────────────────────────────────────────────── */
+/* Frame + table chrome (sticky header, typography, borders, hover) are shared via .grid-table-panel /
+   .grid-table on the grid table — see grid-filter.css. Only the activity-specific scroll height stays here.
+   Constant-size scroll window: the grid scrolls its own rows so the page height never changes with the
+   result count (no jump-to-top on 0 / few results). */
+.act-table-wrapper {
+  height: clamp(320px, 60vh, 760px);
+}
+
+/* ── Activity type + visibility chips ───────────────────────────────── */
+/* Base pill folded onto .chip in cockpit-components.css. The visual deltas (smaller,
+   dimmer, tighter, not uppercased) were dropped 2026-08-02 — the same activity type
+   rendered UPPERCASE in .det-type-chip on details/segment-stats and lowercase here, so
+   "reads as its stored casing" was never true app-wide. Only the functional delta stays:
+   the grid is dense and a wrapped chip breaks the row height. */
+.act-type-chip {
+  white-space: nowrap;
+}
+
+.act-vis-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 5px;
+  border-radius: 999px;
+  font-size: 10px;
+  margin-left: 4px;
+  vertical-align: middle;
+}
+.act-vis-chip--private { background: oklch(0.72 0.18 25 / 0.15);  color: var(--acc-red);  border: 1px solid oklch(0.72 0.18 25 / 0.25); }
+.act-vis-chip--public  { background: oklch(0.85 0.18 130 / 0.12); color: var(--acc-lime); border: 1px solid oklch(0.85 0.18 130 / 0.25); }
+.act-vis-chip--friends { background: oklch(0.78 0.13 210 / 0.12); color: var(--acc-cyan); border: 1px solid oklch(0.78 0.13 210 / 0.25); }
+
+.act-owner-cell { color: var(--fg-3); font-size: 12px; }
+
+.act-actions {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.act-name-link { color: inherit; text-decoration: none; }
+.act-name-link:hover { text-decoration: underline; color: var(--acc-cyan); }
+
+/* Rows marked for deletion (pending the toolbar Delete / staged in Select mode): grey out everything
+   except the undo action. */
+#activitiesGrid tr:has([data-pending-remove]) td { opacity: 0.45; }
+#activitiesGrid tr:has([data-pending-remove]) td.act-actions { opacity: 1; }
+
+/* Rows with a STAGED visibility/type edit (Select mode, pre-commit): a left accent so the change is
+   visible before Done writes it. Delete-staged rows use the greying rule above instead. */
+#activitiesGrid tr:has([data-pending-edit]) td:first-child { box-shadow: inset 3px 0 0 var(--acc-cyan, #36c5d0); }
+#activitiesGrid tr:has([data-pending-edit]) td { background: color-mix(in oklab, var(--acc-cyan, #36c5d0) 8%, transparent); }
+
+/* Toolbar Delete button: sits with the other toolbar actions, highlighted once something is marked. */
+.act-delete-btn { order: -1; }
+.act-delete-btn--dirty { border-color: var(--acc-red, #e5484d); color: var(--acc-red, #e5484d); }
+.act-delete-btn:disabled { opacity: 0.5; cursor: default; }
+.act-delete-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  margin-left: 4px;
+  border-radius: 8px;
+  background: var(--acc-red, #e5484d);
+  color: var(--bg-0, #0e1116);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+/* ── Select (bulk-management) mode ──────────────────────────────────── */
+/* Browsing-only "Select" entry button, sits with the toolbar actions. */
+.act-select-toggle { order: -1; }
+
+/* Staged-edit bar: "N selected" + visibility/type selects + Delete + Done + Cancel. Always present in
+   manage mode (it owns Done/Cancel); the value/delete controls disable when nothing is selected. */
+.act-bulk-bar {
+  order: -1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-right: 8px;
+  border-right: 1px solid var(--line);
+}
+.act-bulk-bar[hidden] { display: none; }
+.act-bulk-count {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--fg-0, #e7eaee);
+  white-space: nowrap;
+}
+/* The visibility/type dropdowns adopt the toolbar-button look (grid-toolbar-btn) as a native <select>. */
+.act-bulk-select { padding-right: 6px; }
+.act-bulk-select:disabled,
+.act-bulk-delete:disabled,
+.act-bulk-done:disabled,
+.act-bulk-cancel:disabled { opacity: 0.5; cursor: default; }
+.act-bulk-delete:not(:disabled):hover {
+  border-color: var(--acc-red, #e5484d);
+  color: var(--acc-red, #e5484d);
+}
+/* Done: highlighted once there are staged changes, with a pending-count badge (mirrors act-delete-badge). */
+.act-bulk-done--dirty { border-color: var(--acc-cyan, #36c5d0); color: var(--acc-cyan, #36c5d0); }
+.act-bulk-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  margin-left: 4px;
+  border-radius: 8px;
+  background: var(--acc-cyan, #36c5d0);
+  color: var(--bg-0, #0e1116);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+/* ── Pagination ─────────────────────────────────────────────────────── */
+.act-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.act-page-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  height: 32px;
+  padding: 0 8px;
+  border-radius: var(--radius-md);
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  color: var(--fg-1);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  text-decoration: none;
+  transition: background 0.12s, color 0.12s;
+}
+.act-page-link:hover   { background: var(--bg-3); color: var(--fg-0); }
+.act-page-link.active  { background: var(--acc-cyan); border-color: var(--acc-cyan); color: oklch(0.14 0.008 240); font-weight: 600; }
+.act-page-link.disabled { opacity: 0.35; pointer-events: none; }
+
+.act-page-sep { color: var(--fg-3); font-size: 12px; padding: 0 4px; }
+
+/* ── Page jump ──────────────────────────────────────────────────────── */
+.act-page-jump {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.act-page-jump-form {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.act-page-jump-form label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--fg-2);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.act-page-jump-input {
+  width: 72px;
+  background: var(--bg-3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  color: var(--fg-0);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  padding: 4px 8px;
+  text-align: center;
+  outline: none;
+}
+.act-page-jump-input:focus { border-color: var(--acc-cyan); }
+
+/* ── Responsive ─────────────────────────────────────────────────────── */
+@media (max-width: 1024px) {
+  #activitiesMap { height: 500px; }
+}
+
+@media (max-width: 768px) {
+  #activitiesMap { height: 550px; }
+  .act-map-toolbar { padding: 6px 10px; gap: 6px; }
+  .act-pagination, .act-page-jump { margin: 0 16px; }
+}
+
+@media (max-width: 480px) {
+  #activitiesMap { height: 450px; }
+}
+
+@media (max-width: 600px) {
+  /* Icon-only display-mode buttons to save room. */
+  .act-map-mode-label { display: none; }
+  .act-map-mode-btn { padding: 0 9px; }
+  /* Track counter / loading progress gets its own row above the controls (the toolbar
+     wraps), with only the toolbar's small gap below it. */
+  .act-map-status { flex-basis: 100%; }
+}
+
+@media (min-width: 769px) {
+  .act-col-picker-wrap { margin-left: auto; }
+}
+
+@media (max-width: 480px) {
+  .act-table th, .act-table td { padding: 7px 8px; }
+  .act-table thead th:first-child,
+  .act-table tbody td:first-child { padding-left: 10px; }
+}

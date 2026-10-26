@@ -1,0 +1,346 @@
+/* gpx-import.css — GPX Import page */
+
+.gpx-layout {
+    max-width: 680px;
+    padding: 0 var(--sp-4) var(--sp-6);
+}
+
+/* ── Option row ───────────────────────────────────────────────────── */
+
+.gpx-option {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    margin-bottom: 24px;
+}
+
+.gpx-option-checkbox {
+    width: 16px;
+    height: 16px;
+    margin-top: 2px;
+    flex-shrink: 0;
+    accent-color: var(--acc-cyan);
+    cursor: pointer;
+}
+
+.gpx-option-body {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.gpx-option-label {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--fg-0);
+    cursor: pointer;
+    line-height: 1.4;
+}
+
+.gpx-option-hint {
+    font-size: 0.8125rem;
+    color: var(--fg-2);
+    line-height: 1.5;
+}
+
+.gpx-option-hint code {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    background: var(--bg-3);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    padding: 1px 5px;
+    color: var(--fg-1);
+}
+
+/* ── Drop zone ────────────────────────────────────────────────────── */
+
+.gpx-dropzone {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 48px 32px;
+    background: var(--bg-2);
+    border: 2px dashed var(--line);
+    border-radius: var(--radius-lg);
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+    margin-bottom: 24px;
+    text-align: center;
+}
+
+.gpx-dropzone:hover {
+    border-color: var(--line-2);
+    background: var(--bg-3);
+}
+
+.gpx-dropzone--over {
+    border-color: var(--acc-cyan);
+    background: var(--bg-3);
+}
+
+.gpx-dropzone-icon {
+    font-size: 2.5rem;
+    color: var(--fg-2);
+    line-height: 1;
+    margin-bottom: 4px;
+}
+
+.gpx-dropzone-primary {
+    font-size: 0.9375rem;
+    font-weight: 500;
+    color: var(--fg-0);
+    margin: 0;
+}
+
+.gpx-dropzone-secondary {
+    font-size: 0.8125rem;
+    color: var(--fg-2);
+    margin: 0 0 12px;
+}
+
+/* ── File queue ───────────────────────────────────────────────────── */
+
+.gpx-queue {
+    margin-bottom: 24px;
+}
+
+.gpx-queue-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+}
+
+.gpx-queue-title {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--fg-1);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.gpx-queue-actions {
+    display: flex;
+    gap: 8px;
+}
+
+/* ── Upload progress (staging bytes) ──────────────────────────────── */
+
+.gpx-upload-progress {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex: 1 1 auto;
+    min-width: 0;
+    margin: 0 16px;
+}
+
+.gpx-upload-progress-text {
+    font-size: 0.8125rem;
+    color: var(--fg-2);
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+}
+
+.gpx-upload-progress-bar {
+    flex: 1 1 auto;
+    min-width: 60px;
+    max-width: 240px;
+    height: 4px;
+    border-radius: 2px;
+    background: var(--bg-3);
+    overflow: hidden;
+}
+
+.gpx-upload-progress-fill {
+    display: block;
+    height: 100%;
+    width: 0;
+    border-radius: 2px;
+    background: var(--acc-cyan);
+    transition: width 0.15s linear;
+}
+
+.gpx-file-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.gpx-file-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px;
+    background: var(--bg-2);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-md);
+    font-size: 0.875rem;
+    color: var(--fg-0);
+}
+
+.gpx-file-name {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+}
+
+.gpx-file-name i {
+    color: var(--fg-2);
+    flex-shrink: 0;
+}
+
+.gpx-file-name span {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* ── Status badges ────────────────────────────────────────────────── */
+
+.gpx-badge {
+    display: inline-block;
+    flex-shrink: 0;
+    padding: 2px 9px;
+    border-radius: 99px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    font-family: var(--font-mono);
+    letter-spacing: 0.01em;
+}
+
+.gpx-badge--pending {
+    background: var(--bg-4);
+    color: var(--fg-2);
+}
+
+/* Queued = uploaded, waiting in the server queue. Distinct from grey "Pending" so
+   the switch is visible, and from cyan "Uploading…/Importing…" so it doesn't read as active. */
+.gpx-badge--queued {
+    background: oklch(from var(--acc-violet) l c h / 0.15);
+    color: var(--acc-violet);
+}
+
+.gpx-badge--importing {
+    background: oklch(from var(--acc-cyan) l c h / 0.15);
+    color: var(--acc-cyan);
+}
+
+.gpx-badge--imported {
+    background: oklch(from var(--acc-lime) l c h / 0.15);
+    color: var(--acc-lime);
+}
+
+.gpx-badge--skipped {
+    background: oklch(from var(--acc-amber) l c h / 0.15);
+    color: var(--acc-amber);
+}
+
+.gpx-badge--failed {
+    background: oklch(from var(--acc-red) l c h / 0.15);
+    color: var(--acc-red);
+}
+
+/* ── Summary panel ────────────────────────────────────────────────── */
+
+.gpx-summary {
+    padding: 14px 18px;
+    border-radius: var(--radius-md);
+    font-size: 0.875rem;
+    background: var(--bg-2);
+    border: 1px solid var(--line);
+    border-left-width: 3px;
+    color: var(--fg-0);
+    line-height: 1.5;
+}
+
+.gpx-summary--success {
+    border-left-color: var(--acc-lime);
+}
+
+.gpx-summary--warn {
+    border-left-color: var(--acc-amber);
+}
+
+.gpx-summary--error {
+    border-left-color: var(--acc-red);
+}
+
+.gpx-summary a {
+    color: var(--acc-cyan);
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.gpx-summary a:hover {
+    text-decoration: underline;
+}
+
+/* ── Unified Import page: type badge, target banner, photo status + resolution ── */
+
+.import-type-badge {
+    margin-left: auto;
+    margin-right: 8px;
+    padding: 2px 8px;
+    border-radius: var(--radius-sm);
+    font-size: 0.7rem;
+    font-weight: 600;
+    background: var(--bg-4);
+    color: var(--fg-2);
+}
+
+.import-target-banner {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 16px;
+    border-radius: var(--radius-md);
+    background: oklch(from var(--acc-cyan) l c h / 0.1);
+    border: 1px solid oklch(from var(--acc-cyan) l c h / 0.3);
+    color: var(--fg-0);
+    font-size: 0.875rem;
+}
+.import-target-banner a { color: var(--acc-cyan); font-weight: 500; }
+
+.gpx-badge--duplicate,
+.gpx-badge--unmatched {
+    background: oklch(from var(--acc-amber) l c h / 0.15);
+    color: var(--acc-amber);
+}
+.gpx-badge--ambiguous {
+    background: oklch(from var(--acc-cyan) l c h / 0.15);
+    color: var(--acc-cyan);
+}
+
+.import-results { display: flex; flex-direction: column; gap: 8px; }
+
+.import-resolve {
+    padding: 10px 14px;
+    border-radius: var(--radius-md);
+    background: var(--bg-2);
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--acc-cyan);
+}
+.import-resolve-name { display: block; font-size: 0.85rem; color: var(--fg-1); margin-bottom: 8px; }
+.import-resolve-choices { display: flex; flex-wrap: wrap; gap: 6px; }
+.import-resolve-choices small { color: var(--fg-2); font-weight: 400; }
+.import-resolve-done { color: var(--acc-lime); }
+.import-resolve-err { color: var(--acc-red); }
+
+/* Photo preview-size select (shared by the Import page) */
+.photos-opt-label { font-size: 0.8rem; color: var(--fg-2); margin-right: 8px; }
+.photos-select {
+    background: var(--bg-3);
+    color: var(--fg-0);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    padding: 6px 10px;
+    font-size: 0.85rem;
+}

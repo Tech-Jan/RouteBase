@@ -1,0 +1,313 @@
+/* track-edit.css — Details edit-mode chrome (A3 §1.2/§4/§5).
+   `.track-edit-active` on <body> is the single root switch: it shows the editor toolbar, hides the
+   view-mode affordances that describe the SAVED track, and dims the KPI strip (⏸ #6: last-saved-state).
+   Uses the house det-* tokens; buttons reuse the existing .btn-cockpit styles. */
+
+/* ---- root-class show/hide ---- */
+
+#trackEditToolbar { display: none; }
+
+body.track-edit-active #trackEditToolbar { display: block; }
+
+/* Hide view-mode affordances that mutate/describe the saved activity (analysis §1.2). */
+body.track-edit-active .page-header-right,
+body.track-edit-active #detActions,
+body.track-edit-active #playReplayBtn,
+body.track-edit-active #detPhotosMapToggle {
+	display: none !important;
+}
+
+/* KPI strip: dimmed, non-interactive; the injected chip explains why. */
+body.track-edit-active .kpi-strip {
+	opacity: 0.45;
+	pointer-events: none;
+}
+
+.track-edit-kpi-chip {
+	display: none;
+	margin: 0 0 0.4rem;
+	padding: 0.15rem 0.6rem;
+	align-self: flex-start;
+	font: 500 0.72rem/1.4 var(--font-ui);
+	color: var(--fg-2);
+	background: var(--bg-3);
+	border: 1px solid var(--line);
+	border-radius: var(--radius-sm);
+}
+
+body.track-edit-active .track-edit-kpi-chip { display: inline-block; }
+
+/* ---- toolbar ---- */
+
+.track-edit-toolbar {
+	margin: 0 0 0.6rem;
+	padding: 0.55rem 0.75rem;
+	background: var(--bg-2);
+	border: 1px solid var(--acc-cyan);
+	border-radius: var(--radius-md);
+	box-shadow: var(--shadow-2);
+}
+
+.track-edit-toolbar-row {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 0.5rem;
+}
+
+.track-edit-mode-label {
+	font: 700 0.7rem/1 var(--font-mono);
+	letter-spacing: 0.08em;
+	color: var(--acc-cyan);
+	text-transform: uppercase;
+}
+
+.track-edit-tools,
+.track-edit-history,
+.track-edit-actions,
+.track-edit-slot-tools {
+	display: flex;
+	align-items: center;
+	gap: 0.35rem;
+}
+
+.track-edit-actions { margin-left: auto; }
+
+/* ---- slot chips (A4 §2.3) ---- */
+
+.track-edit-slot-tools { flex-wrap: wrap; }
+
+.track-edit-slot-chip {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.3rem;
+	padding: 0.2rem 0.45rem;
+	font: 600 0.72rem/1 var(--font-mono);
+	color: var(--fg-1);
+	background: var(--bg-3);
+	border: 1px solid var(--line);
+	border-radius: var(--radius-sm);
+	cursor: pointer;
+}
+
+.track-edit-slot-chip.is-active {
+	border-color: var(--acc-red, #dc3545);
+	color: var(--fg-0);
+	box-shadow: 0 0 0 1px var(--acc-red, #dc3545) inset;
+}
+
+.track-edit-slot-dot {
+	width: 0.6rem;
+	height: 0.6rem;
+	border-radius: 50%;
+	flex: 0 0 auto;
+}
+
+.track-edit-op-counter,
+.track-edit-slot-badge {
+	font: 500 0.75rem/1 var(--font-mono);
+	color: var(--fg-2);
+}
+
+.track-edit-status-row {
+	margin-top: 0.5rem;
+	padding-top: 0.45rem;
+	border-top: 1px solid var(--line);
+	font: 500 0.8rem/1.3 var(--font-ui);
+	color: var(--fg-1);
+}
+
+.track-edit-sel-readout { color: var(--fg-0); font-weight: 600; }
+.track-edit-hint { color: var(--fg-3); }
+
+#trackEditSplitBtn.is-armed {
+	border-color: var(--acc-amber);
+	color: var(--acc-amber);
+}
+
+/* ---- cut popover ---- */
+
+.track-edit-popover {
+	z-index: 2000;
+	min-width: 20rem;
+	padding: 0.75rem;
+	background: var(--bg-2);
+	border: 1px solid var(--line-2);
+	border-radius: var(--radius-md);
+	box-shadow: var(--shadow-2);
+	font: 500 0.82rem/1.4 var(--font-ui);
+	color: var(--fg-1);
+}
+
+.track-edit-popover-title { font-weight: 700; color: var(--fg-0); margin-bottom: 0.25rem; }
+.track-edit-popover-gap { color: var(--acc-amber); margin-bottom: 0.5rem; }
+
+.track-edit-popover-opt {
+	display: block;
+	padding: 0.2rem 0;
+	cursor: pointer;
+}
+
+.track-edit-popover-note { color: var(--fg-3); }
+
+.track-edit-popover-actions {
+	display: flex;
+	justify-content: flex-end;
+	gap: 0.4rem;
+	margin-top: 0.6rem;
+}
+
+/* ---- dialogs (I3c) ---- */
+
+.track-edit-dialog-backdrop {
+	position: fixed;
+	inset: 0;
+	z-index: 2100;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background: rgba(0, 0, 0, 0.55);
+}
+
+.track-edit-dialog {
+	width: min(30rem, 92vw);
+	padding: 1.1rem 1.2rem;
+	background: var(--bg-2);
+	border: 1px solid var(--line-2);
+	border-radius: var(--radius-lg);
+	box-shadow: var(--shadow-2);
+	font: 500 0.88rem/1.5 var(--font-ui);
+	color: var(--fg-1);
+}
+
+.track-edit-dialog h3 { margin: 0 0 0.6rem; font-size: 1rem; color: var(--fg-0); }
+.track-edit-dialog ul { margin: 0.5rem 0; padding-left: 1.1rem; }
+.track-edit-dialog li { margin: 0.15rem 0; }
+.track-edit-dialog-note { color: var(--fg-3); font-size: 0.8rem; }
+.track-edit-dialog-error { color: var(--acc-red); }
+
+/* Edit-history dialog: the version rows are cards (styled with the Details panel's .version-* in
+   activity-details.css), not the bullet list the generic dialog `ul`/`li` rules assume — undo those. A long
+   history scrolls inside the dialog rather than pushing the actions off-screen. */
+.track-edit-dialog--history { width: min(34rem, 94vw); }
+.track-edit-dialog--history .version-list {
+	margin: 0.6rem 0;
+	padding: 0;
+	max-height: 45vh;
+	overflow-y: auto;
+}
+.track-edit-dialog--history .version-row { margin: 0; }
+
+.track-edit-dialog-modes { display: flex; flex-direction: column; gap: 0.25rem; margin-bottom: 0.6rem; }
+
+.track-edit-dialog-actions {
+	display: flex;
+	justify-content: flex-end;
+	gap: 0.4rem;
+	margin-top: 0.9rem;
+}
+
+/* ---- add-track + append dialogs (A4 §3.4/§4) ---- */
+
+.track-edit-add-controls { display: flex; gap: 0.5rem; margin-bottom: 0.6rem; }
+.track-edit-add-search { flex: 1 1 auto; }
+.track-edit-add-controls input {
+	padding: 0.3rem 0.45rem;
+	background: var(--bg-3);
+	border: 1px solid var(--line);
+	border-radius: var(--radius-sm);
+	color: var(--fg-0);
+	font: 500 0.85rem/1.3 var(--font-ui);
+}
+
+.track-edit-add-list { max-height: 20rem; overflow-y: auto; display: flex; flex-direction: column; gap: 0.25rem; }
+
+.track-edit-add-row {
+	display: grid;
+	grid-template-columns: 1fr auto;
+	align-items: baseline;
+	gap: 0.15rem 0.6rem;
+	width: 100%;
+	padding: 0.4rem 0.55rem;
+	text-align: left;
+	background: var(--bg-3);
+	border: 1px solid var(--line);
+	border-radius: var(--radius-sm);
+	color: var(--fg-1);
+	cursor: pointer;
+}
+.track-edit-add-row:hover:not(:disabled) { border-color: var(--acc-cyan); }
+.track-edit-add-row.is-loaded { opacity: 0.55; cursor: default; }
+.track-edit-add-row.is-busy { opacity: 0.7; cursor: progress; }
+
+.track-edit-add-name { font-weight: 600; color: var(--fg-0); }
+.track-edit-add-meta { grid-column: 1; font: 500 0.78rem/1.2 var(--font-mono); color: var(--fg-3); }
+.track-edit-add-reasons { grid-column: 2; grid-row: 1 / span 2; align-self: center; font-size: 0.78rem; color: var(--acc-amber); text-align: right; }
+.track-edit-add-empty { padding: 0.6rem; color: var(--fg-3); }
+
+.track-edit-add-footer { display: flex; align-items: center; gap: 0.6rem; margin-top: 0.8rem; }
+.track-edit-add-picker-link { margin-right: auto; font-size: 0.82rem; color: var(--acc-cyan); }
+
+.track-edit-append-pickers { display: flex; flex-wrap: wrap; gap: 0.6rem; margin-bottom: 0.5rem; }
+.track-edit-append-picker { display: inline-flex; align-items: center; gap: 0.3rem; color: var(--fg-2); font-size: 0.82rem; }
+.track-edit-append-picker select {
+	padding: 0.25rem 0.4rem;
+	background: var(--bg-3);
+	border: 1px solid var(--line);
+	border-radius: var(--radius-sm);
+	color: var(--fg-0);
+}
+.track-edit-append-gap { margin-bottom: 0.5rem; color: var(--acc-amber); font-weight: 600; }
+.track-edit-append-modes { display: flex; flex-direction: column; gap: 0.25rem; }
+.track-edit-append-opt input:disabled + * { color: var(--fg-3); }
+
+/* ---- resume + desync banners, toast ---- */
+
+.track-edit-banner {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 0.5rem;
+	margin: 0 0 0.6rem;
+	padding: 0.5rem 0.75rem;
+	background: var(--bg-3);
+	border: 1px solid var(--acc-cyan);
+	border-radius: var(--radius-md);
+	font: 500 0.82rem/1.3 var(--font-ui);
+	color: var(--fg-1);
+}
+
+.track-edit-banner .track-edit-banner-actions { display: flex; gap: 0.35rem; margin-left: auto; }
+
+.track-edit-desync-banner {
+	position: fixed;
+	left: 50%;
+	bottom: 1.25rem;
+	transform: translateX(-50%);
+	z-index: 2200;
+	display: flex;
+	align-items: center;
+	gap: 0.6rem;
+	padding: 0.55rem 0.9rem;
+	background: var(--bg-2);
+	border: 1px solid var(--acc-red);
+	border-radius: var(--radius-md);
+	box-shadow: var(--shadow-2);
+	font: 500 0.82rem/1.3 var(--font-ui);
+	color: var(--fg-0);
+}
+
+.track-edit-toast {
+	position: fixed;
+	left: 50%;
+	bottom: 1.25rem;
+	transform: translateX(-50%);
+	z-index: 2300;
+	padding: 0.55rem 0.9rem;
+	background: var(--bg-2);
+	border: 1px solid var(--line-2);
+	border-radius: var(--radius-md);
+	box-shadow: var(--shadow-2);
+	font: 500 0.82rem/1.3 var(--font-ui);
+	color: var(--fg-0);
+}

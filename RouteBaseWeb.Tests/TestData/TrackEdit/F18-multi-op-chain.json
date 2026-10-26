@@ -1,0 +1,51 @@
+{
+  "fixtureVersion": 1,
+  "name": "multi-op-chain",
+  "description": "kitchen sink: load x2 -> crop -> append(close) -> splitAt -> deleteRange(keep); slot1 consumed, ends slot0 + slot2",
+  "sources": {
+    "401": {
+      "time": [1000, 1010, 1020, 1030, 1040],
+      "lat": [47000000, 47000100, 47000200, 47000300, 47000400],
+      "lng": [8000000, 8000100, 8000200, 8000300, 8000400],
+      "distance": [0, 100, 200, 300, 400]
+    },
+    "402": {
+      "time": [5000, 5010, 5020, 5030],
+      "lat": [47001000, 47001100, 47001200, 47001300],
+      "lng": [8001000, 8001100, 8001200, 8001300],
+      "distance": [0, 100, 200, 300]
+    }
+  },
+  "script": { "schemaVersion": 1, "ops": [
+    { "op": "loadActivity", "activityId": 401 },
+    { "op": "loadActivity", "activityId": 402 },
+    { "op": "cropTo", "slot": 0, "from": 1, "to": 4 },
+    { "op": "append", "target": 0, "source": 1, "timeMode": "close", "gapSeconds": 10 },
+    { "op": "splitAt", "slot": 0, "index": 4 },
+    { "op": "deleteRange", "slot": 0, "from": 1, "to": 2, "timeMode": "keep" }
+  ] },
+  "expect": {
+    "slots": [
+      {
+        "slotId": 0,
+        "origin": { "activityId": 401 },
+        "channels": {
+          "time": [1010, 1040, 1050],
+          "lat": [47000100, 47000400, 47001000],
+          "lng": [8000100, 8000400, 8001000],
+          "distance": [0, 0, 0]
+        }
+      },
+      {
+        "slotId": 2,
+        "origin": { "splitFromSlotId": 0 },
+        "channels": {
+          "time": [1050, 1060, 1070, 1080],
+          "lat": [47001000, 47001100, 47001200, 47001300],
+          "lng": [8001000, 8001100, 8001200, 8001300],
+          "distance": [0, 100, 200, 300]
+        }
+      }
+    ]
+  }
+}

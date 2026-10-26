@@ -1,0 +1,103 @@
+@page "/Activities/Trash"
+@using Microsoft.AspNetCore.Mvc.ViewFeatures
+@model RouteBaseWeb.Pages.Activities.TrashModel
+@{
+    Layout = "_DashboardLayout";
+    ViewData["Title"] = "Trash";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/grid-filter.css" asp-append-version="true">
+    <link rel="stylesheet" href="~/css/trash.css" asp-append-version="true">
+}
+
+<div class="cockpit-scroll">
+    <partial name="_PageHeader" model="@(new PageHeaderModel(
+        Title: "Trash",
+        Subtitle: "Deleted rides stay here until you remove them for good. Nothing here is counted towards your statistics.",
+        Breadcrumbs: new[] { ("/", "Dashboard"), ("/Activities", "Activities"), ("/Activities/Trash", "Trash") }
+    ))" />
+
+    @if (Model.Activities.Count == 0)
+    {
+        <div class="trash-status" role="status">Trash is empty.</div>
+    }
+    else
+    {
+        <section class="trash-toolbar" id="trashToolbar">
+            <label class="trash-selectall">
+                @* No .trash-row-check here — selectedIds() queries that class, and the select-all box is not a row. *@
+                <input type="checkbox" id="trashSelectAll" />
+                <span id="trashSelectionLabel">Select all</span>
+            </label>
+            <div class="trash-actions">
+                <button type="button" class="btn-cockpit btn-cockpit-ghost btn-cockpit-sm" id="trashRestoreBtn" disabled>
+                    Restore
+                </button>
+                <button type="button" class="btn-cockpit btn-cockpit-ghost btn-cockpit-sm" id="trashPurgeBtn" disabled>
+                    Delete permanently
+                </button>
+                <button type="button" class="btn-cockpit btn-cockpit-danger btn-cockpit-sm" id="trashEmptyBtn">
+                    Empty trash
+                </button>
+            </div>
+        </section>
+
+        @* Sort/filter strip — the same controls-only grid the dashboard feed uses, driving the cards below via
+           CSS order / is-hidden. Rendered by trash/trash-grid.ts. *@
+        <div class="grid-table-panel dash-feed-panel">
+            <div id="trashGridToolbar" class="grid-toolbar"></div>
+            <div id="trashGrid" class="dash-controls-grid"></div>
+        </div>
+
+        <div class="trash-cards" id="trashCards">
+            @foreach (var activity in Model.Activities)
+            {
+                var trash = Model.Trashed[activity.TrackId.Value];
+                <div class="trash-card" data-track-id="@activity.TrackId">
+                    @* The shared card, untouched: minimap + stats, exactly as on the dashboard. Everything that
+                       makes it a TRASH card — grey, badge, checkbox, actions — belongs to this wrapper. *@
+                    <partial name="_ActivityCard" model="activity"
+                             view-data='@(new ViewDataDictionary(ViewData) { ["CurrentUserId"] = activity.UserId ?? "" })' />
+
+                    <label class="trash-card-select" title="Select">
+                        <input type="checkbox" class="trash-row-check" data-track-id="@activity.TrackId"
+                               aria-label="Select this activity" />
+                    </label>
+
+                    <span class="trash-card-badge" title="In the trash" aria-label="In the trash">
+                        <i class="bi bi-trash3-fill"></i>
+                    </span>
+
+                    <div class="trash-card-foot">
+                        @* Why it's here + what Restore does — filled by trash.ts from the same pure functions the
+                           purge dialog uses, so the row and the warning can never word it differently. *@
+                        <div class="trash-card-why" data-why-track-id="@activity.TrackId"></div>
+                        <div class="trash-card-actions">
+                            <button type="button" class="btn-cockpit btn-cockpit-ghost btn-cockpit-sm trash-card-restore"
+                                    data-track-id="@activity.TrackId">
+                                <i class="bi bi-arrow-counterclockwise"></i> Restore
+                            </button>
+                            <button type="button" class="btn-cockpit btn-cockpit-ghost btn-cockpit-sm trash-card-purge"
+                                    data-track-id="@activity.TrackId">
+                                <i class="bi bi-x-lg"></i> Delete permanently
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+
+        <div id="trashFilteredEmpty" class="dash-feed-empty" hidden>No trashed rides match the current filters.</div>
+    }
+</div>
+
+@section Scripts {
+    @if (Model.Activities.Count > 0)
+    {
+        @* JSON island, not a window global (see types/window-globals.d.ts): the rows for the filter strip and
+           the trash chrome the cards are missing. Read by trash/trash.ts. *@
+        <script type="application/json" id="trashBootstrap">@Html.Raw(RouteBaseWeb.Helpers.BootstrapJson.Serialize(Model.GridBootstrap))</script>
+        <script type="module" src="~/js/trash/trash.js" asp-append-version="true"></script>
+    }
+}

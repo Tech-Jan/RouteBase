@@ -1,0 +1,119 @@
+/* photo-viewer.css — the control layer shared by both full-size photo viewers: the map/details
+   lightbox (.det-photo-fs, activity-photos.css) and the /Photos library lightbox (.photos-lightbox,
+   photos.css). The markup is built by src/js/photos/photo-viewer-chrome.ts.
+
+   The layer is fixed to the LAYOUT viewport here; on every visualViewport change the script overwrites
+   width/height/transform inline so it tracks the VISUAL one instead. That is the whole point: pinch-zoom
+   slides the visual viewport across the layout viewport, and controls anchored to the latter walk off
+   screen — with body scroll locked, the close button became unreachable until you zoomed back out. What
+   is below is the un-zoomed state, and the fallback on engines without visualViewport. */
+
+.photo-viewer-chrome {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    transform-origin: top left;
+    /* Only the controls take clicks; everything else falls through to the overlay behind, which reads
+       a click on itself as "dismiss". */
+    pointer-events: none;
+    z-index: 1; /* above the image inside the overlay; the overlay owns page-level stacking */
+}
+/* Buttons only — the counter and caption stay click-through, so a tap next to them still dismisses. */
+.photo-viewer-chrome button { pointer-events: auto; }
+
+.photo-viewer-close,
+.photo-viewer-nav {
+    position: absolute;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 0 4px; /* × and ‹ › both sit high in their em box */
+    border: none;
+    border-radius: 50%;
+    /* A disc, not a bare glyph. A white × over a bright photo is invisible — which is how the close
+       button came to "not always show". */
+    background: oklch(0 0 0 / 0.5);
+    color: #fff;
+    line-height: 1;
+    cursor: pointer;
+    transition: background 0.12s;
+}
+.photo-viewer-close:hover,
+.photo-viewer-nav:hover { background: oklch(0 0 0 / 0.78); }
+.photo-viewer-close:focus-visible,
+.photo-viewer-nav:focus-visible { outline: 2px solid var(--acc-cyan); outline-offset: 2px; }
+
+/* Top-right, and 44px so it is a real touch target. */
+.photo-viewer-close {
+    top: 12px;
+    right: 12px;
+    width: 44px;
+    height: 44px;
+    font-size: 1.9rem;
+}
+
+.photo-viewer-nav {
+    top: 50%;
+    width: 48px;
+    height: 48px;
+    margin-top: -24px;
+    font-size: 2.1rem;
+}
+.photo-viewer-prev { left: 12px; }
+.photo-viewer-next { right: 12px; }
+
+.photo-viewer-counter {
+    position: absolute;
+    left: 50%;
+    bottom: 14px;
+    transform: translateX(-50%);
+    padding: 3px 12px;
+    border-radius: 999px;
+    background: oklch(0 0 0 / 0.5);
+    color: #fff;
+    font-size: 0.78rem;
+    white-space: nowrap;
+}
+
+.photo-viewer-caption {
+    position: absolute;
+    left: 50%;
+    bottom: 46px;
+    transform: translateX(-50%);
+    max-width: min(90%, 640px);
+    padding: 6px 12px;
+    border-radius: var(--radius-sm);
+    background: oklch(0 0 0 / 0.58);
+    color: #fff;
+    font-size: 0.85rem;
+    text-align: center;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+/* ── Zoomable image (src/js/photos/photo-zoom.ts mounts this on the shown <img>) ──────────────────
+   The viewer owns the pinch. Letting the BROWSER have it zoomed the whole document, so closing the
+   viewer left the page — map, markers and all — magnified behind it. */
+.photo-zoomable {
+    transform-origin: center center;
+    /* pan-y, not none: neither pinch-zoom nor double-tap-zoom is in this set, so the browser refuses
+       both, while one-finger vertical scrolling survives for the /Photos lightbox's meta panel.
+       (iOS Safari ignores this for page zoom — photo-zoom.ts refuses that in JS as well.) */
+    touch-action: pan-y;
+    -webkit-user-select: none;
+    user-select: none;
+}
+.photo-zoomable.is-zoomed {
+    /* Zoomed in, one finger drags the photo — the browser must not read that as a scroll. */
+    touch-action: none;
+    cursor: grab;
+    will-change: transform;
+}
+
+/* The script toggles .hidden on these; without this the display rules above would win over the UA
+   [hidden] rule and a single-photo collection would still show arrows. */
+.photo-viewer-nav[hidden],
+.photo-viewer-counter[hidden],
+.photo-viewer-caption[hidden] { display: none; }
