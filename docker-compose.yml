@@ -1,0 +1,19 @@
+# RouteBase server — see README "On a server, for you and your friends".
+# Put a reverse proxy with HTTPS in front: the port is bound to localhost only on purpose, because the app trusts
+# X-Forwarded-* headers and must never be reachable directly.
+services:
+  routebase:
+    image: ghcr.io/tech-jan/routebase:latest
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:5054:5054"
+    volumes:
+      - routebase-data:/app/database   # database, photos, heatmaps, encryption keys — back this up
+    environment:
+      Authentik__Authority: "https://<your-oidc-provider>/application/o/routebase/"
+      Authentik__ClientId: "<client id>"
+      Authentik__ClientSecret: "<client secret>"
+      Admin__Users__0: "<your OIDC sub>"
+
+volumes:
+  routebase-data:

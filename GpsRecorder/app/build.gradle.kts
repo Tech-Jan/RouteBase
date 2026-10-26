@@ -36,8 +36,22 @@ android {
         versionName = "1.6.8"
     }
 
+    // Release signing comes ONLY from the environment (the release workflow's secrets). Unset → local release
+    // builds stay unsigned, and the key never has to exist on a dev machine or in the repo.
+    signingConfigs {
+        System.getenv("ROUTEBASE_KEYSTORE")?.let { keystore ->
+            create("release") {
+                storeFile = file(keystore)
+                storePassword = System.getenv("ROUTEBASE_KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("ROUTEBASE_KEY_ALIAS")
+                keyPassword = System.getenv("ROUTEBASE_KEYSTORE_PASSWORD")
+            }
+        }
+    }
+
     buildTypes {
         release {
+            signingConfig = signingConfigs.findByName("release")
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),

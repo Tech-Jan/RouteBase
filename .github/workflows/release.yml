@@ -1,0 +1,118 @@
+# Builds the downloads when a GitHub Release is published on the PUBLIC repo:
+#   Windows  localhost-mode zip (scripts/publish-local-win.ps1)   → attached to the release
+#   Server   Docker image                                        → ghcr.io/tech-jan/routebase:<version> + :latest
+#   Android  release-signed APK                                  → attached to the release
+#
+# This file also lives in the private source repo and the deployment repo (publish.sh copies it), so every job
+# is guarded to the public repo — elsewhere it must never run.
+#
+# Secrets (public repo → Settings → Secrets and variables → Actions):
+#   ANDROID_KEYSTORE_BASE64    base64 of the release keystore (.jks)
+#   ANDROID_KEYSTORE_PASSWORD  its password (PKCS12: one password for store and key)
+# The key alias is not secret: "routebase".
+
+name: Release
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+
+env:
+  TAG: ${{ github.event.release.tag_name }}
+
+jobs:
+  windows:
+    if: github.repository == 'Tech-Jan/RouteBase'
+    runs-on: windows-latest
+    permissions:
+      contents: write   # attach the zip to the release
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.400'   # = Dockerfile SDK pin; bump both together
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Build localhost package
+        shell: pwsh
+        run: ./scripts/publish-local-win.ps1
+      - name: Attach to release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $zip = "artifacts/RouteBase-$env:TAG-windows.zip"
+          Move-Item artifacts/RouteBase-localhost-win-x64.zip $zip
+          gh release upload $env:TAG $zip --clobber
+
+  docker:
+    if: github.repository == 'Tech-Jan/RouteBase'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write   # push to ghcr.io
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+      - id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/tech-jan/routebase
+          tags: |
+            type=semver,pattern={{version}}
+            type=raw,value=latest
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+  android:
+    if: github.repository == 'Tech-Jan/RouteBase'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write   # attach the APK to the release
+    defaults:
+      run:
+        working-directory: GpsRecorder
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Android SDK packages (compileSdk 36)
+        run: |
+          SDKM="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          yes | "$SDKM" --licenses > /dev/null
+          "$SDKM" "platforms;android-36" "build-tools;36.0.0" > /dev/null
+      - name: Build signed release APK
+        env:
+          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ROUTEBASE_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ROUTEBASE_KEY_ALIAS: routebase
+        run: |
+          [ -n "$KEYSTORE_B64" ] || { echo "::error::ANDROID_KEYSTORE_BASE64 secret is not set"; exit 1; }
+          export ROUTEBASE_KEYSTORE="$RUNNER_TEMP/release.jks"
+          echo "$KEYSTORE_B64" | base64 -d > "$ROUTEBASE_KEYSTORE"
+          chmod +x gradlew
+          ./gradlew --console=plain assembleRelease
+          rm -f "$ROUTEBASE_KEYSTORE"
+          # Fails here, not on a user's phone, if signing silently did not happen.
+          test -f app/build/outputs/apk/release/app-release.apk
+      - name: Attach to release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          apk="RouteBase-recorder-$TAG.apk"
+          mv app/build/outputs/apk/release/app-release.apk "$apk"
+          gh release upload "$TAG" "$apk" --clobber

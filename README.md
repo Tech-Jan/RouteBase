@@ -13,12 +13,10 @@ Imports GPX, FIT and TCX files, and can sync from Strava.
 
 Single-user "localhost mode": no server, no identity provider, all data on your machine.
 
-```powershell
-pwsh ./scripts/publish-local-win.ps1
-```
-
-This builds `artifacts/RouteBase-localhost-win-x64.zip`. Unzip it anywhere and double-click
-`Start RouteBase.bat`; the browser opens at `http://localhost:5054`, already signed in.
+Download `RouteBase-<version>-windows.zip` from the [latest release](https://github.com/Tech-Jan/RouteBase/releases/latest),
+unzip it anywhere and double-click `Start RouteBase.bat`; the browser opens at `http://localhost:5054`, already
+signed in. (Windows may warn about an unknown publisher — the package is not code-signed.) To build the package
+yourself: `pwsh ./scripts/publish-local-win.ps1`.
 
 - Your data lives in the `database/` folder next to the app. Back it up by copying that folder.
 - Localhost mode refuses to start if it is bound to anything but loopback, so it is never reachable from
@@ -31,18 +29,9 @@ is what it is developed against; any standard OIDC provider should work.
 
 1. **Create an OIDC application** in your provider (confidential client, authorization-code flow) with
    redirect URI `https://<your-host>/signin-oidc`, scopes `openid profile email`.
-2. **Build and run:**
-
-   ```bash
-   docker build -t routebase .
-   docker run -d --name routebase -p 5054:5054 \
-     -v routebase-data:/app/database \
-     -e Authentik__Authority="https://<your-oidc-provider>/application/o/routebase/" \
-     -e Authentik__ClientId="<client id>" \
-     -e Authentik__ClientSecret="<client secret>" \
-     -e Admin__Users__0="<your OIDC sub>" \
-     routebase
-   ```
+2. **Run it:** fill in the values in [docker-compose.yml](docker-compose.yml), then `docker compose up -d`. It uses
+   the prebuilt image `ghcr.io/tech-jan/routebase` (pin a version tag instead of `latest` if you prefer);
+   `docker build -t routebase .` builds it yourself.
 
 3. **Put it behind a reverse proxy with HTTPS** (Traefik, Caddy, nginx, Coolify, …). This is required, not
    optional: the app trusts `X-Forwarded-For` / `X-Forwarded-Proto` from its upstream, which is only safe when
@@ -86,7 +75,11 @@ once). The script's comments explain each one.
 server and can share a live-tracking link. It talks to the server with a per-user API key, generated under
 **Mobile API Key** on the web app's **API Keys & Database** page (`/KeysAndData`).
 
-Build it with JDK 21 and the Android SDK (platform 36, build-tools 36.0.0):
+Install `RouteBase-recorder-<version>.apk` from the [latest release](https://github.com/Tech-Jan/RouteBase/releases/latest)
+(allow "install unknown apps" for your browser). Every release is signed with the same key, so newer versions
+install as updates.
+
+Or build it with JDK 21 and the Android SDK (platform 36, build-tools 36.0.0):
 
 ```bash
 echo "sdk.dir=$HOME/Android/Sdk" > GpsRecorder/local.properties   # gitignored, once per checkout
