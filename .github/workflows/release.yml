@@ -1,5 +1,6 @@
 # Builds the downloads when a GitHub Release is published on the PUBLIC repo:
 #   Windows  localhost-mode zip (scripts/publish-local-win.ps1)   → attached to the release
+#   Linux / macOS (Apple Silicon + Intel) localhost tarballs (scripts/publish-local.sh) → attached to the release
 #   Server   Docker image                                        → ghcr.io/tech-jan/routebase:<version> + :latest
 #   Android  release-signed APK                                  → attached to the release
 #
@@ -49,6 +50,39 @@ jobs:
           $zip = "artifacts/RouteBase-$env:TAG-windows.zip"
           Move-Item artifacts/RouteBase-localhost-win-x64.zip $zip
           gh release upload $env:TAG $zip --clobber
+
+  unix:
+    # Linux and macOS localhost packages. macOS builds run ON macOS: Apple Silicon refuses unsigned native code
+    # and only a Mac host ad-hoc signs the app host reliably (osx-x64 is built on the arm64 runner too).
+    if: github.repository == 'Tech-Jan/RouteBase'
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { runner: ubuntu-latest, rid: linux-x64, label: linux-x64 }
+          - { runner: macos-latest,  rid: osx-arm64, label: macos-apple-silicon }
+          - { runner: macos-latest,  rid: osx-x64,   label: macos-intel }
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 30   # a hung build fails fast instead of running for hours
+    permissions:
+      contents: write   # attach the tarball to the release
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: '10.0.400'   # = Dockerfile SDK pin; bump both together
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+      - name: Build localhost package
+        run: ./scripts/publish-local.sh ${{ matrix.rid }}
+      - name: Attach to release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          pkg="artifacts/RouteBase-$TAG-${{ matrix.label }}.tar.gz"
+          mv "artifacts/RouteBase-localhost-${{ matrix.rid }}.tar.gz" "$pkg"
+          gh release upload "$TAG" "$pkg" --clobber
 
   docker:
     if: github.repository == 'Tech-Jan/RouteBase'

@@ -9,14 +9,21 @@ Imports GPX, FIT and TCX files, and can sync from Strava.
 
 ## Ways to run it
 
-### 1. On your own PC, no login (Windows)
+### 1. On your own PC, no login (Windows, Linux, macOS)
 
-Single-user "localhost mode": no server, no identity provider, all data on your machine.
+Single-user "localhost mode": no server, no identity provider, all data on your machine. Download the package for
+your system from the [latest release](https://github.com/Tech-Jan/RouteBase/releases/latest) — it is self-contained,
+no .NET install needed — and start it; the browser opens at `http://localhost:5054`, already signed in.
 
-Download `RouteBase-<version>-windows.zip` from the [latest release](https://github.com/Tech-Jan/RouteBase/releases/latest),
-unzip it anywhere and double-click `Start RouteBase.bat`; the browser opens at `http://localhost:5054`, already
-signed in. (Windows may warn about an unknown publisher — the package is not code-signed.) To build the package
-yourself: `pwsh ./scripts/publish-local-win.ps1`.
+- **Windows:** `RouteBase-<version>-windows.zip` — unzip, double-click `Start RouteBase.bat`. Windows may warn
+  about an unknown publisher (the package is not code-signed).
+- **Linux:** `RouteBase-<version>-linux-x64.tar.gz` — `tar -xzf RouteBase-*-linux-x64.tar.gz && ./RouteBase/start.sh`
+- **macOS:** `…-macos-apple-silicon.tar.gz` (M1 and newer) or `…-macos-intel.tar.gz` — unpack, then once in
+  Terminal: `xattr -dr com.apple.quarantine RouteBase` (the app is not notarized by Apple, so macOS blocks
+  downloaded copies until this flag is removed). Then double-click `Start RouteBase.command`.
+
+To build a package yourself: `pwsh ./scripts/publish-local-win.ps1` (Windows) or
+`scripts/publish-local.sh <linux-x64|osx-arm64|osx-x64>` (Linux/macOS; macOS packages must be built on a Mac).
 
 - Your data lives in the `database/` folder next to the app. Back it up by copying that folder.
 - Localhost mode refuses to start if it is bound to anything but loopback, so it is never reachable from
